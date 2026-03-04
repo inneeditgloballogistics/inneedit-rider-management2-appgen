@@ -8,6 +8,16 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const riderId = searchParams.get('riderId');
     const status = searchParams.get('status');
+    const action = searchParams.get('action');
+
+    // If action is 'count', return pending referrals count
+    if (action === 'count') {
+      const result = await sql`
+        SELECT COUNT(*) as count FROM referrals 
+        WHERE status = 'pending'
+      `;
+      return NextResponse.json({ pendingCount: result[0].count || 0 });
+    }
 
     let query;
     if (riderId) {

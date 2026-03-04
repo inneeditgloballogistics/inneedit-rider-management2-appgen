@@ -79,6 +79,7 @@ function AdminDashboardContent() {
   const [advances, setAdvances] = useState<any[]>([]);
   const [referrals, setReferrals] = useState<any[]>([]);
   const [pendingAdvancesCount, setPendingAdvancesCount] = useState(0);
+  const [pendingReferralsCount, setPendingReferralsCount] = useState(0);
 
   // Role-based access control - redirect if not admin
   useEffect(() => {
@@ -113,12 +114,13 @@ function AdminDashboardContent() {
 
   const fetchCounts = async () => {
     try {
-      const [ridersRes, vehiclesRes, hubsRes, storesRes, advancesRes] = await Promise.all([
+      const [ridersRes, vehiclesRes, hubsRes, storesRes, advancesRes, referralsRes] = await Promise.all([
         fetch('/api/riders?action=count'),
         fetch('/api/vehicles?action=count'),
         fetch('/api/hubs?action=count'),
         fetch('/api/stores?action=count'),
-        fetch('/api/advances?action=count')
+        fetch('/api/advances?action=count'),
+        fetch('/api/referrals?action=count')
       ]);
       
       const ridersData = await ridersRes.json();
@@ -126,12 +128,14 @@ function AdminDashboardContent() {
       const hubsData = await hubsRes.json();
       const storesData = await storesRes.json();
       const advancesData = await advancesRes.json();
+      const referralsData = await referralsRes.json();
       
       setRidersCount(ridersData.count || 0);
       setVehiclesCount(vehiclesData.count || 0);
       setHubsCount(hubsData.count || 0);
       setStoresCount(storesData.count || 0);
       setPendingAdvancesCount(advancesData.pendingCount || 0);
+      setPendingReferralsCount(referralsData.pendingCount || 0);
     } catch (error) {
       console.error('Error fetching counts:', error instanceof Error ? error.message : String(error));
     }
@@ -674,7 +678,7 @@ function AdminDashboardContent() {
                 
                 <button 
                   onClick={() => setActiveTab('referrals')} 
-                  className={`flex items-center gap-2 px-6 py-4 text-sm font-medium transition-all border-b-2 ${
+                  className={`flex items-center gap-2 px-6 py-4 text-sm font-medium transition-all border-b-2 relative ${
                     activeTab === 'referrals' 
                       ? 'border-brand-600 text-brand-600 bg-brand-50/30' 
                       : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -682,6 +686,11 @@ function AdminDashboardContent() {
                 >
                   <i className="ph-bold ph-user-plus text-lg"></i>
                   <span>Referrals</span>
+                  {pendingReferralsCount > 0 && (
+                    <span className="ml-2 px-2 py-0.5 bg-purple-500 text-white text-xs font-bold rounded-full">
+                      {pendingReferralsCount}
+                    </span>
+                  )}
                 </button>
                 
                 <button 
