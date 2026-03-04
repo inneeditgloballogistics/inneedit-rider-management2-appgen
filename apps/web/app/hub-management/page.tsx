@@ -58,16 +58,28 @@ function HubManagementContent() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const endpoint = `/api/${modalType}s`;
-    await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formData)
-    });
-    setShowAddModal(false);
-    setFormData({});
-    if (modalType === 'vehicle') fetchVehicles();
-    if (modalType === 'hub') fetchHubs();
-    if (modalType === 'store') fetchStores();
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      
+      if (!res.ok) {
+        const error = await res.json();
+        alert('Error: ' + (error.error || 'Failed to create ' + modalType));
+        return;
+      }
+      
+      setShowAddModal(false);
+      setFormData({});
+      if (modalType === 'vehicle') fetchVehicles();
+      if (modalType === 'hub') fetchHubs();
+      if (modalType === 'store') fetchStores();
+    } catch (error) {
+      console.error('Submit error:', error);
+      alert('Error: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    }
   };
 
     return (
