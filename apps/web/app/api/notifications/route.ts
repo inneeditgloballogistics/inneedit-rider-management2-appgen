@@ -6,31 +6,19 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const isRead = searchParams.get('isRead');
 
-    let query;
+    let notifications;
     if (isRead !== null) {
       const readValue = isRead === 'true';
-      query = sql`
-        SELECT * FROM notifications 
-        WHERE is_read = ${readValue}
-        ORDER BY created_at DESC
-      `;
+      notifications = await sql('SELECT * FROM notifications WHERE is_read = $1 ORDER BY created_at DESC', [readValue]);
     } else {
-      query = sql`
-        SELECT * FROM notifications 
-        ORDER BY created_at DESC
-        LIMIT 50
-      `;
+      notifications = await sql('SELECT * FROM notifications ORDER BY created_at DESC LIMIT 50');
     }
 
-    const notifications = await query;
-
-    const unreadCount = await sql`
-      SELECT COUNT(*) as count FROM notifications WHERE is_read = false
-    `;
+    const unreadCountResult = await sql('SELECT COUNT(*) as count FROM notifications WHERE is_read = false');
 
     return NextResponse.json({ 
       notifications,
-      unreadCount: parseInt(unreadCount[0].count) || 0
+      unreadCount: parseInt(unreadCountResult[0].count) || 0
     });
   } catch (error) {
     console.error('Error fetching notifications:', error);
@@ -44,20 +32,11 @@ export async function PATCH(request: NextRequest) {
     const { id, isRead } = body;
 
     if (id) {
-      const result = await sql`
-        UPDATE notifications 
-        SET is_read = ${isRead}
-        WHERE id = ${id}
-        RETURNING *
-      `;
+      const result = await sql('UPDATE notifications SET is_read = $1 WHERE id = $2 RETURNING *', [isRead, id]);
       return NextResponse.json(result[0]);
     } else {
       // Mark all as read
-      await sql`
-        UPDATE notifications 
-        SET is_read = true
-        WHERE is_read = false
-      `;
+      await sql('UPDATE notifications SET is_read = true WHERE is_read = false');
       return NextResponse.json({ success: true });
     }
   } catch (error) {
