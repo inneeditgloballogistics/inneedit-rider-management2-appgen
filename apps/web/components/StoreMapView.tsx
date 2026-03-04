@@ -76,6 +76,12 @@ export default function StoreMapView() {
         map: newMap,
         title: store.store_name,
         animation: window.google.maps.Animation.DROP,
+        label: {
+          text: store.store_name,
+          color: '#ffffff',
+          fontSize: '12px',
+          fontWeight: 'bold',
+        },
       });
 
       // Create info window content with all required details
