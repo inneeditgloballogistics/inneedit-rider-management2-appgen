@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { neon } from '@neondatabase/serverless';
-
-const sql = neon(process.env.DATABASE_URL!);
+import pool from '../utils/sql';
 
 export async function GET(request: NextRequest) {
   try {
@@ -9,12 +7,12 @@ export async function GET(request: NextRequest) {
     const action = searchParams.get('action');
 
     if (action === 'count') {
-      const result = await sql`SELECT COUNT(*) as count FROM riders`;
-      return NextResponse.json({ count: parseInt(result[0].count) });
+      const result = await pool.query('SELECT COUNT(*) as count FROM riders');
+      return NextResponse.json({ count: parseInt(result.rows[0].count) });
     }
 
     // Get all riders
-    const riders = await sql`
+    const result = await pool.query(`
       SELECT 
         r.*,
         u.name as user_name,
@@ -24,9 +22,9 @@ export async function GET(request: NextRequest) {
       LEFT JOIN "user" u ON r.user_id = u.id
       LEFT JOIN hubs h ON r.assigned_hub_id = h.id
       ORDER BY r.created_at DESC
-    `;
+    `);
     
-    return NextResponse.json({ riders });
+    return NextResponse.json({ riders: result.rows });
   } catch (error) {
     console.error('Error fetching riders:', error);
     return NextResponse.json({ error: 'Failed to fetch riders' }, { status: 500 });
@@ -53,8 +51,8 @@ export async function POST(request: Request) {
     }
     
     // Insert rider into database
-    const result = await sql`
-      INSERT INTO riders (
+    const result = await pool.query(
+      `INSERT INTO riders (
         cee_id,
         full_name,
         phone,
@@ -75,38 +73,41 @@ export async function POST(request: Request) {
         leader_discount_percentage,
         status
       ) VALUES (
-        ${ceeId},
-        ${body.fullName || ''},
-        ${body.mobile || ''},
-        ${body.email || null},
-        ${body.dob || null},
-        ${body.address || null},
-        ${body.client || ''},
-        ${hubId},
-        ${body.assignedVehicleId || null},
-        ${body.bankAccount || null},
-        ${body.ifscCode || null},
-        ${body.dlUrl || null},
-        ${body.aadharUrl || null},
-        ${body.vehicleOwnership || 'company_ev'},
-        ${body.evMonthlyRent || null},
-        ${body.evWeeklyRent || null},
-        ${body.isLeader || false},
-        ${body.leaderDiscountPercentage || 0},
-        'active'
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+        $11, $12, $13, $14, $15, $16, $17, $18, $19
       )
-      RETURNING *
-    `;
+      RETURNING *`,
+      [
+        ceeId,
+        body.fullName || '',
+        body.mobile || '',
+        body.email || null,
+        body.dob || null,
+        body.address || null,
+        body.client || '',
+        hubId,
+        body.assignedVehicleId || null,
+        body.bankAccount || null,
+        body.ifscCode || null,
+        body.dlUrl || null,
+        body.aadharUrl || null,
+        body.vehicleOwnership || 'company_ev',
+        body.evMonthlyRent || null,
+        body.evWeeklyRent || null,
+        body.isLeader || false,
+        body.leaderDiscountPercentage || 0,
+        'active'
+      ]
+    );
     
-    const newRider = result[0];
+    const newRider = result.rows[0];
 
     // If a vehicle was assigned, update the vehicle record
     if (body.assignedVehicleId) {
-      await sql`
-        UPDATE vehicles 
-        SET assigned_rider_id = ${ceeId}, status = 'assigned'
-        WHERE id = ${body.assignedVehicleId}
-      `;
+      await pool.query(
+        'UPDATE vehicles SET assigned_rider_id = $1, status = $2 WHERE id = $3',
+        [ceeId, 'assigned', body.assignedVehicleId]
+      );
       console.log('Vehicle assigned to rider:', body.assignedVehicleId, ceeId);
     }
     
@@ -137,57 +138,74 @@ export async function PUT(request: NextRequest) {
     const { id, assigned_vehicle_id, ...otherFields } = body;
 
     // Get the current rider data to find previous vehicle assignment
-    const currentRider = await sql`
-      SELECT assigned_vehicle_id FROM riders WHERE id = ${id}
-    `;
+    const currentRider = await pool.query(
+      'SELECT assigned_vehicle_id FROM riders WHERE id = $1',
+      [id]
+    );
 
     // If vehicle assignment changed, update both old and new vehicles
-    if (currentRider.length > 0) {
-      const oldVehicleId = currentRider[0].assigned_vehicle_id;
+    if (currentRider.rows.length > 0) {
+      const oldVehicleId = currentRider.rows[0].assigned_vehicle_id;
       
       // Free up old vehicle if it exists
       if (oldVehicleId && oldVehicleId !== assigned_vehicle_id) {
-        await sql`
-          UPDATE vehicles 
-          SET assigned_rider_id = NULL, status = 'available'
-          WHERE id = ${oldVehicleId}
-        `;
+        await pool.query(
+          'UPDATE vehicles SET assigned_rider_id = NULL, status = $1 WHERE id = $2',
+          ['available', oldVehicleId]
+        );
       }
       
       // Assign new vehicle if provided
       if (assigned_vehicle_id) {
-        const riderCeeId = await sql`SELECT cee_id FROM riders WHERE id = ${id}`;
-        if (riderCeeId.length > 0) {
-          await sql`
-            UPDATE vehicles 
-            SET assigned_rider_id = ${riderCeeId[0].cee_id}, status = 'assigned'
-            WHERE id = ${assigned_vehicle_id}
-          `;
+        const riderCeeId = await pool.query(
+          'SELECT cee_id FROM riders WHERE id = $1',
+          [id]
+        );
+        if (riderCeeId.rows.length > 0) {
+          await pool.query(
+            'UPDATE vehicles SET assigned_rider_id = $1, status = $2 WHERE id = $3',
+            [riderCeeId.rows[0].cee_id, 'assigned', assigned_vehicle_id]
+          );
         }
       }
     }
 
     // Update rider record
-    const result = await sql`
-      UPDATE riders 
+    const result = await pool.query(
+      `UPDATE riders 
       SET 
-        full_name = ${otherFields.full_name},
-        phone = ${otherFields.phone},
-        email = ${otherFields.email || null},
-        address = ${otherFields.address || null},
-        city = ${otherFields.city || null},
-        state = ${otherFields.state || null},
-        pincode = ${otherFields.pincode || null},
-        client = ${otherFields.client || null},
-        assigned_hub_id = ${otherFields.assigned_hub_id || null},
-        assigned_vehicle_id = ${assigned_vehicle_id || null},
-        store_id = ${otherFields.store_id || null},
-        status = ${otherFields.status || 'active'}
-      WHERE id = ${id}
-      RETURNING *
-    `;
+        full_name = $1,
+        phone = $2,
+        email = $3,
+        address = $4,
+        city = $5,
+        state = $6,
+        pincode = $7,
+        client = $8,
+        assigned_hub_id = $9,
+        assigned_vehicle_id = $10,
+        store_id = $11,
+        status = $12
+      WHERE id = $13
+      RETURNING *`,
+      [
+        otherFields.full_name,
+        otherFields.phone,
+        otherFields.email || null,
+        otherFields.address || null,
+        otherFields.city || null,
+        otherFields.state || null,
+        otherFields.pincode || null,
+        otherFields.client || null,
+        otherFields.assigned_hub_id || null,
+        assigned_vehicle_id || null,
+        otherFields.store_id || null,
+        otherFields.status || 'active',
+        id
+      ]
+    );
 
-    return NextResponse.json(result[0]);
+    return NextResponse.json(result.rows[0]);
   } catch (error) {
     console.error('Error updating rider:', error);
     return NextResponse.json({ error: 'Failed to update rider' }, { status: 500 });
@@ -204,43 +222,45 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Get rider details
-    const riderResult = await sql`
-      SELECT id, cee_id, full_name FROM riders WHERE user_id = ${user_id}
-    `;
+    const riderResult = await pool.query(
+      'SELECT id, cee_id, full_name FROM riders WHERE user_id = $1',
+      [user_id]
+    );
 
-    if (riderResult.length === 0) {
+    if (riderResult.rows.length === 0) {
       return NextResponse.json({ error: 'Rider not found' }, { status: 404 });
     }
 
-    const rider = riderResult[0];
+    const rider = riderResult.rows[0];
 
     // Update bank details
-    const updatedRider = await sql`
-      UPDATE riders 
+    const updatedRider = await pool.query(
+      `UPDATE riders 
       SET 
-        bank_name = ${bank_name},
-        account_number = ${account_number},
-        ifsc_code = ${ifsc_code}
-      WHERE user_id = ${user_id}
-      RETURNING *
-    `;
+        bank_name = $1,
+        account_number = $2,
+        ifsc_code = $3
+      WHERE user_id = $4
+      RETURNING *`,
+      [bank_name, account_number, ifsc_code, user_id]
+    );
 
     // Create notification for admin
-    await sql`
-      INSERT INTO notifications (type, title, message, related_id, is_read, created_at)
-      VALUES (
+    await pool.query(
+      `INSERT INTO notifications (type, title, message, related_id, is_read, created_at)
+      VALUES ($1, $2, $3, $4, $5, NOW())`,
+      [
         'bank_update',
         'Rider Bank Details Updated',
-        ${`${rider.full_name} (CEE ID: ${rider.cee_id}) has updated their bank details. Please verify: ${bank_name}, Account: ${account_number}, IFSC: ${ifsc_code}`},
-        ${rider.id},
-        false,
-        NOW()
-      )
-    `;
+        `${rider.full_name} (CEE ID: ${rider.cee_id}) has updated their bank details. Please verify: ${bank_name}, Account: ${account_number}, IFSC: ${ifsc_code}`,
+        rider.id,
+        false
+      ]
+    );
 
     return NextResponse.json({ 
       success: true, 
-      rider: updatedRider[0],
+      rider: updatedRider.rows[0],
       message: 'Bank details updated and admin notified' 
     });
   } catch (error: any) {
@@ -261,31 +281,34 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Get rider details before deletion
-    const rider = await sql`SELECT cee_id, assigned_vehicle_id FROM riders WHERE id = ${id}`;
+    const rider = await pool.query(
+      'SELECT cee_id, assigned_vehicle_id FROM riders WHERE id = $1',
+      [id]
+    );
     
-    if (rider.length === 0) {
+    if (rider.rows.length === 0) {
       return NextResponse.json({ error: 'Rider not found' }, { status: 404 });
     }
 
-    const riderData = rider[0];
+    const riderData = rider.rows[0];
 
     // Check if rider has related records
     const [orders, advances, referrals, deductions, incentives, payouts] = await Promise.all([
-      sql`SELECT COUNT(*) as count FROM orders WHERE rider_id = ${riderData.cee_id}`,
-      sql`SELECT COUNT(*) as count FROM advances WHERE rider_id = ${riderData.cee_id}`,
-      sql`SELECT COUNT(*) as count FROM referrals WHERE referrer_id = ${riderData.cee_id}`,
-      sql`SELECT COUNT(*) as count FROM deductions WHERE rider_id = ${riderData.cee_id}`,
-      sql`SELECT COUNT(*) as count FROM incentives WHERE rider_id = ${riderData.cee_id}`,
-      sql`SELECT COUNT(*) as count FROM payouts WHERE rider_id = ${riderData.cee_id}`
+      pool.query('SELECT COUNT(*) as count FROM orders WHERE rider_id = $1', [riderData.cee_id]),
+      pool.query('SELECT COUNT(*) as count FROM advances WHERE rider_id = $1', [riderData.cee_id]),
+      pool.query('SELECT COUNT(*) as count FROM referrals WHERE referrer_id = $1', [riderData.cee_id]),
+      pool.query('SELECT COUNT(*) as count FROM deductions WHERE rider_id = $1', [riderData.cee_id]),
+      pool.query('SELECT COUNT(*) as count FROM incentives WHERE rider_id = $1', [riderData.cee_id]),
+      pool.query('SELECT COUNT(*) as count FROM payouts WHERE rider_id = $1', [riderData.cee_id])
     ]);
 
     const hasRelatedRecords = 
-      parseInt(orders[0].count) > 0 ||
-      parseInt(advances[0].count) > 0 ||
-      parseInt(referrals[0].count) > 0 ||
-      parseInt(deductions[0].count) > 0 ||
-      parseInt(incentives[0].count) > 0 ||
-      parseInt(payouts[0].count) > 0;
+      parseInt(orders.rows[0].count) > 0 ||
+      parseInt(advances.rows[0].count) > 0 ||
+      parseInt(referrals.rows[0].count) > 0 ||
+      parseInt(deductions.rows[0].count) > 0 ||
+      parseInt(incentives.rows[0].count) > 0 ||
+      parseInt(payouts.rows[0].count) > 0;
 
     if (hasRelatedRecords) {
       return NextResponse.json({ 
@@ -295,15 +318,14 @@ export async function DELETE(request: NextRequest) {
 
     // Free up assigned vehicle if exists
     if (riderData.assigned_vehicle_id) {
-      await sql`
-        UPDATE vehicles 
-        SET assigned_rider_id = NULL, status = 'available'
-        WHERE id = ${riderData.assigned_vehicle_id}
-      `;
+      await pool.query(
+        'UPDATE vehicles SET assigned_rider_id = NULL, status = $1 WHERE id = $2',
+        ['available', riderData.assigned_vehicle_id]
+      );
     }
 
     // Delete the rider
-    await sql`DELETE FROM riders WHERE id = ${id}`;
+    await pool.query('DELETE FROM riders WHERE id = $1', [id]);
 
     return NextResponse.json({ success: true, message: 'Rider deleted successfully' });
   } catch (error: any) {
