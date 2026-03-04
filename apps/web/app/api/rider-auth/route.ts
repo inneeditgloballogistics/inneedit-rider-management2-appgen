@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { neon } from '@neondatabase/serverless';
+import pool from '../utils/sql';
 
 const sql = neon(process.env.DATABASE_URL!);
 
@@ -34,9 +34,38 @@ export async function GET(request: NextRequest) {
 
     const session = sessions[0];
 
-    // Get rider details
+    // Get rider details with all fields
     const riders = await sql`
-      SELECT id, cee_id, full_name, phone, email, status
+      SELECT 
+        id, 
+        user_id, 
+        cee_id, 
+        full_name, 
+        phone, 
+        email, 
+        date_of_birth,
+        gender,
+        address,
+        city, 
+        state, 
+        pincode,
+        emergency_contact_name,
+        emergency_contact_phone,
+        client,
+        driving_license_number,
+        driving_license_expiry,
+        driving_license_url,
+        aadhar_number,
+        aadhar_url,
+        bank_name,
+        account_number,
+        ifsc_code,
+        vehicle_type,
+        assigned_hub_id,
+        assigned_vehicle_id,
+        status,
+        phone_verified,
+        created_at
       FROM riders
       WHERE user_id = ${session.userId}
       LIMIT 1
@@ -55,10 +84,34 @@ export async function GET(request: NextRequest) {
       success: true,
       rider: {
         id: rider.id,
+        user_id: rider.user_id,
         ceeId: rider.cee_id,
-        name: rider.full_name,
+        full_name: rider.full_name,
         phone: rider.phone,
         email: rider.email,
+        date_of_birth: rider.date_of_birth,
+        gender: rider.gender,
+        address: rider.address,
+        city: rider.city,
+        state: rider.state,
+        pincode: rider.pincode,
+        emergency_contact_name: rider.emergency_contact_name,
+        emergency_contact_phone: rider.emergency_contact_phone,
+        client: rider.client,
+        driving_license_number: rider.driving_license_number,
+        driving_license_expiry: rider.driving_license_expiry,
+        driving_license_url: rider.driving_license_url,
+        aadhar_number: rider.aadhar_number,
+        aadhar_url: rider.aadhar_url,
+        bank_name: rider.bank_name,
+        account_number: rider.account_number,
+        ifsc_code: rider.ifsc_code,
+        vehicle_type: rider.vehicle_type,
+        assigned_hub_id: rider.assigned_hub_id,
+        assigned_vehicle_id: rider.assigned_vehicle_id,
+        status: rider.status,
+        phone_verified: rider.phone_verified,
+        created_at: rider.created_at,
       },
     });
   } catch (error: any) {

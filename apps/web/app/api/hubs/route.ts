@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { neon } from '@neondatabase/serverless';
+import pool from '../utils/sql';
 
 const sql = neon(process.env.DATABASE_URL!);
 
