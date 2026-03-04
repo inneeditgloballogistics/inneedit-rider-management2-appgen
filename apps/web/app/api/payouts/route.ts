@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '../utils/sql';
-
-const sql = neon(process.env.DATABASE_URL!);
+import sql from '../utils/sql';
 
 export async function GET(request: NextRequest) {
   try {
