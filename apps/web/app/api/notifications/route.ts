@@ -9,12 +9,12 @@ export async function GET(request: NextRequest) {
     let notifications;
     if (isRead !== null) {
       const readValue = isRead === 'true';
-      notifications = await sql('SELECT * FROM notifications WHERE is_read = $1 ORDER BY created_at DESC', [readValue]);
+      notifications = await sql`SELECT * FROM notifications WHERE is_read = ${readValue} ORDER BY created_at DESC`;
     } else {
-      notifications = await sql('SELECT * FROM notifications ORDER BY created_at DESC LIMIT 50');
+      notifications = await sql`SELECT * FROM notifications ORDER BY created_at DESC LIMIT 50`;
     }
 
-    const unreadCountResult = await sql('SELECT COUNT(*) as count FROM notifications WHERE is_read = false');
+    const unreadCountResult = await sql`SELECT COUNT(*) as count FROM notifications WHERE is_read = false`;
 
     return NextResponse.json({ 
       notifications,
@@ -32,11 +32,11 @@ export async function PATCH(request: NextRequest) {
     const { id, isRead } = body;
 
     if (id) {
-      const result = await sql('UPDATE notifications SET is_read = $1 WHERE id = $2 RETURNING *', [isRead, id]);
+      const result = await sql`UPDATE notifications SET is_read = ${isRead} WHERE id = ${id} RETURNING *`;
       return NextResponse.json(result[0]);
     } else {
       // Mark all as read
-      await sql('UPDATE notifications SET is_read = true WHERE is_read = false');
+      await sql`UPDATE notifications SET is_read = true WHERE is_read = false`;
       return NextResponse.json({ success: true });
     }
   } catch (error) {

@@ -104,48 +104,13 @@ export async function GET(request: NextRequest) {
 
     if (action === 'history') {
       // Get payout history
-      let query = `
+      const payouts = await sql`
         SELECT p.*, r.full_name, r.cee_id
         FROM payouts p
         LEFT JOIN riders r ON r.cee_id = p.rider_id
-        WHERE 1=1
+        ORDER BY p.created_at DESC
+        LIMIT 200
       `;
-      const params: any[] = [];
-      let paramIndex = 1;
-
-      if (riderId) {
-        query += ` AND p.rider_id = $${paramIndex}`;
-        params.push(riderId);
-        paramIndex++;
-      }
-
-      if (weekNumber) {
-        query += ` AND p.week_number = $${paramIndex}`;
-        params.push(weekNumber);
-        paramIndex++;
-      }
-
-      if (month) {
-        query += ` AND p.month = $${paramIndex}`;
-        params.push(month);
-        paramIndex++;
-      }
-
-      if (year) {
-        query += ` AND p.year = $${paramIndex}`;
-        params.push(year);
-        paramIndex++;
-      }
-
-      if (status) {
-        query += ` AND p.status = $${paramIndex}`;
-        params.push(status);
-        paramIndex++;
-      }
-
-      query += ` ORDER BY p.created_at DESC`;
-
-      const payouts = await sql(query, params);
       return NextResponse.json(payouts);
     }
 
