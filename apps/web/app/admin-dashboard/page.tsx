@@ -1098,6 +1098,57 @@ function AdminDashboardContent() {
                   </div>
                 </div>
 
+                {/* Advances Statistics Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
+                    <div className="absolute right-0 top-0 w-24 h-24 bg-orange-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+                    <div className="relative z-10">
+                      <div className="flex items-center gap-2 mb-3">
+                        <i className="ph-duotone ph-hourglass-medium text-2xl text-orange-600"></i>
+                        <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Pending Requests</h3>
+                      </div>
+                      <p className="text-4xl font-bold text-slate-900 tracking-tight mb-3">
+                        {advances.filter(a => !a.status || a.status === 'pending').length}
+                      </p>
+                      <div className="flex items-center gap-2 text-xs font-medium">
+                        <span className="text-orange-600 bg-orange-50 px-2.5 py-1 rounded-md">Awaiting Action</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
+                    <div className="absolute right-0 top-0 w-24 h-24 bg-green-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+                    <div className="relative z-10">
+                      <div className="flex items-center gap-2 mb-3">
+                        <i className="ph-duotone ph-check-circle text-2xl text-green-600"></i>
+                        <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Approved</h3>
+                      </div>
+                      <p className="text-4xl font-bold text-slate-900 tracking-tight mb-3">
+                        {advances.filter(a => a.status === 'approved').length}
+                      </p>
+                      <div className="flex items-center gap-2 text-xs font-medium">
+                        <span className="text-green-600 bg-green-50 px-2.5 py-1 rounded-md">Processed</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
+                    <div className="absolute right-0 top-0 w-24 h-24 bg-red-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+                    <div className="relative z-10">
+                      <div className="flex items-center gap-2 mb-3">
+                        <i className="ph-duotone ph-x-circle text-2xl text-red-600"></i>
+                        <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Rejected</h3>
+                      </div>
+                      <p className="text-4xl font-bold text-slate-900 tracking-tight mb-3">
+                        {advances.filter(a => a.status === 'rejected').length}
+                      </p>
+                      <div className="flex items-center gap-2 text-xs font-medium">
+                        <span className="text-red-600 bg-red-50 px-2.5 py-1 rounded-md">Denied</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 gap-4">
                   {advances.length > 0 ? (
                     advances.map((advance) => (
