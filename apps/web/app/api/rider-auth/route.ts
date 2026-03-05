@@ -135,11 +135,21 @@ export async function POST(request: NextRequest) {
     // Verify Firebase ID token (optional - adds extra security)
     // You can add Firebase Admin SDK verification here if needed
 
+    // Normalize phone number to just 10 digits (remove country code, spaces, etc.)
+    let normalizedPhone = phoneNumber.replace(/\D/g, ''); // Remove all non-digits
+    if (normalizedPhone.length === 12 && normalizedPhone.startsWith('91')) {
+      // Remove country code if present (91)
+      normalizedPhone = normalizedPhone.slice(2);
+    } else if (normalizedPhone.length === 11 && normalizedPhone.startsWith('0')) {
+      // Remove leading 0 if present
+      normalizedPhone = normalizedPhone.slice(1);
+    }
+
     // Check if rider exists with this phone number
     const riders = await sql`
       SELECT id, user_id, full_name, phone, email, status, cee_id
       FROM riders
-      WHERE phone = ${phoneNumber}
+      WHERE phone = ${normalizedPhone}
       LIMIT 1
     `;
 
