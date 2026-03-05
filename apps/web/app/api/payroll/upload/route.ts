@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
@@ -108,6 +104,10 @@ async function extractWithOpenAI(base64Data: string, mimeType: string, fileType:
   if (!apiKey) {
     throw new Error('OpenAI API key not configured. Please add OPENAI_API_KEY to environment variables.');
   }
+
+  const openai = new OpenAI({
+    apiKey: apiKey,
+  });
 
   // Prepare the prompt based on file type
   const prompt = `Analyze this ${fileType} document which contains rider/delivery partner payout information.
