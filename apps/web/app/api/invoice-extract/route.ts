@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { google } from 'googleapis';
-import fs from 'fs';
 
 const projectId = process.env.GOOGLE_CLOUD_PROJECT_ID || '';
 const processorId = process.env.GOOGLE_DOCUMENT_AI_PROCESSOR_ID || '';
@@ -41,6 +40,7 @@ export async function POST(request: NextRequest) {
     try {
       credentials = JSON.parse(credentialsJson);
     } catch (e) {
+      console.error('Failed to parse credentials:', e);
       return NextResponse.json(
         { error: 'Invalid GOOGLE_APPLICATION_CREDENTIALS format' },
         { status: 500 }
@@ -51,14 +51,23 @@ export async function POST(request: NextRequest) {
     const fileBuffer = Buffer.from(await file.arrayBuffer());
     const base64Content = fileBuffer.toString('base64');
 
-    // Create JWT auth
+    // Create GoogleAuth instance with credentials
     const auth = new google.auth.GoogleAuth({
-      credentials: credentials,
+      credentials,
       scopes: ['https://www.googleapis.com/auth/cloud-platform'],
     });
 
-    const client = await auth.getClient();
+    // Get the authenticated client
+    const authClient = await auth.getClient();
+    
+    // Get authorization headers
+    const { headers } = await authClient.request({ url: 'https://documentai.googleapis.com/v1/projects' });
+    const authHeader = headers['authorization'] || '';
+    
     const processorName = `projects/${projectId}/locations/${location}/processors/${processorId}`;
+
+    console.log(`Calling Document AI: ${processorName}`);
+    console.log(`File type: ${file.type}, File size: ${fileBuffer.length}`);
 
     // Call Document AI API
     const response = await fetch(
@@ -67,7 +76,7 @@ export async function POST(request: NextRequest) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${await (client as any).getAccessToken().then((t: any) => t.token)}`,
+          'Authorization': authHeader,
         },
         body: JSON.stringify({
           rawDocument: {
@@ -78,13 +87,16 @@ export async function POST(request: NextRequest) {
       }
     );
 
+    console.log(`Document AI response status: ${response.status}`);
+
     if (!response.ok) {
       const error = await response.text();
       console.error('Document AI API error:', error);
       return NextResponse.json(
         { 
           error: 'Failed to process document',
-          details: error 
+          status: response.status,
+          message: error.substring(0, 500)
         },
         { status: response.status }
       );
