@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import OpenAI from 'openai';
+import { DocumentProcessorServiceClient } from '@google-cloud/documentai';
+import * as fs from 'fs';
+import * as path from 'path';
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,7 +16,6 @@ export async function POST(req: NextRequest) {
     const fileType = file.type;
     const fileName = file.name.toLowerCase();
 
-    // Convert file to base64 for OpenAI Vision API
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
     
@@ -46,13 +47,11 @@ export async function POST(req: NextRequest) {
 }
 
 async function extractFromPDF(buffer: Buffer) {
-  const base64 = buffer.toString('base64');
-  return await extractWithOpenAI(base64, 'application/pdf', 'pdf');
+  return await extractWithGoogleDocumentAI(buffer, 'application/pdf');
 }
 
 async function extractFromImage(buffer: Buffer) {
-  const base64 = buffer.toString('base64');
-  return await extractWithOpenAI(base64, 'image/jpeg', 'image');
+  return await extractWithGoogleDocumentAI(buffer, 'image/jpeg');
 }
 
 async function extractFromSpreadsheet(buffer: Buffer, fileName: string) {
@@ -62,9 +61,9 @@ async function extractFromSpreadsheet(buffer: Buffer, fileName: string) {
     return parseCSV(text);
   }
   
-  // For Excel, convert to image or use text extraction
-  const base64 = buffer.toString('base64');
-  return await extractWithOpenAI(base64, 'image/jpeg', 'spreadsheet');
+  // For Excel, parse directly as text
+  const text = buffer.toString('utf-8');
+  return parseCSV(text);
 }
 
 function parseCSV(csvText: string) {
@@ -98,77 +97,126 @@ function parseCSV(csvText: string) {
   return riders;
 }
 
-async function extractWithOpenAI(base64Data: string, mimeType: string, fileType: string) {
-  const apiKey = process.env.OPENAI_API_KEY;
+async function extractWithGoogleDocumentAI(buffer: Buffer, mimeType: string) {
+  const serviceAccountJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
   
-  if (!apiKey) {
-    throw new Error('OpenAI API key not configured. Please add OPENAI_API_KEY to environment variables.');
+  if (!serviceAccountJson) {
+    throw new Error('GOOGLE_SERVICE_ACCOUNT_JSON not configured in environment variables.');
   }
-
-  const openai = new OpenAI({
-    apiKey: apiKey,
-  });
-
-  // Prepare the prompt based on file type
-  const prompt = `Analyze this ${fileType} document which contains rider/delivery partner payout information.
-
-Extract the following information for each rider/delivery partner:
-1. CEE ID / Employee ID / Rider ID
-2. Full Name / Rider Name
-3. Number of Orders / Trips / Deliveries
-4. Base Payout Amount / Salary / Payment
-5. Week Period / Date Range (if available)
-
-Return the data as a JSON array with this structure:
-[
-  {
-    "ceeId": "CEE123",
-    "riderName": "John Doe",
-    "orders": 45,
-    "basePayout": 15000,
-    "weekPeriod": "Week 1 (Jan 1-7)"
-  }
-]
-
-If any field is not found, use empty string for text fields and 0 for numeric fields.
-Extract ALL riders from the document.`;
 
   try {
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o',
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: prompt,
-            },
-            {
-              type: 'image_url',
-              image_url: {
-                url: `data:${mimeType};base64,${base64Data}`,
-              },
-            },
-          ],
-        },
-      ],
-      max_tokens: 4000,
-      temperature: 0.4,
+    const serviceAccount = JSON.parse(serviceAccountJson);
+    const projectId = serviceAccount.project_id;
+    const processorId = 'ec20e080f10b01a3'; // Replace with your Document AI processor ID
+    const location = 'us'; // Processor location
+
+    // Create client
+    const client = new DocumentProcessorServiceClient({
+      credentials: serviceAccount,
     });
 
-    const content = response.choices[0].message.content || '';
+    const name = client.processorPath(projectId, location, processorId);
+
+    // Encode document
+    const encodedDocument = {
+      mimeType: mimeType,
+      content: buffer,
+    };
+
+    // Process document
+    const request = {
+      name,
+      rawDocument: encodedDocument,
+    };
+
+    const [result] = await client.processDocument(request as any);
+    const document = result.document!;
+
+    // Extract text and tables from the document
+    const riders = extractRiderDataFromDocument(document);
     
-    // Extract JSON from the response
-    const jsonMatch = content.match(/\[[\s\S]*\]/);
-    if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
+    if (riders.length === 0) {
+      // Fall back to simple text extraction if tables not found
+      const text = document.text || '';
+      return parsePayrollText(text);
     }
-    
-    throw new Error('Could not extract valid JSON from AI response');
-    
+
+    return riders;
+
   } catch (error: any) {
-    console.error('OpenAI API error:', error);
-    throw new Error(`AI extraction failed: ${error.message}`);
+    console.error('Document AI error:', error);
+    // Fall back to empty extraction on error
+    return [];
   }
+}
+
+function extractRiderDataFromDocument(document: any) {
+  const riders = [];
+  
+  // Extract from document pages and tables
+  if (document.pages && document.pages.length > 0) {
+    for (const page of document.pages) {
+      if (page.tables && page.tables.length > 0) {
+        for (const table of page.tables) {
+          const tableData = extractTableData(table);
+          riders.push(...tableData);
+        }
+      }
+    }
+  }
+
+  return riders;
+}
+
+function extractTableData(table: any) {
+  const rows = [];
+  
+  if (!table.bodyRows) return rows;
+
+  // Assuming first row or header row contains column names
+  for (const row of table.bodyRows) {
+    const cellValues = row.cells?.map((cell: any) => {
+      const text = cell.layout?.textAnchor?.textSegments?.map((segment: any) => segment).join('') || '';
+      return text.trim();
+    }) || [];
+
+    if (cellValues.length > 0) {
+      const rider = {
+        ceeId: cellValues[0] || '',
+        riderName: cellValues[1] || '',
+        orders: parseInt(cellValues[2] || '0'),
+        basePayout: parseFloat(cellValues[3] || '0'),
+        weekPeriod: cellValues[4] || '',
+      };
+      
+      if (rider.ceeId || rider.riderName) {
+        rows.push(rider);
+      }
+    }
+  }
+
+  return rows;
+}
+
+function parsePayrollText(text: string) {
+  // Simple text parsing fallback
+  const lines = text.split('
+').filter(line => line.trim());
+  const riders = [];
+
+  for (const line of lines) {
+    // Try to extract rider data from each line
+    const match = line.match(/([A-Z0-9]+)\s+(.+?)\s+(\d+)\s+([\d,]+)/);
+    if (match) {
+      riders.push({
+        ceeId: match[1],
+        riderName: match[2],
+        orders: parseInt(match[3]),
+        basePayout: parseFloat(match[4].replace(',', '')),
+        weekPeriod: '',
+      });
+    }
+  }
+
+  return riders;
 }
