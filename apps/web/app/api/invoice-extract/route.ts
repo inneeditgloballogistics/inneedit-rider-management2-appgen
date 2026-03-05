@@ -36,11 +36,30 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer();
     const base64String = Buffer.from(bytes).toString('base64');
 
-    // Initialize Document AI client
-    const client = new DocumentProcessorServiceClient({
+    // Initialize Document AI client with credentials
+    let clientOptions: any = {
       projectId,
-      keyFilename: process.env.GOOGLE_APPLICATION_CREDENTIALS,
-    });
+    };
+
+    // Handle credentials - either from file path or from JSON string
+    const credentialsPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+    if (credentialsPath) {
+      try {
+        // Try to load from file path first
+        if (fs.existsSync(credentialsPath)) {
+          clientOptions.keyFilename = credentialsPath;
+        } else {
+          // Otherwise, treat it as a JSON string
+          const credentials = JSON.parse(credentialsPath);
+          clientOptions.credentials = credentials;
+        }
+      } catch (e) {
+        // If parsing fails, try as file path
+        clientOptions.keyFilename = credentialsPath;
+      }
+    }
+
+    const client = new DocumentProcessorServiceClient(clientOptions);
 
     const processorName = client.processorPath(projectId, location, processorId);
 
