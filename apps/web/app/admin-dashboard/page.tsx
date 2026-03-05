@@ -1317,7 +1317,223 @@ function AdminDashboardContent() {
     </footer>
 
     {/* View Modal */}
-    {showViewModal && viewItem && (\n      <div className=\"fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4\">\n        <div className=\"bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-96 overflow-y-auto\">\n          <div className=\"p-6 border-b border-slate-200 flex items-center justify-between\">\n            <h3 className=\"text-xl font-bold text-slate-900\">View {viewItem.type.charAt(0).toUpperCase() + viewItem.type.slice(1)}</h3>\n            <button onClick={() => setShowViewModal(false)} className=\"p-1 hover:bg-slate-100 rounded transition-colors\">\n              <i className=\"ph-bold ph-x text-xl\"></i>\n            </button>\n          </div>\n          <div className=\"p-6 space-y-4\">\n            {viewItem.type === 'rider' && (\n              <>\n                <div><strong>Name:</strong> {viewItem.full_name}</div>\n                <div><strong>Phone:</strong> {viewItem.phone}</div>\n                <div><strong>Email:</strong> {viewItem.email}</div>\n                <div><strong>Address:</strong> {viewItem.address}</div>\n                <div><strong>City:</strong> {viewItem.city}, {viewItem.state}</div>\n                <div><strong>License Number:</strong> {viewItem.driving_license_number}</div>\n                <div><strong>Status:</strong> <span className=\"px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700\">{viewItem.status}</span></div>\n              </>\n            )}\n            {viewItem.type === 'vehicle' && (\n              <>\n                <div><strong>Vehicle Number:</strong> {viewItem.vehicle_number}</div>\n                <div><strong>Type:</strong> {viewItem.vehicle_type}</div>\n                <div><strong>Model:</strong> {viewItem.model}</div>\n                <div><strong>Year:</strong> {viewItem.year}</div>\n                <div><strong>Status:</strong> <span className=\"px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700\">{viewItem.status}</span></div>\n              </>\n            )}\n            {viewItem.type === 'hub' && (\n              <>\n                <div><strong>Hub Name:</strong> {viewItem.hub_name}</div>\n                <div><strong>Location:</strong> {viewItem.location}</div>\n                <div><strong>City:</strong> {viewItem.city}, {viewItem.state}</div>\n                <div><strong>Manager:</strong> {viewItem.manager_name}</div>\n                <div><strong>Phone:</strong> {viewItem.manager_phone}</div>\n                <div><strong>Status:</strong> <span className=\"px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700\">{viewItem.status}</span></div>\n              </>\n            )}\n            {viewItem.type === 'store' && (\n              <>\n                <div><strong>Store Name:</strong> {viewItem.store_name}</div>\n                <div><strong>Location:</strong> {viewItem.location}</div>\n                <div><strong>City:</strong> {viewItem.city}, {viewItem.state}</div>\n                <div><strong>Manager:</strong> {viewItem.store_manager_name}</div>\n                <div><strong>Phone:</strong> {viewItem.store_manager_phone}</div>\n                <div><strong>Status:</strong> <span className=\"px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700\">{viewItem.status}</span></div>\n              </>\n            )}\n            {viewItem.type === 'referral' && (\n              <>\n                <div><strong>Referrer:</strong> {viewItem.referrer_name}</div>\n                <div><strong>Referred Name:</strong> {viewItem.referred_name}</div>\n                <div><strong>Phone:</strong> {viewItem.referred_phone}</div>\n                <div><strong>Location:</strong> {viewItem.preferred_location}</div>\n                <div><strong>Status:</strong> <span className={`px-2 py-1 rounded-full text-xs font-medium ${viewItem.status === 'pending' ? 'bg-yellow-100 text-yellow-700' : viewItem.status === 'approved' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{viewItem.status}</span></div>\n                {viewItem.notes && <div><strong>Notes:</strong> {viewItem.notes}</div>}\n              </>\n            )}\n          </div>\n          <div className=\"p-6 border-t border-slate-200 flex gap-3 justify-end\">\n            <button onClick={() => setShowViewModal(false)} className=\"px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 font-medium\">\n              Close\n            </button>\n          </div>\n        </div>\n      </div>\n    )}\n\n    {/* Edit Modal */}\n    {showEditModal && editItem && (\n      <div className=\"fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4\">\n        <div className=\"bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-96 overflow-y-auto\">\n          <div className=\"p-6 border-b border-slate-200 flex items-center justify-between\">\n            <h3 className=\"text-xl font-bold text-slate-900\">Edit {editItem.type.charAt(0).toUpperCase() + editItem.type.slice(1)}</h3>\n            <button onClick={() => setShowEditModal(false)} className=\"p-1 hover:bg-slate-100 rounded transition-colors\">\n              <i className=\"ph-bold ph-x text-xl\"></i>\n            </button>\n          </div>\n          <form onSubmit={handleUpdateSubmit} className=\"p-6 space-y-4\">\n            {editItem.type === 'rider' && (\n              <>\n                <div>\n                  <label className=\"block text-sm font-medium text-slate-700 mb-1\">Full Name</label>\n                  <input type=\"text\" value={editItem.full_name || ''} onChange={(e) => setEditItem({...editItem, full_name: e.target.value})} className=\"w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500\" />\n                </div>\n                <div>\n                  <label className=\"block text-sm font-medium text-slate-700 mb-1\">Email</label>\n                  <input type=\"email\" value={editItem.email || ''} onChange={(e) => setEditItem({...editItem, email: e.target.value})} className=\"w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500\" />\n                </div>\n                <div>\n                  <label className=\"block text-sm font-medium text-slate-700 mb-1\">Phone</label>\n                  <input type=\"tel\" value={editItem.phone || ''} onChange={(e) => setEditItem({...editItem, phone: e.target.value})} className=\"w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500\" />\n                </div>\n                <div>\n                  <label className=\"block text-sm font-medium text-slate-700 mb-1\">Status</label>\n                  <select value={editItem.status || 'active'} onChange={(e) => setEditItem({...editItem, status: e.target.value})} className=\"w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500\">\n                    <option value=\"active\">Active</option>\n                    <option value=\"inactive\">Inactive</option>\n                  </select>\n                </div>\n              </>\n            )}\n            {editItem.type === 'vehicle' && (\n              <>\n                <div>\n                  <label className=\"block text-sm font-medium text-slate-700 mb-1\">Vehicle Number</label>\n                  <input type=\"text\" value={editItem.vehicle_number || ''} onChange={(e) => setEditItem({...editItem, vehicle_number: e.target.value})} className=\"w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500\" />\n                </div>\n                <div>\n                  <label className=\"block text-sm font-medium text-slate-700 mb-1\">Type</label>\n                  <input type=\"text\" value={editItem.vehicle_type || ''} onChange={(e) => setEditItem({...editItem, vehicle_type: e.target.value})} className=\"w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500\" />\n                </div>\n                <div>\n                  <label className=\"block text-sm font-medium text-slate-700 mb-1\">Model</label>\n                  <input type=\"text\" value={editItem.model || ''} onChange={(e) => setEditItem({...editItem, model: e.target.value})} className=\"w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500\" />\n                </div>\n                <div>\n                  <label className=\"block text-sm font-medium text-slate-700 mb-1\">Year</label>\n                  <input type=\"number\" value={editItem.year || ''} onChange={(e) => setEditItem({...editItem, year: parseInt(e.target.value)})} className=\"w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500\" />\n                </div>\n                <div>\n                  <label className=\"block text-sm font-medium text-slate-700 mb-1\">Status</label>\n                  <select value={editItem.status || 'active'} onChange={(e) => setEditItem({...editItem, status: e.target.value})} className=\"w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500\">\n                    <option value=\"active\">Active</option>\n                    <option value=\"inactive\">Inactive</option>\n                  </select>\n                </div>\n              </>\n            )}\n            {editItem.type === 'hub' && (\n              <>\n                <div>\n                  <label className=\"block text-sm font-medium text-slate-700 mb-1\">Hub Name</label>\n                  <input type=\"text\" value={editItem.hub_name || ''} onChange={(e) => setEditItem({...editItem, hub_name: e.target.value})} className=\"w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500\" />\n                </div>\n                <div>\n                  <label className=\"block text-sm font-medium text-slate-700 mb-1\">Location</label>\n                  <input type=\"text\" value={editItem.location || ''} onChange={(e) => setEditItem({...editItem, location: e.target.value})} className=\"w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500\" />\n                </div>\n                <div>\n                  <label className=\"block text-sm font-medium text-slate-700 mb-1\">Manager Name</label>\n                  <input type=\"text\" value={editItem.manager_name || ''} onChange={(e) => setEditItem({...editItem, manager_name: e.target.value})} className=\"w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500\" />\n                </div>\n                <div>\n                  <label className=\"block text-sm font-medium text-slate-700 mb-1\">Manager Phone</label>\n                  <input type=\"tel\" value={editItem.manager_phone || ''} onChange={(e) => setEditItem({...editItem, manager_phone: e.target.value})} className=\"w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500\" />\n                </div>\n                <div>\n                  <label className=\"block text-sm font-medium text-slate-700 mb-1\">Status</label>\n                  <select value={editItem.status || 'active'} onChange={(e) => setEditItem({...editItem, status: e.target.value})} className=\"w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500\">\n                    <option value=\"active\">Active</option>\n                    <option value=\"inactive\">Inactive</option>\n                  </select>\n                </div>\n              </>\n            )}\n            {editItem.type === 'store' && (\n              <>\n                <div>\n                  <label className=\"block text-sm font-medium text-slate-700 mb-1\">Store Name</label>\n                  <input type=\"text\" value={editItem.store_name || ''} onChange={(e) => setEditItem({...editItem, store_name: e.target.value})} className=\"w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500\" />\n                </div>\n                <div>\n                  <label className=\"block text-sm font-medium text-slate-700 mb-1\">Location</label>\n                  <input type=\"text\" value={editItem.location || ''} onChange={(e) => setEditItem({...editItem, location: e.target.value})} className=\"w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500\" />\n                </div>\n                <div>\n                  <label className=\"block text-sm font-medium text-slate-700 mb-1\">Store Manager</label>\n                  <input type=\"text\" value={editItem.store_manager_name || ''} onChange={(e) => setEditItem({...editItem, store_manager_name: e.target.value})} className=\"w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500\" />\n                </div>\n                <div>\n                  <label className=\"block text-sm font-medium text-slate-700 mb-1\">Store Manager Phone</label>\n                  <input type=\"tel\" value={editItem.store_manager_phone || ''} onChange={(e) => setEditItem({...editItem, store_manager_phone: e.target.value})} className=\"w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500\" />\n                </div>\n                <div>\n                  <label className=\"block text-sm font-medium text-slate-700 mb-1\">Status</label>\n                  <select value={editItem.status || 'active'} onChange={(e) => setEditItem({...editItem, status: e.target.value})} className=\"w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500\">\n                    <option value=\"active\">Active</option>\n                    <option value=\"inactive\">Inactive</option>\n                  </select>\n                </div>\n              </>\n            )}\n            {editItem.type === 'referral' && (\n              <>\n                <div>\n                  <label className=\"block text-sm font-medium text-slate-700 mb-1\">Status</label>\n                  <select value={editItem.status || 'pending'} onChange={(e) => setEditItem({...editItem, status: e.target.value})} className=\"w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500\">\n                    <option value=\"pending\">Pending</option>\n                    <option value=\"approved\">Approved</option>\n                    <option value=\"rejected\">Rejected</option>\n                  </select>\n                </div>\n                <div>\n                  <label className=\"block text-sm font-medium text-slate-700 mb-1\">Notes</label>\n                  <textarea value={editItem.notes || ''} onChange={(e) => setEditItem({...editItem, notes: e.target.value})} className=\"w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 rows-3\"></textarea>\n                </div>\n              </>\n            )}\n            <div className=\"flex gap-3 justify-end pt-4\">\n              <button type=\"button\" onClick={() => setShowEditModal(false)} className=\"px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 font-medium\">\n                Cancel\n              </button>\n              <button type=\"submit\" className=\"px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium\">\n                Save Changes\n              </button>\n            </div>\n          </form>\n        </div>\n      </div>\n    )}\n        </div>\n        </GoogleMapsLoader>\n      </>\n    );
+    {showViewModal && viewItem && (
+      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-96 overflow-y-auto">
+          <div className="p-6 border-b border-slate-200 flex items-center justify-between">
+            <h3 className="text-xl font-bold text-slate-900">View {viewItem.type.charAt(0).toUpperCase() + viewItem.type.slice(1)}</h3>
+            <button onClick={() => setShowViewModal(false)} className="p-1 hover:bg-slate-100 rounded transition-colors">
+              <i className="ph-bold ph-x text-xl"></i>
+            </button>
+          </div>
+          <div className="p-6 space-y-4">
+            {viewItem.type === 'rider' && (
+              <>
+                <div><strong>Name:</strong> {viewItem.full_name}</div>
+                <div><strong>Phone:</strong> {viewItem.phone}</div>
+                <div><strong>Email:</strong> {viewItem.email}</div>
+                <div><strong>Address:</strong> {viewItem.address}</div>
+                <div><strong>City:</strong> {viewItem.city}, {viewItem.state}</div>
+                <div><strong>License Number:</strong> {viewItem.driving_license_number}</div>
+                <div><strong>Status:</strong> <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">{viewItem.status}</span></div>
+              </>
+            )}
+            {viewItem.type === 'vehicle' && (
+              <>
+                <div><strong>Vehicle Number:</strong> {viewItem.vehicle_number}</div>
+                <div><strong>Type:</strong> {viewItem.vehicle_type}</div>
+                <div><strong>Model:</strong> {viewItem.model}</div>
+                <div><strong>Year:</strong> {viewItem.year}</div>
+                <div><strong>Status:</strong> <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">{viewItem.status}</span></div>
+              </>
+            )}
+            {viewItem.type === 'hub' && (
+              <>
+                <div><strong>Hub Name:</strong> {viewItem.hub_name}</div>
+                <div><strong>Location:</strong> {viewItem.location}</div>
+                <div><strong>City:</strong> {viewItem.city}, {viewItem.state}</div>
+                <div><strong>Manager:</strong> {viewItem.manager_name}</div>
+                <div><strong>Phone:</strong> {viewItem.manager_phone}</div>
+                <div><strong>Status:</strong> <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">{viewItem.status}</span></div>
+              </>
+            )}
+            {viewItem.type === 'store' && (
+              <>
+                <div><strong>Store Name:</strong> {viewItem.store_name}</div>
+                <div><strong>Location:</strong> {viewItem.location}</div>
+                <div><strong>City:</strong> {viewItem.city}, {viewItem.state}</div>
+                <div><strong>Manager:</strong> {viewItem.store_manager_name}</div>
+                <div><strong>Phone:</strong> {viewItem.store_manager_phone}</div>
+                <div><strong>Status:</strong> <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">{viewItem.status}</span></div>
+              </>
+            )}
+            {viewItem.type === 'referral' && (
+              <>
+                <div><strong>Referrer:</strong> {viewItem.referrer_name}</div>
+                <div><strong>Referred Name:</strong> {viewItem.referred_name}</div>
+                <div><strong>Phone:</strong> {viewItem.referred_phone}</div>
+                <div><strong>Location:</strong> {viewItem.preferred_location}</div>
+                <div><strong>Status:</strong> <span className={`px-2 py-1 rounded-full text-xs font-medium ${viewItem.status === 'pending' ? 'bg-yellow-100 text-yellow-700' : viewItem.status === 'approved' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{viewItem.status}</span></div>
+                {viewItem.notes && <div><strong>Notes:</strong> {viewItem.notes}</div>}
+              </>
+            )}
+          </div>
+          <div className="p-6 border-t border-slate-200 flex gap-3 justify-end">
+            <button onClick={() => setShowViewModal(false)} className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 font-medium">
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Edit Modal */}
+    {showEditModal && editItem && (
+      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-96 overflow-y-auto">
+          <div className="p-6 border-b border-slate-200 flex items-center justify-between">
+            <h3 className="text-xl font-bold text-slate-900">Edit {editItem.type.charAt(0).toUpperCase() + editItem.type.slice(1)}</h3>
+            <button onClick={() => setShowEditModal(false)} className="p-1 hover:bg-slate-100 rounded transition-colors">
+              <i className="ph-bold ph-x text-xl"></i>
+            </button>
+          </div>
+          <form onSubmit={handleUpdateSubmit} className="p-6 space-y-4">
+            {editItem.type === 'rider' && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
+                  <input type="text" value={editItem.full_name || ''} onChange={(e) => setEditItem({...editItem, full_name: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                  <input type="email" value={editItem.email || ''} onChange={(e) => setEditItem({...editItem, email: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Phone</label>
+                  <input type="tel" value={editItem.phone || ''} onChange={(e) => setEditItem({...editItem, phone: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
+                  <select value={editItem.status || 'active'} onChange={(e) => setEditItem({...editItem, status: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
+              </>
+            )}
+            {editItem.type === 'vehicle' && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Vehicle Number</label>
+                  <input type="text" value={editItem.vehicle_number || ''} onChange={(e) => setEditItem({...editItem, vehicle_number: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Type</label>
+                  <input type="text" value={editItem.vehicle_type || ''} onChange={(e) => setEditItem({...editItem, vehicle_type: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Model</label>
+                  <input type="text" value={editItem.model || ''} onChange={(e) => setEditItem({...editItem, model: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Year</label>
+                  <input type="number" value={editItem.year || ''} onChange={(e) => setEditItem({...editItem, year: parseInt(e.target.value)})} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
+                  <select value={editItem.status || 'active'} onChange={(e) => setEditItem({...editItem, status: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
+              </>
+            )}
+            {editItem.type === 'hub' && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Hub Name</label>
+                  <input type="text" value={editItem.hub_name || ''} onChange={(e) => setEditItem({...editItem, hub_name: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Location</label>
+                  <input type="text" value={editItem.location || ''} onChange={(e) => setEditItem({...editItem, location: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Manager Name</label>
+                  <input type="text" value={editItem.manager_name || ''} onChange={(e) => setEditItem({...editItem, manager_name: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Manager Phone</label>
+                  <input type="tel" value={editItem.manager_phone || ''} onChange={(e) => setEditItem({...editItem, manager_phone: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
+                  <select value={editItem.status || 'active'} onChange={(e) => setEditItem({...editItem, status: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
+              </>
+            )}
+            {editItem.type === 'store' && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Store Name</label>
+                  <input type="text" value={editItem.store_name || ''} onChange={(e) => setEditItem({...editItem, store_name: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Location</label>
+                  <input type="text" value={editItem.location || ''} onChange={(e) => setEditItem({...editItem, location: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Store Manager</label>
+                  <input type="text" value={editItem.store_manager_name || ''} onChange={(e) => setEditItem({...editItem, store_manager_name: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Store Manager Phone</label>
+                  <input type="tel" value={editItem.store_manager_phone || ''} onChange={(e) => setEditItem({...editItem, store_manager_phone: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
+                  <select value={editItem.status || 'active'} onChange={(e) => setEditItem({...editItem, status: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
+              </>
+            )}
+            {editItem.type === 'referral' && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
+                  <select value={editItem.status || 'pending'} onChange={(e) => setEditItem({...editItem, status: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    <option value="pending">Pending</option>
+                    <option value="approved">Approved</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Notes</label>
+                  <textarea value={editItem.notes || ''} onChange={(e) => setEditItem({...editItem, notes: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"></textarea>
+                </div>
+              </>
+            )}
+            <div className="flex gap-3 justify-end pt-4">
+              <button type="button" onClick={() => setShowEditModal(false)} className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 font-medium">
+                Cancel
+              </button>
+              <button type="submit" className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium">
+                Save Changes
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    )}
+        </div>
+        </GoogleMapsLoader>
+      </>
+    );
 }
 
 export default function AdminDashboardPage() {
