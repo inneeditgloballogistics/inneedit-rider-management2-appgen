@@ -1112,7 +1112,7 @@ function AdminDashboardContent() {
                                 advance.status === 'rejected' ? 'bg-red-100 text-red-700' :
                                 'bg-orange-100 text-orange-700'
                               }`}>
-                                {advance.status.toUpperCase()}
+                                {(advance.status || 'pending').toUpperCase()}
                               </span>
                               <span className="text-2xl font-bold text-slate-900">₹{parseFloat(advance.amount).toFixed(2)}</span>
                             </div>
