@@ -80,6 +80,9 @@ function AdminDashboardContent() {
   const [referrals, setReferrals] = useState<any[]>([]);
   const [pendingAdvancesCount, setPendingAdvancesCount] = useState(0);
   const [pendingReferralsCount, setPendingReferralsCount] = useState(0);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState<'success' | 'info' | 'warning' | 'error'>('info');
+  const [lastAdvancesCount, setLastAdvancesCount] = useState(0);
 
   // Role-based access control - redirect if not admin
   useEffect(() => {
@@ -107,9 +110,12 @@ function AdminDashboardContent() {
   }, [activeTab]);
 
   useEffect(() => {
-    // Poll for new notifications every 30 seconds
-    const interval = setInterval(fetchNotifications, 30000);
-    return () => clearInterval(interval);
+    // Poll for new advances and notifications every 10 seconds
+    const advancesInterval = setInterval(() => {
+      fetchCounts(); // This updates pendingAdvancesCount
+      fetchNotifications();
+    }, 10000);
+    return () => clearInterval(advancesInterval);
   }, []);
 
   const fetchCounts = async () => {
@@ -134,7 +140,21 @@ function AdminDashboardContent() {
       setVehiclesCount(vehiclesData.count || 0);
       setHubsCount(hubsData.count || 0);
       setStoresCount(storesData.count || 0);
-      setPendingAdvancesCount(advancesData.pendingCount || 0);
+      
+      // Check if new advances were added
+      const currentAdvancesCount = advancesData.pendingCount || 0;
+      if (lastAdvancesCount > 0 && currentAdvancesCount > lastAdvancesCount) {
+        // New advance request detected
+        const newRequestsCount = currentAdvancesCount - lastAdvancesCount;
+        setToastMessage(`${newRequestsCount} new advance request${newRequestsCount > 1 ? 's' : ''} received!`);
+        setToastType('info');
+        
+        // Auto-hide toast after 5 seconds
+        setTimeout(() => setToastMessage(''), 5000);
+      }
+      
+      setLastAdvancesCount(currentAdvancesCount);
+      setPendingAdvancesCount(currentAdvancesCount);
       setPendingReferralsCount(referralsData.pendingCount || 0);
     } catch (error) {
       console.error('Error fetching counts:', error instanceof Error ? error.message : String(error));
@@ -761,8 +781,9 @@ function AdminDashboardContent() {
             )}
           </header>
 
-    {/* Main Content */}
-    <main className="pt-[140px] pb-12 px-8">
+    {/* Toast Notifications */}
+    {toastMessage && (
+      <div className={`fixed bottom-6 right-6 z-40 px-6 py-4 rounded-xl shadow-2xl border flex items-center gap-3 animate-in fade-in slide-in-from-right-4 duration-300 ${\n        toastType === 'info' ? 'bg-blue-50 border-blue-200 text-blue-800' :\n        toastType === 'success' ? 'bg-green-50 border-green-200 text-green-800' :\n        toastType === 'warning' ? 'bg-amber-50 border-amber-200 text-amber-800' :\n        'bg-red-50 border-red-200 text-red-800'\n      }`}>\n        <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${\n          toastType === 'info' ? 'bg-blue-200' :\n          toastType === 'success' ? 'bg-green-200' :\n          toastType === 'warning' ? 'bg-amber-200' :\n          'bg-red-200'\n        }`}>\n          <i className={`ph-bold text-sm ${\n            toastType === 'info' ? 'ph-info text-blue-700' :\n            toastType === 'success' ? 'ph-check text-green-700' :\n            toastType === 'warning' ? 'ph-warning text-amber-700' :\n            'ph-x text-red-700'\n          }`}></i>\n        </div>\n        <div className=\"flex-1\">\n          <p className=\"font-semibold text-sm\">{toastMessage}</p>\n        </div>\n        <button\n          onClick={() => setToastMessage('')}\n          className=\"ml-2 p-1 hover:bg-white/30 rounded transition-colors\"\n        >\n          <i className=\"ph-bold ph-x text-lg\"></i>\n        </button>\n      </div>\n    )}\n\n    {/* Main Content */}\n    <main className=\"pt-[140px] pb-12 px-8\">
         <div className="max-w-7xl mx-auto space-y-8">
             
             {/* Dashboard Tab */}
