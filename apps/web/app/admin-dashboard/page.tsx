@@ -969,8 +969,16 @@ function AdminDashboardContent() {
                                 {rider.status}
                               </span>
                             </td>
-                            <td className="px-6 py-4 text-right">
-                              <button onClick={() => handleView(rider, 'rider')} className="text-brand-600 hover:text-brand-700 text-sm font-medium">View</button>
+                            <td className="px-6 py-4 text-right flex gap-2 justify-end">
+                              <button onClick={() => handleView(rider, 'rider')} className="px-3 py-1 text-blue-600 hover:text-blue-700 text-sm font-medium border border-blue-200 rounded hover:bg-blue-50 transition-colors">
+                                <i className="ph-bold ph-eye mr-1"></i>View
+                              </button>
+                              <button onClick={() => handleEdit(rider, 'rider')} className="px-3 py-1 text-amber-600 hover:text-amber-700 text-sm font-medium border border-amber-200 rounded hover:bg-amber-50 transition-colors">
+                                <i className="ph-bold ph-pencil mr-1"></i>Edit
+                              </button>
+                              <button onClick={() => handleDelete(rider.id, 'rider')} className="px-3 py-1 text-red-600 hover:text-red-700 text-sm font-medium border border-red-200 rounded hover:bg-red-50 transition-colors">
+                                <i className="ph-bold ph-trash mr-1"></i>Delete
+                              </button>
                             </td>
                           </tr>
                         ))
@@ -1020,8 +1028,16 @@ function AdminDashboardContent() {
                                 {vehicle.status}
                               </span>
                             </td>
-                            <td className="px-6 py-4 text-right">
-                              <button onClick={() => handleView(vehicle, 'vehicle')} className="text-brand-600 hover:text-brand-700 text-sm font-medium">View</button>
+                            <td className="px-6 py-4 text-right flex gap-2 justify-end">
+                              <button onClick={() => handleView(vehicle, 'vehicle')} className="px-3 py-1 text-blue-600 hover:text-blue-700 text-sm font-medium border border-blue-200 rounded hover:bg-blue-50 transition-colors">
+                                <i className="ph-bold ph-eye mr-1"></i>View
+                              </button>
+                              <button onClick={() => handleEdit(vehicle, 'vehicle')} className="px-3 py-1 text-amber-600 hover:text-amber-700 text-sm font-medium border border-amber-200 rounded hover:bg-amber-50 transition-colors">
+                                <i className="ph-bold ph-pencil mr-1"></i>Edit
+                              </button>
+                              <button onClick={() => handleDelete(vehicle.id, 'vehicle')} className="px-3 py-1 text-red-600 hover:text-red-700 text-sm font-medium border border-red-200 rounded hover:bg-red-50 transition-colors">
+                                <i className="ph-bold ph-trash mr-1"></i>Delete
+                              </button>
                             </td>
                           </tr>
                         ))
@@ -1071,8 +1087,16 @@ function AdminDashboardContent() {
                                 {hub.status}
                               </span>
                             </td>
-                            <td className="px-6 py-4 text-right">
-                              <button onClick={() => handleView(hub, 'hub')} className="text-brand-600 hover:text-brand-700 text-sm font-medium">View</button>
+                            <td className="px-6 py-4 text-right flex gap-2 justify-end">
+                              <button onClick={() => handleView(hub, 'hub')} className="px-3 py-1 text-blue-600 hover:text-blue-700 text-sm font-medium border border-blue-200 rounded hover:bg-blue-50 transition-colors">
+                                <i className="ph-bold ph-eye mr-1"></i>View
+                              </button>
+                              <button onClick={() => handleEdit(hub, 'hub')} className="px-3 py-1 text-amber-600 hover:text-amber-700 text-sm font-medium border border-amber-200 rounded hover:bg-amber-50 transition-colors">
+                                <i className="ph-bold ph-pencil mr-1"></i>Edit
+                              </button>
+                              <button onClick={() => handleDelete(hub.id, 'hub')} className="px-3 py-1 text-red-600 hover:text-red-700 text-sm font-medium border border-red-200 rounded hover:bg-red-50 transition-colors">
+                                <i className="ph-bold ph-trash mr-1"></i>Delete
+                              </button>
                             </td>
                           </tr>
                         ))
@@ -1122,8 +1146,16 @@ function AdminDashboardContent() {
                                 {store.status}
                               </span>
                             </td>
-                            <td className="px-6 py-4 text-right">
-                              <button onClick={() => handleView(store, 'store')} className="text-brand-600 hover:text-brand-700 text-sm font-medium">View</button>
+                            <td className="px-6 py-4 text-right flex gap-2 justify-end">
+                              <button onClick={() => handleView(store, 'store')} className="px-3 py-1 text-blue-600 hover:text-blue-700 text-sm font-medium border border-blue-200 rounded hover:bg-blue-50 transition-colors">
+                                <i className="ph-bold ph-eye mr-1"></i>View
+                              </button>
+                              <button onClick={() => handleEdit(store, 'store')} className="px-3 py-1 text-amber-600 hover:text-amber-700 text-sm font-medium border border-amber-200 rounded hover:bg-amber-50 transition-colors">
+                                <i className="ph-bold ph-pencil mr-1"></i>Edit
+                              </button>
+                              <button onClick={() => handleDelete(store.id, 'store')} className="px-3 py-1 text-red-600 hover:text-red-700 text-sm font-medium border border-red-200 rounded hover:bg-red-50 transition-colors">
+                                <i className="ph-bold ph-trash mr-1"></i>Delete
+                              </button>
                             </td>
                           </tr>
                         ))
@@ -1225,16 +1257,20 @@ function AdminDashboardContent() {
                             <td className="px-6 py-4 text-sm text-slate-600">{referral.referred_name}</td>
                             <td className="px-6 py-4 text-sm text-slate-600">{referral.referred_phone}</td>
                             <td className="px-6 py-4 text-sm">
-                              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                referral.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                                referral.status === 'approved' ? 'bg-green-100 text-green-700' :
-                                'bg-red-100 text-red-700'
-                              }`}>
+                              <span className={`px-3 py-1 rounded-full text-xs font-medium ${referral.status === 'pending' ? 'bg-yellow-100 text-yellow-700' : referral.status === 'approved' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                                 {referral.status}
                               </span>
                             </td>
-                            <td className="px-6 py-4 text-right">
-                              <button onClick={() => handleView(referral, 'referral')} className="text-brand-600 hover:text-brand-700 text-sm font-medium">View</button>
+                            <td className="px-6 py-4 text-right flex gap-2 justify-end">
+                              <button onClick={() => handleView(referral, 'referral')} className="px-3 py-1 text-blue-600 hover:text-blue-700 text-sm font-medium border border-blue-200 rounded hover:bg-blue-50 transition-colors">
+                                <i className="ph-bold ph-eye mr-1"></i>View
+                              </button>
+                              <button onClick={() => handleEdit(referral, 'referral')} className="px-3 py-1 text-amber-600 hover:text-amber-700 text-sm font-medium border border-amber-200 rounded hover:bg-amber-50 transition-colors">
+                                <i className="ph-bold ph-pencil mr-1"></i>Edit
+                              </button>
+                              <button onClick={() => handleDelete(referral.id, 'referral')} className="px-3 py-1 text-red-600 hover:text-red-700 text-sm font-medium border border-red-200 rounded hover:bg-red-50 transition-colors">
+                                <i className="ph-bold ph-trash mr-1"></i>Delete
+                              </button>
                             </td>
                           </tr>
                         ))
