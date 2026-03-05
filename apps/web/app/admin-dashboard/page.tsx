@@ -72,17 +72,11 @@ function AdminDashboardContent() {
   const [year, setYear] = useState(new Date().getFullYear());
   const [settings, setSettings] = useState<any>({});
 
-  // Notifications and advances
-  const [notifications, setNotifications] = useState<any[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [showNotifications, setShowNotifications] = useState(false);
+  // Advances and referrals
   const [advances, setAdvances] = useState<any[]>([]);
   const [referrals, setReferrals] = useState<any[]>([]);
   const [pendingAdvancesCount, setPendingAdvancesCount] = useState(0);
   const [pendingReferralsCount, setPendingReferralsCount] = useState(0);
-  const [toastMessage, setToastMessage] = useState('');
-  const [toastType, setToastType] = useState<'success' | 'info' | 'warning' | 'error'>('info');
-  const [lastAdvancesCount, setLastAdvancesCount] = useState(0);
 
   // Role-based access control - redirect if not admin
   useEffect(() => {
@@ -94,7 +88,6 @@ function AdminDashboardContent() {
   useEffect(() => {
     // Fetch counts for dashboard
     fetchCounts();
-    fetchNotifications();
     
     if (activeTab === 'riders') fetchRiders();
     if (activeTab === 'vehicles') fetchVehicles();
@@ -110,10 +103,9 @@ function AdminDashboardContent() {
   }, [activeTab]);
 
   useEffect(() => {
-    // Poll for new advances and notifications every 10 seconds
+    // Poll for new advances every 10 seconds
     const advancesInterval = setInterval(() => {
       fetchCounts(); // This updates pendingAdvancesCount
-      fetchNotifications();
     }, 10000);
     return () => clearInterval(advancesInterval);
   }, []);
@@ -143,17 +135,6 @@ function AdminDashboardContent() {
       
       // Check if new advances were added
       const currentAdvancesCount = advancesData.pendingCount || 0;
-      if (lastAdvancesCount > 0 && currentAdvancesCount > lastAdvancesCount) {
-        // New advance request detected
-        const newRequestsCount = currentAdvancesCount - lastAdvancesCount;
-        setToastMessage(`${newRequestsCount} new advance request${newRequestsCount > 1 ? 's' : ''} received!`);
-        setToastType('info');
-        
-        // Auto-hide toast after 5 seconds
-        setTimeout(() => setToastMessage(''), 5000);
-      }
-      
-      setLastAdvancesCount(currentAdvancesCount);
       setPendingAdvancesCount(currentAdvancesCount);
       setPendingReferralsCount(referralsData.pendingCount || 0);
     } catch (error) {
@@ -183,20 +164,6 @@ function AdminDashboardContent() {
     const res = await fetch('/api/stores');
     const data = await res.json();
     setStores(data);
-  };
-
-  const fetchNotifications = async () => {
-    try {
-      const res = await fetch('/api/notifications');
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-      }
-      const data = await res.json();
-      setNotifications(data.notifications || []);
-      setUnreadCount(data.unreadCount || 0);
-    } catch (error) {
-      console.error('Error fetching notifications:', error instanceof Error ? error.message : String(error));
-    }
   };
 
   const fetchAdvances = async () => {
@@ -394,24 +361,6 @@ function AdminDashboardContent() {
     }
   };
 
-  const markNotificationAsRead = async (id: number) => {
-    await fetch('/api/notifications', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, isRead: true })
-    });
-    fetchNotifications();
-  };
-
-  const markAllAsRead = async () => {
-    await fetch('/api/notifications', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ isRead: true })
-    });
-    fetchNotifications();
-  };
-
   const handleAdvanceAction = async (id: number, status: string, notes: string = '') => {
     try {
       await fetch('/api/advances', {
@@ -583,20 +532,8 @@ function AdminDashboardContent() {
                 </div>
               </div>
 
-              {/* Right Side - Notifications & User */}
+              {/* Right Side - User */}
               <div className="flex items-center gap-4">
-                <button 
-                  onClick={() => setShowNotifications(!showNotifications)}
-                  className="relative p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-all"
-                >
-                  <i className="ph ph-bell text-xl"></i>
-                  {unreadCount > 0 && (
-                    <span className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center border border-white">
-                      {unreadCount}
-                    </span>
-                  )}
-                </button>
-
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-slate-700 to-slate-900 flex items-center justify-center text-white text-sm font-bold">
                     {user?.name?.charAt(0) || 'A'}
@@ -727,92 +664,8 @@ function AdminDashboardContent() {
               </div>
             </nav>
 
-            {/* Notifications Dropdown */}
-            {showNotifications && (
-              <div className="fixed top-16 right-6 w-96 bg-white rounded-xl shadow-2xl border border-slate-200 z-50 max-h-96 overflow-hidden flex flex-col">
-                <div className="p-4 border-b border-slate-200 flex items-center justify-between">
-                  <h3 className="font-semibold text-slate-900">Notifications</h3>
-                  {unreadCount > 0 && (
-                    <button onClick={markAllAsRead} className="text-xs text-indigo-600 hover:text-indigo-700 font-medium">
-                      Mark all as read
-                    </button>
-                  )}
-                </div>
-                <div className="overflow-y-auto flex-1">
-                  {notifications.length > 0 ? (
-                    notifications.map((notif) => (
-                      <div 
-                        key={notif.id} 
-                        className={`p-4 border-b border-slate-100 hover:bg-slate-50 cursor-pointer ${!notif.is_read ? 'bg-blue-50' : ''}`}
-                        onClick={() => {
-                          markNotificationAsRead(notif.id);
-                          if (notif.type === 'advance') setActiveTab('advances');
-                          if (notif.type === 'referral') setActiveTab('referrals');
-                          setShowNotifications(false);
-                        }}
-                      >
-                        <div className="flex items-start gap-3">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                            notif.type === 'advance' ? 'bg-orange-100' : 'bg-purple-100'
-                          }`}>
-                            <i className={`ph-bold ${notif.type === 'advance' ? 'ph-currency-dollar text-orange-600' : 'ph-user-plus text-purple-600'} text-sm`}></i>
-                          </div>
-                          <div className="flex-1">
-                            <p className="font-medium text-sm text-slate-900">{notif.title}</p>
-                            <p className="text-xs text-slate-600 mt-1">{notif.message}</p>
-                            <p className="text-xs text-slate-400 mt-1">
-                              {new Date(notif.created_at).toLocaleString()}
-                            </p>
-                          </div>
-                          {!notif.is_read && (
-                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                          )}
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="p-8 text-center text-slate-500">
-                      <i className="ph-duotone ph-bell-slash text-4xl mb-2"></i>
-                      <p className="text-sm">No notifications</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </header>
 
-    {/* Toast Notifications */}
-    {toastMessage && (
-      <div className={`fixed bottom-6 right-6 z-40 px-6 py-4 rounded-xl shadow-2xl border flex items-center gap-3 animate-in fade-in slide-in-from-right-4 duration-300 ${
-        toastType === 'info' ? 'bg-blue-50 border-blue-200 text-blue-800' :
-        toastType === 'success' ? 'bg-green-50 border-green-200 text-green-800' :
-        toastType === 'warning' ? 'bg-amber-50 border-amber-200 text-amber-800' :
-        'bg-red-50 border-red-200 text-red-800'
-      }`}>
-        <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
-          toastType === 'info' ? 'bg-blue-200' :
-          toastType === 'success' ? 'bg-green-200' :
-          toastType === 'warning' ? 'bg-amber-200' :
-          'bg-red-200'
-        }`}>
-          <i className={`ph-bold text-sm ${
-            toastType === 'info' ? 'ph-info text-blue-700' :
-            toastType === 'success' ? 'ph-check text-green-700' :
-            toastType === 'warning' ? 'ph-warning text-amber-700' :
-            'ph-x text-red-700'
-          }`}></i>
-        </div>
-        <div className="flex-1">
-          <p className="font-semibold text-sm">{toastMessage}</p>
-        </div>
-        <button
-          onClick={() => setToastMessage('')}
-          className="ml-2 p-1 hover:bg-white/30 rounded transition-colors"
-        >
-          <i className="ph-bold ph-x text-lg"></i>
-        </button>
-      </div>
-    )}
+          </header>
 
     {/* Main Content */}
     <main className="pt-[140px] pb-12 px-8">
