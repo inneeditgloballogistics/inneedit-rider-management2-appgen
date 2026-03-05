@@ -1147,7 +1147,7 @@ function AdminDashboardContent() {
                               </div>
                             )}
                           </div>
-                          {advance.status === 'pending' && (
+                          {(!advance.status || advance.status === 'pending') && (
                             <div className="flex flex-col gap-2 ml-4">
                               <button
                                 onClick={() => {
