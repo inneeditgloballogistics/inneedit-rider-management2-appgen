@@ -937,8 +937,329 @@ function AdminDashboardContent() {
               </>
             )}
 
-            {/* Placeholder for other tabs - keeping structure minimal to fix the error */}
-            {activeTab !== 'dashboard' && <div className="p-4 text-center text-slate-500">Loading content...</div>}
+            {/* Riders Tab */}
+            {activeTab === 'riders' && (
+              <>
+                <div className="flex justify-between items-center pb-6">
+                  <div>
+                    <h2 className="font-display text-3xl font-bold text-slate-900 mb-2">Rider Management</h2>
+                    <p className="text-slate-600">Total Riders: {ridersCount}</p>
+                  </div>
+                </div>
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                  <table className="w-full">
+                    <thead className="bg-slate-50 border-b border-slate-200">
+                      <tr>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Name</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Phone</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Email</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Status</th>
+                        <th className="px-6 py-4 text-right text-sm font-semibold text-slate-900">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {riders.length > 0 ? (
+                        riders.map((rider) => (
+                          <tr key={rider.id} className="border-b border-slate-200 hover:bg-slate-50">
+                            <td className="px-6 py-4 text-sm text-slate-900">{rider.full_name}</td>
+                            <td className="px-6 py-4 text-sm text-slate-600">{rider.phone}</td>
+                            <td className="px-6 py-4 text-sm text-slate-600">{rider.email}</td>
+                            <td className="px-6 py-4 text-sm">
+                              <span className={`px-3 py-1 rounded-full text-xs font-medium ${rider.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-700'}`}>
+                                {rider.status}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                              <button onClick={() => handleView(rider, 'rider')} className="text-brand-600 hover:text-brand-700 text-sm font-medium">View</button>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={5} className="px-6 py-12 text-center text-slate-500">No riders found</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+
+            {/* Vehicles Tab */}
+            {activeTab === 'vehicles' && (
+              <>
+                <div className="flex justify-between items-center pb-6">
+                  <div>
+                    <h2 className="font-display text-3xl font-bold text-slate-900 mb-2">Vehicle Management</h2>
+                    <p className="text-slate-600">Total Vehicles: {vehiclesCount}</p>
+                  </div>
+                  <button onClick={() => handleAddNew('vehicle')} className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700">
+                    <i className="ph-bold ph-plus mr-2"></i>Add Vehicle
+                  </button>
+                </div>
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                  <table className="w-full">
+                    <thead className="bg-slate-50 border-b border-slate-200">
+                      <tr>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Vehicle Number</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Type</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Model</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Status</th>
+                        <th className="px-6 py-4 text-right text-sm font-semibold text-slate-900">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {vehicles.length > 0 ? (
+                        vehicles.map((vehicle: any) => (
+                          <tr key={vehicle.id} className="border-b border-slate-200 hover:bg-slate-50">
+                            <td className="px-6 py-4 text-sm text-slate-900">{vehicle.vehicle_number}</td>
+                            <td className="px-6 py-4 text-sm text-slate-600">{vehicle.vehicle_type}</td>
+                            <td className="px-6 py-4 text-sm text-slate-600">{vehicle.model}</td>
+                            <td className="px-6 py-4 text-sm">
+                              <span className={`px-3 py-1 rounded-full text-xs font-medium ${vehicle.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-700'}`}>
+                                {vehicle.status}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                              <button onClick={() => handleView(vehicle, 'vehicle')} className="text-brand-600 hover:text-brand-700 text-sm font-medium">View</button>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={5} className="px-6 py-12 text-center text-slate-500">No vehicles found</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+
+            {/* Hubs Tab */}
+            {activeTab === 'hubs' && (
+              <>
+                <div className="flex justify-between items-center pb-6">
+                  <div>
+                    <h2 className="font-display text-3xl font-bold text-slate-900 mb-2">Hub Management</h2>
+                    <p className="text-slate-600">Total Hubs: {hubsCount}</p>
+                  </div>
+                  <button onClick={() => handleAddNew('hub')} className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700">
+                    <i className="ph-bold ph-plus mr-2"></i>Add Hub
+                  </button>
+                </div>
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                  <table className="w-full">
+                    <thead className="bg-slate-50 border-b border-slate-200">
+                      <tr>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Hub Name</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Location</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Manager</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Status</th>
+                        <th className="px-6 py-4 text-right text-sm font-semibold text-slate-900">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {hubs.length > 0 ? (
+                        hubs.map((hub: any) => (
+                          <tr key={hub.id} className="border-b border-slate-200 hover:bg-slate-50">
+                            <td className="px-6 py-4 text-sm text-slate-900">{hub.hub_name}</td>
+                            <td className="px-6 py-4 text-sm text-slate-600">{hub.location}</td>
+                            <td className="px-6 py-4 text-sm text-slate-600">{hub.manager_name}</td>
+                            <td className="px-6 py-4 text-sm">
+                              <span className={`px-3 py-1 rounded-full text-xs font-medium ${hub.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-700'}`}>
+                                {hub.status}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                              <button onClick={() => handleView(hub, 'hub')} className="text-brand-600 hover:text-brand-700 text-sm font-medium">View</button>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={5} className="px-6 py-12 text-center text-slate-500">No hubs found</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+
+            {/* Stores Tab */}
+            {activeTab === 'stores' && (
+              <>
+                <div className="flex justify-between items-center pb-6">
+                  <div>
+                    <h2 className="font-display text-3xl font-bold text-slate-900 mb-2">Store Management</h2>
+                    <p className="text-slate-600">Total Stores: {storesCount}</p>
+                  </div>
+                  <button onClick={() => handleAddNew('store')} className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700">
+                    <i className="ph-bold ph-plus mr-2"></i>Add Store
+                  </button>
+                </div>
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                  <table className="w-full">
+                    <thead className="bg-slate-50 border-b border-slate-200">
+                      <tr>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Store Name</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Location</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Manager</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Status</th>
+                        <th className="px-6 py-4 text-right text-sm font-semibold text-slate-900">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {stores.length > 0 ? (
+                        stores.map((store: any) => (
+                          <tr key={store.id} className="border-b border-slate-200 hover:bg-slate-50">
+                            <td className="px-6 py-4 text-sm text-slate-900">{store.store_name}</td>
+                            <td className="px-6 py-4 text-sm text-slate-600">{store.location}</td>
+                            <td className="px-6 py-4 text-sm text-slate-600">{store.store_manager_name}</td>
+                            <td className="px-6 py-4 text-sm">
+                              <span className={`px-3 py-1 rounded-full text-xs font-medium ${store.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-700'}`}>
+                                {store.status}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                              <button onClick={() => handleView(store, 'store')} className="text-brand-600 hover:text-brand-700 text-sm font-medium">View</button>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={5} className="px-6 py-12 text-center text-slate-500">No stores found</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+
+            {/* Advances Tab */}
+            {activeTab === 'advances' && (
+              <>
+                <div className="flex justify-between items-center pb-6">
+                  <div>
+                    <h2 className="font-display text-3xl font-bold text-slate-900 mb-2">Advance Requests</h2>
+                    <p className="text-slate-600">Pending Requests: {pendingAdvancesCount}</p>
+                  </div>
+                </div>
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                  <table className="w-full">
+                    <thead className="bg-slate-50 border-b border-slate-200">
+                      <tr>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Rider Name</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Amount</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Reason</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Status</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Date</th>
+                        <th className="px-6 py-4 text-right text-sm font-semibold text-slate-900">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {advances.length > 0 ? (
+                        advances.map((advance: any) => (
+                          <tr key={advance.id} className="border-b border-slate-200 hover:bg-slate-50">
+                            <td className="px-6 py-4 text-sm text-slate-900">{advance.rider_name}</td>
+                            <td className="px-6 py-4 text-sm text-slate-900 font-semibold">₹{advance.amount}</td>
+                            <td className="px-6 py-4 text-sm text-slate-600">{advance.reason}</td>
+                            <td className="px-6 py-4 text-sm">
+                              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                advance.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                                advance.status === 'approved' ? 'bg-green-100 text-green-700' :
+                                'bg-red-100 text-red-700'
+                              }`}>
+                                {advance.status}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-sm text-slate-600">{new Date(advance.requested_at).toLocaleDateString()}</td>
+                            <td className="px-6 py-4 text-right space-x-2">
+                              {advance.status === 'pending' && (
+                                <>
+                                  <button onClick={() => handleAdvanceAction(advance.id, 'approved')} className="text-green-600 hover:text-green-700 text-sm font-medium">Approve</button>
+                                  <button onClick={() => handleAdvanceAction(advance.id, 'rejected')} className="text-red-600 hover:text-red-700 text-sm font-medium">Reject</button>
+                                </>
+                              )}
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={6} className="px-6 py-12 text-center text-slate-500">No advance requests</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+
+            {/* Referrals Tab */}
+            {activeTab === 'referrals' && (
+              <>
+                <div className="flex justify-between items-center pb-6">
+                  <div>
+                    <h2 className="font-display text-3xl font-bold text-slate-900 mb-2">Referral Management</h2>
+                    <p className="text-slate-600">Pending Referrals: {pendingReferralsCount}</p>
+                  </div>
+                </div>
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                  <table className="w-full">
+                    <thead className="bg-slate-50 border-b border-slate-200">
+                      <tr>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Referrer</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Referred Name</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Phone</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Status</th>
+                        <th className="px-6 py-4 text-right text-sm font-semibold text-slate-900">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {referrals.length > 0 ? (
+                        referrals.map((referral: any) => (
+                          <tr key={referral.id} className="border-b border-slate-200 hover:bg-slate-50">
+                            <td className="px-6 py-4 text-sm text-slate-900">{referral.referrer_name}</td>
+                            <td className="px-6 py-4 text-sm text-slate-600">{referral.referred_name}</td>
+                            <td className="px-6 py-4 text-sm text-slate-600">{referral.referred_phone}</td>
+                            <td className="px-6 py-4 text-sm">
+                              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                referral.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                                referral.status === 'approved' ? 'bg-green-100 text-green-700' :
+                                'bg-red-100 text-red-700'
+                              }`}>
+                                {referral.status}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                              <button onClick={() => handleView(referral, 'referral')} className="text-brand-600 hover:text-brand-700 text-sm font-medium">View</button>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={5} className="px-6 py-12 text-center text-slate-500">No referrals found</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+
+            {/* Payroll Tab */}
+            {activeTab === 'payroll' && (
+              <>
+                <div className="flex justify-between items-center pb-6">
+                  <h2 className="font-display text-3xl font-bold text-slate-900">Payroll Management</h2>
+                </div>
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                  <p className="text-slate-600">Payroll module content here</p>
+                </div>
+              </>
+            )}
 
         </div>
     </main>
