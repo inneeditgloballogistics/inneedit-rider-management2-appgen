@@ -789,6 +789,10 @@ function AdminDashboardContent() {
                     <h2 className="font-display text-3xl font-bold text-slate-900 mb-2">Rider Management</h2>
                     <p className="text-slate-600">Total Riders: {ridersCount}</p>
                   </div>
+                  <button onClick={() => router.push('/rider-registration')} className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium flex items-center gap-2">
+                    <i className="ph-bold ph-plus"></i>
+                    Register New Rider
+                  </button>
                 </div>
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                   <table className="w-full">
