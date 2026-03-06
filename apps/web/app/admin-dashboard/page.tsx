@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic';
 import { GoogleMapsLoader } from '@/components/GoogleMapsLoader';
 import GooglePlacesAutocomplete from '@/components/GooglePlacesAutocomplete';
 import InvoiceUpload from '@/components/InvoiceUpload';
+import LocationSearch from '@/components/LocationSearch';
 
 const StoreMapView = dynamic(() => import('@/components/StoreMapView'), {
   ssr: false,
@@ -716,19 +717,37 @@ function AdminDashboardContent() {
                 {modalType === 'hub' && (
                   <>
                     <input placeholder="Hub Name" value={formData.hub_name || ''} onChange={(e) => setFormData({...formData, hub_name: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
-                    <input placeholder="Location" value={formData.location || ''} onChange={(e) => setFormData({...formData, location: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
+                    <LocationSearch
+                      value={formData.location || ''}
+                      onChange={(location, lat, lng) => setFormData({...formData, location, latitude: lat, longitude: lng})}
+                      placeholder="Search location"
+                    />
                     <input placeholder="City" value={formData.city || ''} onChange={(e) => setFormData({...formData, city: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
                     <input placeholder="Manager Name" value={formData.manager_name || ''} onChange={(e) => setFormData({...formData, manager_name: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
                     <input placeholder="Manager Phone" value={formData.manager_phone || ''} onChange={(e) => setFormData({...formData, manager_phone: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
+                    {formData.latitude && formData.longitude && (
+                      <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
+                        <strong>Location captured:</strong> Lat: {formData.latitude.toFixed(4)}, Lng: {formData.longitude.toFixed(4)}
+                      </div>
+                    )}
                   </>
                 )}
                 {modalType === 'store' && (
                   <>
                     <input placeholder="Store Name" value={formData.store_name || ''} onChange={(e) => setFormData({...formData, store_name: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
-                    <input placeholder="Location" value={formData.location || ''} onChange={(e) => setFormData({...formData, location: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
+                    <LocationSearch
+                      value={formData.location || ''}
+                      onChange={(location, lat, lng) => setFormData({...formData, location, latitude: lat, longitude: lng})}
+                      placeholder="Search store location"
+                    />
                     <input placeholder="City" value={formData.city || ''} onChange={(e) => setFormData({...formData, city: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
                     <input placeholder="Store Manager" value={formData.store_manager_name || ''} onChange={(e) => setFormData({...formData, store_manager_name: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
                     <input placeholder="Store Manager Phone" value={formData.store_manager_phone || ''} onChange={(e) => setFormData({...formData, store_manager_phone: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
+                    {formData.latitude && formData.longitude && (
+                      <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
+                        <strong>Location captured:</strong> Lat: {formData.latitude.toFixed(4)}, Lng: {formData.longitude.toFixed(4)}
+                      </div>
+                    )}
                   </>
                 )}
                 <div className="flex gap-3 justify-end pt-4">
@@ -767,14 +786,32 @@ function AdminDashboardContent() {
                 {editItem.type === 'hub' && (
                   <>
                     <input value={editItem.hub_name || ''} onChange={(e) => setEditItem({...editItem, hub_name: e.target.value})} placeholder="Hub Name" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
-                    <input value={editItem.location || ''} onChange={(e) => setEditItem({...editItem, location: e.target.value})} placeholder="Location" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
+                    <LocationSearch
+                      value={editItem.location || ''}
+                      onChange={(location, lat, lng) => setEditItem({...editItem, location, latitude: lat, longitude: lng})}
+                      placeholder="Update location"
+                    />
                     <input value={editItem.manager_name || ''} onChange={(e) => setEditItem({...editItem, manager_name: e.target.value})} placeholder="Manager Name" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
+                    {editItem.latitude && editItem.longitude && (
+                      <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
+                        <strong>Location:</strong> Lat: {editItem.latitude.toFixed(4)}, Lng: {editItem.longitude.toFixed(4)}
+                      </div>
+                    )}
                   </>
                 )}
                 {editItem.type === 'store' && (
                   <>
                     <input value={editItem.store_name || ''} onChange={(e) => setEditItem({...editItem, store_name: e.target.value})} placeholder="Store Name" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
-                    <input value={editItem.location || ''} onChange={(e) => setEditItem({...editItem, location: e.target.value})} placeholder="Location" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
+                    <LocationSearch
+                      value={editItem.location || ''}
+                      onChange={(location, lat, lng) => setEditItem({...editItem, location, latitude: lat, longitude: lng})}
+                      placeholder="Update store location"
+                    />
+                    {editItem.latitude && editItem.longitude && (
+                      <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
+                        <strong>Location:</strong> Lat: {editItem.latitude.toFixed(4)}, Lng: {editItem.longitude.toFixed(4)}
+                      </div>
+                    )}
                   </>
                 )}
                 <div className="flex gap-3 justify-end pt-4">
