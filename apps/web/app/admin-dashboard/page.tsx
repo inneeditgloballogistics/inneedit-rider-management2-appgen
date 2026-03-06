@@ -868,12 +868,32 @@ function AdminDashboardContent() {
                 {editItem.type === 'hub' && (
                   <>
                     <input value={editItem.hub_name || ''} onChange={(e) => setEditItem({...editItem, hub_name: e.target.value})} placeholder="Hub Name" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
+                    <input value={editItem.hub_code || ''} onChange={(e) => setEditItem({...editItem, hub_code: e.target.value})} placeholder="Hub Code" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
                     <LocationSearch
                       value={editItem.location || ''}
-                      onChange={(location, lat, lng) => setEditItem({...editItem, location, latitude: lat, longitude: lng})}
+                      onChange={(location, lat, lng) => {
+                        const parts = location.split(',').map((p: string) => p.trim());
+                        let city = '', state = '', pincode = '';
+                        if (parts.length >= 2) {
+                          city = parts[parts.length - 3] || '';
+                          state = parts[parts.length - 2] || '';
+                          pincode = parts[parts.length - 1]?.match(/\\d{6}/) ? parts[parts.length - 1] : '';
+                        }
+                        setEditItem({...editItem, location, latitude: lat, longitude: lng, city: city || editItem.city, state: state || editItem.state, pincode: pincode || editItem.pincode});
+                      }}
                       placeholder="Update location"
                     />
+                    <div className="grid grid-cols-2 gap-4">
+                      <input value={editItem.city || ''} onChange={(e) => setEditItem({...editItem, city: e.target.value})} placeholder="City" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
+                      <input value={editItem.state || ''} onChange={(e) => setEditItem({...editItem, state: e.target.value})} placeholder="State" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
+                    </div>
+                    <input value={editItem.pincode || ''} onChange={(e) => setEditItem({...editItem, pincode: e.target.value})} placeholder="Pincode" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
                     <input value={editItem.manager_name || ''} onChange={(e) => setEditItem({...editItem, manager_name: e.target.value})} placeholder="Manager Name" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
+                    <input value={editItem.manager_phone || ''} onChange={(e) => setEditItem({...editItem, manager_phone: e.target.value})} placeholder="Manager Phone" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
+                    <select value={editItem.status || 'active'} onChange={(e) => setEditItem({...editItem, status: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg">
+                      <option value="active">Active</option>
+                      <option value="inactive">Inactive</option>
+                    </select>
                     {editItem.latitude && editItem.longitude && (
                       <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
                         <strong>Location:</strong> Lat: {editItem.latitude.toFixed(4)}, Lng: {editItem.longitude.toFixed(4)}
