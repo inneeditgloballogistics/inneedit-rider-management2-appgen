@@ -110,7 +110,7 @@ function HomeContent() {
                         <i className="ph ph-download-simple"></i>
                         Export Report
                     </button>
-                    <button onClick={() => router.push('/rider-registration')} className="flex items-center gap-2 px-4 py-2.5 bg-brand-900 text-white rounded-lg text-sm font-medium hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/20 active:scale-95">
+                    <button onClick={() => router.push('/rider-registration')} className="flex items-center gap-2 px-4 py-2.5 bg-brand-500 text-white rounded-lg text-sm font-medium hover:bg-brand-600 transition-all shadow-lg shadow-brand-500/25 active:scale-95">
                         <i className="ph ph-plus-circle text-lg"></i>
                         Add New Rider
                     </button>
@@ -122,7 +122,7 @@ function HomeContent() {
                 {/* Stat 1 */}
                 <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all group">
                     <div className="flex justify-between items-start mb-4">
-                        <div className="p-3 bg-blue-50 text-blue-600 rounded-xl group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                        <div className="p-3 bg-brand-50 text-brand-500 rounded-xl group-hover:bg-brand-500 group-hover:text-white transition-colors">
                             <i className="ph ph-moped text-2xl"></i>
                         </div>
                         <span className="text-xs font-semibold px-2 py-1 bg-green-100 text-green-700 rounded-full">+12% this week</span>
@@ -192,22 +192,22 @@ function HomeContent() {
                             </button>
                             
                             {/* Card 2 */}
-                            <button onClick={() => router.push('/admin-dashboard')} className="p-5 rounded-xl bg-slate-50 border border-slate-100 hover:border-blue-500/30 hover:bg-blue-50/50 transition-all text-left group">
-                                <i className="ph-duotone ph-chart-pie-slice text-3xl text-slate-400 group-hover:text-blue-600 mb-3 transition-colors"></i>
+                            <button onClick={() => router.push('/admin-dashboard')} className="p-5 rounded-xl bg-slate-50 border border-slate-100 hover:border-secondary-500/30 hover:bg-blue-50/50 transition-all text-left group">
+                                <i className="ph-duotone ph-chart-pie-slice text-3xl text-slate-400 group-hover:text-secondary-600 mb-3 transition-colors"></i>
                                 <h4 className="font-semibold text-slate-900">Analytics</h4>
                                 <p className="text-xs text-slate-500 mt-1">View Full Report</p>
                             </button>
 
                             {/* Card 3 */}
-                            <button onClick={() => router.push('/hub-management')} className="p-5 rounded-xl bg-slate-50 border border-slate-100 hover:border-amber-500/30 hover:bg-amber-50/50 transition-all text-left group">
-                                <i className="ph-duotone ph-warehouse text-3xl text-slate-400 group-hover:text-amber-600 mb-3 transition-colors"></i>
+                            <button onClick={() => router.push('/hub-management')} className="p-5 rounded-xl bg-slate-50 border border-slate-100 hover:border-brand-500/30 hover:bg-brand-50/50 transition-all text-left group">
+                                <i className="ph-duotone ph-warehouse text-3xl text-slate-400 group-hover:text-brand-600 mb-3 transition-colors"></i>
                                 <h4 className="font-semibold text-slate-900">Hub Status</h4>
                                 <p className="text-xs text-slate-500 mt-1">Vehicle Handover</p>
                             </button>
                             
                             {/* Card 4 */}
-                            <button onClick={() => router.push('/payroll-system')} className="p-5 rounded-xl bg-slate-50 border border-slate-100 hover:border-purple-500/30 hover:bg-purple-50/50 transition-all text-left group">
-                                <i className="ph-duotone ph-money text-3xl text-slate-400 group-hover:text-purple-600 mb-3 transition-colors"></i>
+                            <button onClick={() => router.push('/payroll-system')} className="p-5 rounded-xl bg-slate-50 border border-slate-100 hover:border-secondary-500/30 hover:bg-blue-50/50 transition-all text-left group">
+                                <i className="ph-duotone ph-money text-3xl text-slate-400 group-hover:text-secondary-600 mb-3 transition-colors"></i>
                                 <h4 className="font-semibold text-slate-900">Payroll</h4>
                                 <p className="text-xs text-slate-500 mt-1">Salary & Invoices</p>
                             </button>
@@ -231,7 +231,7 @@ function HomeContent() {
                     {/* Fleet Utilization Visualization (Placeholder for aesthetic) */}
                     <div className="bg-slate-900 rounded-2xl p-6 shadow-xl text-white relative overflow-hidden">
                         {/* Decorative gradient blob */}
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-brand-500/10 rounded-full blur-3xl -mr-16 -mt-16"></div>
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-brand-600/10 rounded-full blur-3xl -mr-16 -mt-16"></div>
                         
                         <div className="relative z-10 flex justify-between items-center mb-6">
                             <h3 className="font-display font-semibold text-lg">Live Fleet Utilization</h3>
@@ -243,14 +243,14 @@ function HomeContent() {
 
                         <div className="flex items-end gap-2 h-32 relative z-10">
                             {/* Fake Bar Chart using CSS */}
-                            <div className="w-full bg-slate-800/50 rounded-t-sm hover:bg-brand-500 transition-all h-[40%]"></div>
-                            <div className="w-full bg-slate-800/50 rounded-t-sm hover:bg-brand-500 transition-all h-[65%]"></div>
-                            <div className="w-full bg-slate-800/50 rounded-t-sm hover:bg-brand-500 transition-all h-[50%]"></div>
-                            <div className="w-full bg-slate-800/50 rounded-t-sm hover:bg-brand-500 transition-all h-[85%]"></div>
-                            <div className="w-full bg-slate-800/50 rounded-t-sm hover:bg-brand-500 transition-all h-[95%]"></div>
-                            <div className="w-full bg-slate-800/50 rounded-t-sm hover:bg-brand-500 transition-all h-[70%]"></div>
-                            <div className="w-full bg-slate-800/50 rounded-t-sm hover:bg-brand-500 transition-all h-[60%]"></div>
-                            <div className="w-full bg-brand-500 rounded-t-sm h-[88%] shadow-[0_0_15px_rgba(34,197,94,0.4)]"></div>
+                            <div className="w-full bg-slate-800/50 rounded-t-sm hover:bg-brand-600 transition-all h-[40%]"></div>
+                            <div className="w-full bg-slate-800/50 rounded-t-sm hover:bg-brand-600 transition-all h-[65%]"></div>
+                            <div className="w-full bg-slate-800/50 rounded-t-sm hover:bg-brand-600 transition-all h-[50%]"></div>
+                            <div className="w-full bg-slate-800/50 rounded-t-sm hover:bg-brand-600 transition-all h-[85%]"></div>
+                            <div className="w-full bg-slate-800/50 rounded-t-sm hover:bg-brand-600 transition-all h-[95%]"></div>
+                            <div className="w-full bg-slate-800/50 rounded-t-sm hover:bg-brand-600 transition-all h-[70%]"></div>
+                            <div className="w-full bg-slate-800/50 rounded-t-sm hover:bg-brand-600 transition-all h-[60%]"></div>
+                            <div className="w-full bg-brand-600 rounded-t-sm h-[88%] shadow-[0_0_15px_rgba(255,136,66,0.4)]"></div>
                         </div>
                         <div className="flex justify-between mt-2 text-xs text-slate-400">
                             <span>06:00</span>
@@ -267,7 +267,7 @@ function HomeContent() {
                     <div className="bg-white rounded-2xl border border-slate-200 h-full shadow-sm flex flex-col">
                         <div className="p-5 border-b border-slate-100 flex justify-between items-center">
                             <h3 className="font-display font-semibold text-lg text-slate-900">Activity Feed</h3>
-                            <button className="text-xs font-medium text-brand-600 hover:text-brand-700">View All</button>
+                            <button className="text-xs font-medium text-brand-500 hover:text-brand-600">View All</button>
                         </div>
                         
                         <div className="p-2 overflow-y-auto max-h-[500px] hide-scrollbar flex-1">

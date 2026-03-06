@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "inneedit - Fleet & Rider Management",
+  title: "inneedit - One Stop Solution For Your Business Needs",
   description: "Professional fleet and rider management system",
 };
 
