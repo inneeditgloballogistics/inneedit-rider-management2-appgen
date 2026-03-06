@@ -485,7 +485,6 @@ function AdminDashboardContent() {
               <>
                 <div className="flex justify-between items-center">
                   <h2 className="font-display text-3xl font-bold text-slate-900">Hub Management ({hubsCount})</h2>
-                  <button onClick={() => handleAddNew('hub')} className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700">Add Hub</button>
                 </div>
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                   <table className="w-full">
@@ -530,7 +529,6 @@ function AdminDashboardContent() {
                     <button onClick={() => setShowMapView(!showMapView)} className={`px-4 py-2 rounded-lg font-medium flex items-center gap-2 ${showMapView ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-700'}`}>
                       <i className="ph-bold ph-map"></i>{showMapView ? 'List View' : 'Map View'}
                     </button>
-                    <button onClick={() => handleAddNew('store')} className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700">Add Store</button>
                   </div>
                 </div>
                 {showMapView ? (
@@ -690,74 +688,7 @@ function AdminDashboardContent() {
           </div>
         )}
 
-        {showAddModal && (
-          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-96 overflow-y-auto">
-              <div className="p-6 border-b border-slate-200 flex items-center justify-between">
-                <h3 className="text-xl font-bold text-slate-900">Add {modalType.charAt(0).toUpperCase() + modalType.slice(1)}</h3>
-                <button onClick={() => setShowAddModal(false)} className="p-1 hover:bg-slate-100 rounded">
-                  <i className="ph-bold ph-x text-xl"></i>
-                </button>
-              </div>
-              <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                {modalType === 'vehicle' && (
-                  <>
-                    <input placeholder="Vehicle Number" value={formData.vehicle_number || ''} onChange={(e) => setFormData({...formData, vehicle_number: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
-                    <input placeholder="Type" value={formData.vehicle_type || ''} onChange={(e) => setFormData({...formData, vehicle_type: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
-                    <input placeholder="Model" value={formData.model || ''} onChange={(e) => setFormData({...formData, model: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
-                    <input placeholder="Year" type="number" value={formData.year || ''} onChange={(e) => setFormData({...formData, year: parseInt(e.target.value)})} className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
-                    <select value={formData.hub_id || ''} onChange={(e) => setFormData({...formData, hub_id: parseInt(e.target.value)})} className="w-full px-3 py-2 border border-slate-300 rounded-lg" required>
-                      <option value="">Select a hub</option>
-                      {hubsForVehicle.map((hub: any) => (
-                        <option key={hub.id} value={hub.id}>{hub.hub_name}</option>
-                      ))}
-                    </select>
-                  </>
-                )}
-                {modalType === 'hub' && (
-                  <>
-                    <input placeholder="Hub Name" value={formData.hub_name || ''} onChange={(e) => setFormData({...formData, hub_name: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
-                    <LocationSearch
-                      value={formData.location || ''}
-                      onChange={(location, lat, lng) => setFormData({...formData, location, latitude: lat, longitude: lng})}
-                      placeholder="Search location"
-                    />
-                    <input placeholder="City" value={formData.city || ''} onChange={(e) => setFormData({...formData, city: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
-                    <input placeholder="Manager Name" value={formData.manager_name || ''} onChange={(e) => setFormData({...formData, manager_name: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
-                    <input placeholder="Manager Phone" value={formData.manager_phone || ''} onChange={(e) => setFormData({...formData, manager_phone: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
-                    {formData.latitude && formData.longitude && (
-                      <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
-                        <strong>Location captured:</strong> Lat: {formData.latitude.toFixed(4)}, Lng: {formData.longitude.toFixed(4)}
-                      </div>
-                    )}
-                  </>
-                )}
-                {modalType === 'store' && (
-                  <>
-                    <input placeholder="Store Name" value={formData.store_name || ''} onChange={(e) => setFormData({...formData, store_name: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
-                    <LocationSearch
-                      value={formData.location || ''}
-                      onChange={(location, lat, lng) => setFormData({...formData, location, latitude: lat, longitude: lng})}
-                      placeholder="Search store location"
-                    />
-                    <input placeholder="City" value={formData.city || ''} onChange={(e) => setFormData({...formData, city: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
-                    <input placeholder="Store Manager" value={formData.store_manager_name || ''} onChange={(e) => setFormData({...formData, store_manager_name: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
-                    <input placeholder="Store Manager Phone" value={formData.store_manager_phone || ''} onChange={(e) => setFormData({...formData, store_manager_phone: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
-                    {formData.latitude && formData.longitude && (
-                      <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
-                        <strong>Location captured:</strong> Lat: {formData.latitude.toFixed(4)}, Lng: {formData.longitude.toFixed(4)}
-                      </div>
-                    )}
-                  </>
-                )}
-                <div className="flex gap-3 justify-end pt-4">
-                  <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 font-medium">Cancel</button>
-                  <button type="submit" className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium">Add</button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
+
 
         {showEditModal && editItem && (
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
