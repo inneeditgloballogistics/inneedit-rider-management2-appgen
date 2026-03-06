@@ -894,9 +894,9 @@ function AdminDashboardContent() {
                       <option value="active">Active</option>
                       <option value="inactive">Inactive</option>
                     </select>
-                    {editItem.latitude && editItem.longitude && (
+                    {editItem.latitude !== null && editItem.latitude !== undefined && editItem.longitude !== null && editItem.longitude !== undefined && (
                       <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
-                        <strong>Location:</strong> Lat: {editItem.latitude.toFixed(4)}, Lng: {editItem.longitude.toFixed(4)}
+                        <strong>Location:</strong> Lat: {typeof editItem.latitude === 'number' ? editItem.latitude.toFixed(4) : parseFloat(editItem.latitude).toFixed(4)}, Lng: {typeof editItem.longitude === 'number' ? editItem.longitude.toFixed(4) : parseFloat(editItem.longitude).toFixed(4)}
                       </div>
                     )}
                   </>
@@ -909,9 +909,9 @@ function AdminDashboardContent() {
                       onChange={(location, lat, lng) => setEditItem({...editItem, location, latitude: lat, longitude: lng})}
                       placeholder="Update store location"
                     />
-                    {editItem.latitude && editItem.longitude && (
+                    {editItem.latitude !== null && editItem.latitude !== undefined && editItem.longitude !== null && editItem.longitude !== undefined && (
                       <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
-                        <strong>Location:</strong> Lat: {editItem.latitude.toFixed(4)}, Lng: {editItem.longitude.toFixed(4)}
+                        <strong>Location:</strong> Lat: {typeof editItem.latitude === 'number' ? editItem.latitude.toFixed(4) : parseFloat(editItem.latitude).toFixed(4)}, Lng: {typeof editItem.longitude === 'number' ? editItem.longitude.toFixed(4) : parseFloat(editItem.longitude).toFixed(4)}
                       </div>
                     )}
                   </>
