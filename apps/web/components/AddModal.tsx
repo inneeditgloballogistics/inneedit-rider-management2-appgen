@@ -202,6 +202,26 @@ export function AddModal({
                   onChange={(e) => setFormData({...formData, location: e.target.value})} 
                 />
               </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Latitude</label>
+                  <input 
+                    type="number" 
+                    step="0.000001"
+                    className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none" 
+                    onChange={(e) => setFormData({...formData, latitude: e.target.value})} 
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Longitude</label>
+                  <input 
+                    type="number" 
+                    step="0.000001"
+                    className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none" 
+                    onChange={(e) => setFormData({...formData, longitude: e.target.value})} 
+                  />
+                </div>
+              </div>
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">City</label>
