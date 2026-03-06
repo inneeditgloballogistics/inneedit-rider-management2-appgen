@@ -155,69 +155,92 @@ function HubManagementContent() {
 
             {/* Stores Tab */}
             {activeTab === 'stores' && (
-              <div>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200">
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
                   <div>
                     <h2 className="text-3xl font-bold text-slate-900">Store Management</h2>
                     <p className="text-slate-500 mt-1">Manage all stores and locations</p>
                   </div>
                   <button 
                     onClick={() => handleAddNew('store')}
-                    className="px-6 py-3 bg-brand-500 hover:bg-brand-600 text-white font-semibold rounded-lg transition-colors flex items-center gap-2 w-fit"
+                    style={{
+                      backgroundColor: '#ff8c42',
+                      color: 'white',
+                      padding: '12px 24px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}
                   >
-                    <i className="ph-bold ph-plus text-lg"></i>
-                    Add Store
+                    <span style={{ fontSize: '20px' }}>+</span> ADD STORE
                   </button>
                 </div>
 
                 {stores.length === 0 ? (
-                  <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
-                    <i className="ph-duotone ph-storefront text-6xl text-slate-300 mb-4 block"></i>
-                    <p className="text-slate-500 mb-4">No stores added yet</p>
+                  <div style={{ backgroundColor: '#fff', border: '1px solid #ddd', padding: '48px', textAlign: 'center', borderRadius: '12px' }}>
+                    <p style={{ color: '#999', marginBottom: '20px', fontSize: '16px' }}>No stores added yet</p>
                     <button 
                       onClick={() => handleAddNew('store')}
-                      className="px-6 py-2 bg-brand-500 hover:bg-brand-600 text-white font-medium rounded-lg transition-colors inline-flex items-center gap-2"
+                      style={{
+                        backgroundColor: '#ff8c42',
+                        color: 'white',
+                        padding: '10px 20px',
+                        borderRadius: '8px',
+                        border: 'none',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}
                     >
-                      <i className="ph-bold ph-plus"></i>
-                      Add First Store
+                      <span>+</span> ADD FIRST STORE
                     </button>
                   </div>
                 ) : (
-                  <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                    <div className="overflow-x-auto">
-                      <table className="w-full">
-                        <thead className="bg-slate-50 border-b border-slate-200">
-                          <tr>
-                            <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">Store Name</th>
-                            <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">Code</th>
-                            <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">Client</th>
-                            <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">Location</th>
-                            <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">Manager</th>
-                            <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">Status</th>
+                  <div style={{ backgroundColor: '#fff', border: '1px solid #ddd', borderRadius: '12px', overflow: 'hidden' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                      <thead style={{ backgroundColor: '#f8f9fa', borderBottom: '2px solid #ddd' }}>
+                        <tr>
+                          <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: '#333', fontSize: '14px' }}>Store Name</th>
+                          <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: '#333', fontSize: '14px' }}>Code</th>
+                          <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: '#333', fontSize: '14px' }}>Client</th>
+                          <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: '#333', fontSize: '14px' }}>Location</th>
+                          <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: '#333', fontSize: '14px' }}>Manager</th>
+                          <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: '#333', fontSize: '14px' }}>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {stores.map((store, idx) => (
+                          <tr key={store.id} style={{ borderBottom: idx < stores.length - 1 ? '1px solid #eee' : 'none' }}>
+                            <td style={{ padding: '12px 16px', color: '#000', fontSize: '14px' }}>{store.store_name}</td>
+                            <td style={{ padding: '12px 16px', color: '#666', fontSize: '14px', fontFamily: 'monospace' }}>{store.store_code}</td>
+                            <td style={{ padding: '12px 16px', color: '#666', fontSize: '14px' }}>{store.client}</td>
+                            <td style={{ padding: '12px 16px', color: '#666', fontSize: '14px' }}>{store.city}, {store.state}</td>
+                            <td style={{ padding: '12px 16px', color: '#666', fontSize: '14px' }}>{store.store_manager_name || '-'}</td>
+                            <td style={{ padding: '12px 16px', fontSize: '14px' }}>
+                              <span style={{
+                                display: 'inline-block',
+                                padding: '4px 12px',
+                                borderRadius: '16px',
+                                fontSize: '12px',
+                                fontWeight: '600',
+                                backgroundColor: store.status === 'active' ? '#d4edda' : '#e2e3e5',
+                                color: store.status === 'active' ? '#155724' : '#383d41'
+                              }}>
+                                {store.status}
+                              </span>
+                            </td>
                           </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-200">
-                          {stores.map((store) => (
-                            <tr key={store.id} className="hover:bg-slate-50 transition-colors">
-                              <td className="px-6 py-4 text-sm font-medium text-slate-900">{store.store_name}</td>
-                              <td className="px-6 py-4 text-sm font-mono text-slate-600">{store.store_code}</td>
-                              <td className="px-6 py-4 text-sm text-slate-600">{store.client}</td>
-                              <td className="px-6 py-4 text-sm text-slate-600">{store.city}, {store.state}</td>
-                              <td className="px-6 py-4 text-sm text-slate-600">{store.store_manager_name || '-'}</td>
-                              <td className="px-6 py-4 text-sm">
-                                <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
-                                  store.status === 'active' 
-                                    ? 'bg-green-100 text-green-700' 
-                                    : 'bg-slate-100 text-slate-700'
-                                }`}>
-                                  {store.status}
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 )}
               </div>
