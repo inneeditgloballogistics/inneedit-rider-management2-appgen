@@ -1,4 +1,5 @@
 import { betterAuth } from "better-auth";
+import { postgresAdapter } from "better-auth/adapters/postgres";
 import { Pool } from "pg";
 
 if (!process.env.DATABASE_URL) {
@@ -11,7 +12,7 @@ const pool = new Pool({
 
 export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
-  database: pool,
+  database: postgresAdapter(pool),
   secret: process.env.BETTER_AUTH_SECRET || "default-secret",
   emailAndPassword: {
     enabled: true,
