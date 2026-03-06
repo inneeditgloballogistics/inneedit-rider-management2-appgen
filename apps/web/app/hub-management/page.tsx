@@ -26,9 +26,13 @@ function HubManagementContent() {
   const [formData, setFormData] = useState<any>({});
 
   useEffect(() => {
+    console.log('Active tab changed to:', activeTab);
     if (activeTab === 'vehicles') fetchVehicles();
     if (activeTab === 'hubs') fetchHubs();
-    if (activeTab === 'stores') fetchStores();
+    if (activeTab === 'stores') {
+      console.log('Loading stores...');
+      fetchStores();
+    }
   }, [activeTab]);
 
   const fetchVehicles = async () => {
