@@ -103,15 +103,15 @@ function HubManagementContent() {
                 </div>
             </div>
 
-            {/* Desktop Nav */}
-            <nav className="hidden lg:flex items-center gap-1 p-1 bg-slate-100/50 rounded-xl border border-slate-200/50">
-                <button onClick={() => setActiveTab('vehicles')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'vehicles' ? 'bg-white shadow-sm text-slate-900 border border-slate-200' : 'hover:bg-white/50 text-slate-500 hover:text-slate-900'}`}>
+            {/* Nav - Mobile & Desktop */}
+            <nav className="flex items-center gap-1 p-1 bg-slate-100/50 rounded-xl border border-slate-200/50 overflow-x-auto">
+                <button onClick={() => setActiveTab('vehicles')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${activeTab === 'vehicles' ? 'bg-white shadow-sm text-slate-900 border border-slate-200' : 'hover:bg-white/50 text-slate-500 hover:text-slate-900'}`}>
                     <i className="ph-bold ph-truck mr-2"></i>Vehicles
                 </button>
-                <button onClick={() => setActiveTab('hubs')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'hubs' ? 'bg-white shadow-sm text-slate-900 border border-slate-200' : 'hover:bg-white/50 text-slate-500 hover:text-slate-900'}`}>
+                <button onClick={() => setActiveTab('hubs')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${activeTab === 'hubs' ? 'bg-white shadow-sm text-slate-900 border border-slate-200' : 'hover:bg-white/50 text-slate-500 hover:text-slate-900'}`}>
                     <i className="ph-bold ph-map-pin mr-2"></i>Hubs
                 </button>
-                <button onClick={() => setActiveTab('stores')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'stores' ? 'bg-white shadow-sm text-slate-900 border border-slate-200' : 'hover:bg-white/50 text-slate-500 hover:text-slate-900'}`}>
+                <button onClick={() => setActiveTab('stores')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${activeTab === 'stores' ? 'bg-white shadow-sm text-slate-900 border border-slate-200' : 'hover:bg-white/50 text-slate-500 hover:text-slate-900'}`}>
                     <i className="ph-bold ph-storefront mr-2"></i>Stores
                 </button>
             </nav>
