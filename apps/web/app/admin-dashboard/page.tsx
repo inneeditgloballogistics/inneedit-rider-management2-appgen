@@ -1,8 +1,6 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import ProtectedRoute from '@/components/ProtectedRoute';
-import { useAuth } from '@/hooks/useAuth';
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { GoogleMapsLoader } from '@/components/GoogleMapsLoader';
@@ -35,7 +33,6 @@ const DashboardMapView = dynamic(() => import('@/components/DashboardMapView'), 
 
 function AdminDashboardContent() {
   const router = useRouter();
-  const { user, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [riders, setRiders] = useState<any[]>([]);
   const [vehicles, setVehicles] = useState<any[]>([]);
@@ -78,12 +75,7 @@ function AdminDashboardContent() {
   const [pendingAdvancesCount, setPendingAdvancesCount] = useState(0);
   const [pendingReferralsCount, setPendingReferralsCount] = useState(0);
 
-  // Role-based access control - redirect if not admin
-  useEffect(() => {
-    if (user && user.role && user.role !== 'admin') {
-      router.push('/login');
-    }
-  }, [user, router]);
+
 
   useEffect(() => {
     // Fetch counts for dashboard
@@ -374,7 +366,6 @@ function AdminDashboardContent() {
         })
       });
       fetchAdvances();
-      fetchNotifications();
       fetchCounts(); // Update the pending advances count
       alert(`Advance request ${status}!`);
     } catch (error) {
@@ -536,18 +527,18 @@ function AdminDashboardContent() {
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-slate-700 to-slate-900 flex items-center justify-center text-white text-sm font-bold">
-                    {user?.name?.charAt(0) || 'A'}
+                    A
                   </div>
                   <div className="hidden md:block">
-                    <p className="text-sm font-semibold text-slate-900">{user?.name || 'Admin User'}</p>
-                    <p className="text-xs text-slate-500">{user?.email || 'admin@inneedit.com'}</p>
+                    <p className="text-sm font-semibold text-slate-900">Admin Portal</p>
+                    <p className="text-xs text-slate-500">inneedit Global</p>
                   </div>
                   <button
-                    onClick={() => signOut()}
+                    onClick={() => router.push('/login')}
                     className="px-4 py-2 bg-slate-100 hover:bg-red-50 text-slate-700 hover:text-red-700 rounded-lg text-sm font-medium transition-all flex items-center gap-2"
                   >
                     <i className="ph-bold ph-sign-out"></i>
-                    Sign Out
+                    Back to Login
                   </button>
                 </div>
               </div>
@@ -1390,9 +1381,5 @@ function AdminDashboardContent() {
 }
 
 export default function AdminDashboardPage() {
-  return (
-    <ProtectedRoute>
-      <AdminDashboardContent />
-    </ProtectedRoute>
-  );
+  return <AdminDashboardContent />;
 }
