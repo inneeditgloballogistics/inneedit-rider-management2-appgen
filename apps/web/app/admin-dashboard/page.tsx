@@ -963,10 +963,20 @@ function AdminDashboardContent() {
                     <h2 className="font-display text-3xl font-bold text-slate-900 mb-2">Store Management</h2>
                     <p className="text-slate-600">Total Stores: {storesCount}</p>
                   </div>
-                  <button onClick={() => handleAddNew('store')} className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700">
-                    <i className="ph-bold ph-plus mr-2"></i>Add Store
-                  </button>
+                  <div className="flex gap-3">
+                    <button onClick={() => setShowMapView(!showMapView)} className={`px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors ${showMapView ? 'bg-brand-600 text-white hover:bg-brand-700' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>
+                      <i className="ph-bold ph-map"></i>
+                      {showMapView ? 'List View' : 'Map View'}
+                    </button>
+                    <button onClick={() => handleAddNew('store')} className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700">
+                      <i className="ph-bold ph-plus mr-2"></i>Add Store
+                    </button>
+                  </div>
                 </div>
+
+                {showMapView ? (
+                  <StoreMapView />
+                ) : (
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                   <table className="w-full">
                     <thead className="bg-slate-50 border-b border-slate-200">
@@ -1011,6 +1021,7 @@ function AdminDashboardContent() {
                     </tbody>
                   </table>
                 </div>
+                )}
               </>
             )}
 
