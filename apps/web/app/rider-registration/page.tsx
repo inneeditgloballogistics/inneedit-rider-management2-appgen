@@ -2,7 +2,6 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
-import ProtectedRoute from '@/components/ProtectedRoute';
 import { useAuth } from '@/hooks/useAuth';
 
 function RiderRegistrationContent() {
@@ -804,9 +803,5 @@ function RiderRegistrationContent() {
 }
 
 export default function RiderRegistrationPage() {
-  return (
-    <ProtectedRoute>
-      <RiderRegistrationContent />
-    </ProtectedRoute>
-  );
+  return <RiderRegistrationContent />;
 }
