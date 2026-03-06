@@ -1,13 +1,16 @@
 import { betterAuth } from "better-auth";
-import { neonAdapter } from "@better-auth/neon";
+import { Pool } from "pg";
 
-if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL is not set");
-}
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
 
 export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
-  database: neonAdapter(process.env.DATABASE_URL),
+  database: {
+    type: "postgres",
+    getConnection: async () => pool,
+  },
   secret: process.env.BETTER_AUTH_SECRET || "default-secret",
   emailAndPassword: {
     enabled: true,
