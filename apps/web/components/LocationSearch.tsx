@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 
 interface LocationSearchProps {
   value: string;
-  onChange: (value: string, lat?: number, lng?: number) => void;
+  onChange: (value: string, lat?: number, lng?: number, address?: string) => void;
   placeholder?: string;
 }
 
@@ -45,7 +45,7 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
             const lng = typeof place.geometry.location.lng === 'function' 
               ? place.geometry.location.lng() 
               : place.geometry.location.lng;
-            onChange(place.formatted_address, lat, lng);
+            onChange(place.formatted_address, lat, lng, place.formatted_address);
           }
         });
 

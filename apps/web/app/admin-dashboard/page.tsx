@@ -194,7 +194,11 @@ function AdminDashboardContent() {
 
   const handleAddNew = async (type: 'vehicle' | 'hub' | 'store') => {
     setModalType(type);
-    setFormData({});
+    if (type === 'hub') {
+      setFormData({ status: 'active' });
+    } else {
+      setFormData({});
+    }
     
     if (type === 'vehicle') {
       const res = await fetch('/api/hubs');
@@ -485,6 +489,9 @@ function AdminDashboardContent() {
               <>
                 <div className="flex justify-between items-center">
                   <h2 className="font-display text-3xl font-bold text-slate-900">Hub Management ({hubsCount})</h2>
+                  <button onClick={() => handleAddNew('hub')} className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium flex items-center gap-2">
+                    <i className="ph-bold ph-plus"></i>Add Hub
+                  </button>
                 </div>
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                   <table className="w-full">
@@ -689,6 +696,150 @@ function AdminDashboardContent() {
         )}
 
 
+
+        {showAddModal && modalType === 'hub' && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6 border-b border-slate-200 flex items-center justify-between sticky top-0 bg-white">
+                <h3 className="text-xl font-bold text-slate-900">Add New Hub</h3>
+                <button onClick={() => setShowAddModal(false)} className="p-1 hover:bg-slate-100 rounded">
+                  <i className="ph-bold ph-x text-xl"></i>
+                </button>
+              </div>
+              <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-900 mb-2">Search Location</label>
+                  <LocationSearch
+                    value={formData.location || ''}
+                    onChange={(location, lat, lng, address) => {
+                      // Extract city, state, pincode from formatted address
+                      const parts = location.split(',').map((p: string) => p.trim());
+                      let city = '', state = '', pincode = '';
+                      
+                      if (parts.length >= 2) {
+                        city = parts[parts.length - 3] || '';
+                        state = parts[parts.length - 2] || '';
+                        pincode = parts[parts.length - 1]?.match(/\\d{6}/) ? parts[parts.length - 1] : '';
+                      }
+                      
+                      setFormData({
+                        ...formData,
+                        location,
+                        latitude: lat,
+                        longitude: lng,
+                        city: city || formData.city,
+                        state: state || formData.state,
+                        pincode: pincode || formData.pincode
+                      });
+                    }}
+                    placeholder="Search location (City, State, etc.)"
+                  />
+                </div>
+                
+                {formData.latitude && formData.longitude && (
+                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
+                    <strong>Location Selected:</strong> Lat: {formData.latitude.toFixed(4)}, Lng: {formData.longitude.toFixed(4)}
+                  </div>
+                )}
+                
+                <div>
+                  <label className="block text-sm font-semibold text-slate-900 mb-2">Hub Name</label>
+                  <input
+                    type="text"
+                    value={formData.hub_name || ''}
+                    onChange={(e) => setFormData({...formData, hub_name: e.target.value})}
+                    placeholder="e.g., Delhi Hub 1"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-semibold text-slate-900 mb-2">Hub Code</label>
+                  <input
+                    type="text"
+                    value={formData.hub_code || ''}
+                    onChange={(e) => setFormData({...formData, hub_code: e.target.value})}
+                    placeholder="e.g., DLH001"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-900 mb-2">City</label>
+                    <input
+                      type="text"
+                      value={formData.city || ''}
+                      onChange={(e) => setFormData({...formData, city: e.target.value})}
+                      placeholder="City"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-900 mb-2">State</label>
+                    <input
+                      type="text"
+                      value={formData.state || ''}
+                      onChange={(e) => setFormData({...formData, state: e.target.value})}
+                      placeholder="State"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-semibold text-slate-900 mb-2">Pincode</label>
+                  <input
+                    type="text"
+                    value={formData.pincode || ''}
+                    onChange={(e) => setFormData({...formData, pincode: e.target.value})}
+                    placeholder="Pincode"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-semibold text-slate-900 mb-2">Manager Name</label>
+                  <input
+                    type="text"
+                    value={formData.manager_name || ''}
+                    onChange={(e) => setFormData({...formData, manager_name: e.target.value})}
+                    placeholder="Manager full name"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-semibold text-slate-900 mb-2">Manager Contact Number</label>
+                  <input
+                    type="tel"
+                    value={formData.manager_phone || ''}
+                    onChange={(e) => setFormData({...formData, manager_phone: e.target.value})}
+                    placeholder="10-digit phone number"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-semibold text-slate-900 mb-2">Status</label>
+                  <select
+                    value={formData.status || 'active'}
+                    onChange={(e) => setFormData({...formData, status: e.target.value})}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
+                  >
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
+                
+                <div className="flex gap-3 justify-end pt-4 border-t border-slate-200">
+                  <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 font-medium">Cancel</button>
+                  <button type="submit" className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium">Add Hub</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
         {showEditModal && editItem && (
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
