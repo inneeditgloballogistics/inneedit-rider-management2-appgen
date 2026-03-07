@@ -20,19 +20,14 @@ function HubManagementContent() {
   }, [user, router]);
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [hubs, setHubs] = useState<any[]>([]);
-  const [stores, setStores] = useState<any[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [modalType, setModalType] = useState<'vehicle' | 'hub' | 'store'>('vehicle');
+  const [modalType, setModalType] = useState<'vehicle' | 'hub'>('vehicle');
   const [formData, setFormData] = useState<any>({});
 
   useEffect(() => {
     console.log('Active tab changed to:', activeTab);
     if (activeTab === 'vehicles') fetchVehicles();
     if (activeTab === 'hubs') fetchHubs();
-    if (activeTab === 'stores') {
-      console.log('Loading stores...');
-      fetchStores();
-    }
   }, [activeTab]);
 
   const fetchVehicles = async () => {
@@ -47,13 +42,7 @@ function HubManagementContent() {
     setHubs(data);
   };
 
-  const fetchStores = async () => {
-    const res = await fetch('/api/stores');
-    const data = await res.json();
-    setStores(data);
-  };
-
-  const handleAddNew = (type: 'vehicle' | 'hub' | 'store') => {
+  const handleAddNew = (type: 'vehicle' | 'hub') => {
     setModalType(type);
     setFormData({});
     setShowAddModal(true);
@@ -79,7 +68,6 @@ function HubManagementContent() {
       setFormData({});
       if (modalType === 'vehicle') fetchVehicles();
       if (modalType === 'hub') fetchHubs();
-      if (modalType === 'store') fetchStores();
     } catch (error) {
       console.error('Submit error:', error);
       alert('Error: ' + (error instanceof Error ? error.message : 'Unknown error'));
@@ -110,9 +98,6 @@ function HubManagementContent() {
                 </button>
                 <button onClick={() => setActiveTab('hubs')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${activeTab === 'hubs' ? 'bg-white shadow-sm text-slate-900 border border-slate-200' : 'hover:bg-white/50 text-slate-500 hover:text-slate-900'}`}>
                     <i className="ph-bold ph-map-pin mr-2"></i>Hubs
-                </button>
-                <button onClick={() => setActiveTab('stores')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${activeTab === 'stores' ? 'bg-white shadow-sm text-slate-900 border border-slate-200' : 'hover:bg-white/50 text-slate-500 hover:text-slate-900'}`}>
-                    <i className="ph-bold ph-storefront mr-2"></i>Stores
                 </button>
             </nav>
 
@@ -151,99 +136,6 @@ function HubManagementContent() {
             {/* Hubs Tab */}
             {activeTab === 'hubs' && (
               <HubList hubs={hubs} onAdd={() => handleAddNew('hub')} vehicles={vehicles} />
-            )}
-
-            {/* Stores Tab */}
-            {activeTab === 'stores' && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-3xl font-bold text-slate-900">Store Management</h2>
-                    <p className="text-slate-500 mt-1">Manage all stores and locations</p>
-                  </div>
-                  <button 
-                    onClick={() => handleAddNew('store')}
-                    style={{
-                      backgroundColor: '#ff8c42',
-                      color: 'white',
-                      padding: '12px 24px',
-                      borderRadius: '8px',
-                      border: 'none',
-                      fontSize: '16px',
-                      fontWeight: '600',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px'
-                    }}
-                  >
-                    <span style={{ fontSize: '20px' }}>+</span> ADD STORE
-                  </button>
-                </div>
-
-                {stores.length === 0 ? (
-                  <div style={{ backgroundColor: '#fff', border: '1px solid #ddd', padding: '48px', textAlign: 'center', borderRadius: '12px' }}>
-                    <p style={{ color: '#999', marginBottom: '20px', fontSize: '16px' }}>No stores added yet</p>
-                    <button 
-                      onClick={() => handleAddNew('store')}
-                      style={{
-                        backgroundColor: '#ff8c42',
-                        color: 'white',
-                        padding: '10px 20px',
-                        borderRadius: '8px',
-                        border: 'none',
-                        fontSize: '14px',
-                        fontWeight: '600',
-                        cursor: 'pointer',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '6px'
-                      }}
-                    >
-                      <span>+</span> ADD FIRST STORE
-                    </button>
-                  </div>
-                ) : (
-                  <div style={{ backgroundColor: '#fff', border: '1px solid #ddd', borderRadius: '12px', overflow: 'hidden' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                      <thead style={{ backgroundColor: '#f8f9fa', borderBottom: '2px solid #ddd' }}>
-                        <tr>
-                          <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: '#333', fontSize: '14px' }}>Store Name</th>
-                          <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: '#333', fontSize: '14px' }}>Code</th>
-                          <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: '#333', fontSize: '14px' }}>Client</th>
-                          <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: '#333', fontSize: '14px' }}>Location</th>
-                          <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: '#333', fontSize: '14px' }}>Manager</th>
-                          <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: '#333', fontSize: '14px' }}>Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {stores.map((store, idx) => (
-                          <tr key={store.id} style={{ borderBottom: idx < stores.length - 1 ? '1px solid #eee' : 'none' }}>
-                            <td style={{ padding: '12px 16px', color: '#000', fontSize: '14px' }}>{store.store_name}</td>
-                            <td style={{ padding: '12px 16px', color: '#666', fontSize: '14px', fontFamily: 'monospace' }}>{store.store_code}</td>
-                            <td style={{ padding: '12px 16px', color: '#666', fontSize: '14px' }}>{store.client}</td>
-                            <td style={{ padding: '12px 16px', color: '#666', fontSize: '14px' }}>{store.city}, {store.state}</td>
-                            <td style={{ padding: '12px 16px', color: '#666', fontSize: '14px' }}>{store.store_manager_name || '-'}</td>
-                            <td style={{ padding: '12px 16px', fontSize: '14px' }}>
-                              <span style={{
-                                display: 'inline-block',
-                                padding: '4px 12px',
-                                borderRadius: '16px',
-                                fontSize: '12px',
-                                fontWeight: '600',
-                                backgroundColor: store.status === 'active' ? '#d4edda' : '#e2e3e5',
-                                color: store.status === 'active' ? '#155724' : '#383d41'
-                              }}>
-                                {store.status}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
             )}
 
             {/* Add Modal */}
