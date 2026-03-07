@@ -83,7 +83,7 @@ export default function HubMapView() {
                     <p><strong>Code:</strong> {hub.hub_code}</p>
                     <p><strong>In-charge:</strong> {hub.manager_name}</p>
                     <p><strong>Phone:</strong> {hub.manager_phone}</p>
-                    <p className="text-xs text-slate-500 mt-1">Lat: {hub.latitude.toFixed(4)}, Lng: {hub.longitude.toFixed(4)}</p>
+                    <p className="text-xs text-slate-500 mt-1">Lat: {(typeof hub.latitude === 'number' ? hub.latitude : parseFloat(hub.latitude)).toFixed(4)}, Lng: {(typeof hub.longitude === 'number' ? hub.longitude : parseFloat(hub.longitude)).toFixed(4)}</p>
                   </div>
                 </div>
                 <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ml-2 ${
