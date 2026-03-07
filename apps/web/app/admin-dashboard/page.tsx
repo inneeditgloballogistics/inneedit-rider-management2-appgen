@@ -78,7 +78,6 @@ function AdminDashboardContent() {
     if (activeTab === 'riders') fetchRiders();
     if (activeTab === 'vehicles') fetchVehicles();
     if (activeTab === 'hubs') fetchHubs();
-    if (activeTab === 'stores') fetchStores();
     if (activeTab === 'advances') fetchAdvances();
     if (activeTab === 'referrals') fetchReferrals();
     if (activeTab === 'payroll') {
@@ -97,11 +96,10 @@ function AdminDashboardContent() {
 
   const fetchCounts = async () => {
     try {
-      const [ridersRes, vehiclesRes, hubsRes, storesRes, advancesRes, referralsRes] = await Promise.all([
+      const [ridersRes, vehiclesRes, hubsRes, advancesRes, referralsRes] = await Promise.all([
         fetch('/api/riders?action=count'),
         fetch('/api/vehicles?action=count'),
         fetch('/api/hubs?action=count'),
-        fetch('/api/stores?action=count'),
         fetch('/api/advances?action=count'),
         fetch('/api/referrals?action=count')
       ]);
@@ -109,14 +107,12 @@ function AdminDashboardContent() {
       const ridersData = await ridersRes.json();
       const vehiclesData = await vehiclesRes.json();
       const hubsData = await hubsRes.json();
-      const storesData = await storesRes.json();
       const advancesData = await advancesRes.json();
       const referralsData = await referralsRes.json();
       
       setRidersCount(ridersData.count || 0);
       setVehiclesCount(vehiclesData.count || 0);
       setHubsCount(hubsData.count || 0);
-      setStoresCount(storesData.count || 0);
       setPendingAdvancesCount(advancesData.pendingCount || 0);
       setPendingReferralsCount(referralsData.pendingCount || 0);
     } catch (error) {
@@ -330,7 +326,7 @@ function AdminDashboardContent() {
 
           <nav className="border-t border-slate-200 overflow-x-auto">
             <div className="flex px-6">
-              {['dashboard', 'riders', 'vehicles', 'hubs', 'stores', 'advances', 'referrals', 'payroll'].map((tab) => (
+              {['dashboard', 'riders', 'vehicles', 'hubs', 'advances', 'referrals', 'payroll'].map((tab) => (
                 <button 
                   key={tab}
                   onClick={() => setActiveTab(tab)} 
@@ -344,7 +340,6 @@ function AdminDashboardContent() {
                   {tab === 'riders' && <i className="ph-bold ph-users text-lg"></i>}
                   {tab === 'vehicles' && <i className="ph-bold ph-truck text-lg"></i>}
                   {tab === 'hubs' && <i className="ph-bold ph-buildings text-lg"></i>}
-                  {tab === 'stores' && <i className="ph-bold ph-storefront text-lg"></i>}
                   {tab === 'advances' && <i className="ph-bold ph-currency-dollar text-lg"></i>}
                   {tab === 'referrals' && <i className="ph-bold ph-user-plus text-lg"></i>}
                   {tab === 'payroll' && <i className="ph-bold ph-wallet text-lg"></i>}
@@ -528,54 +523,7 @@ function AdminDashboardContent() {
               </>
             )}
 
-            {activeTab === 'stores' && (
-              <>
-                <div className="flex justify-between items-center">
-                  <h2 className="font-display text-3xl font-bold text-slate-900">Store Management ({storesCount})</h2>
-                  <div className="flex gap-3">
-                    <button onClick={() => setShowMapView(!showMapView)} className={`px-4 py-2 rounded-lg font-medium flex items-center gap-2 ${showMapView ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-700'}`}>
-                      <i className="ph-bold ph-map"></i>{showMapView ? 'List View' : 'Map View'}
-                    </button>
-                  </div>
-                </div>
-                {showMapView ? (
-                  <StoreMapView />
-                ) : (
-                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                    <table className="w-full">
-                      <thead className="bg-slate-50 border-b border-slate-200">
-                        <tr>
-                          <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Store Name</th>
-                          <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Location</th>
-                          <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Manager</th>
-                          <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Status</th>
-                          <th className="px-6 py-4 text-right text-sm font-semibold text-slate-900">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {stores.map((store: any) => (
-                          <tr key={store.id} className="border-b border-slate-200 hover:bg-slate-50">
-                            <td className="px-6 py-4 text-sm text-slate-900">{store.store_name}</td>
-                            <td className="px-6 py-4 text-sm text-slate-600">{store.location}</td>
-                            <td className="px-6 py-4 text-sm text-slate-600">{store.store_manager_name}</td>
-                            <td className="px-6 py-4 text-sm">
-                              <span className={`px-3 py-1 rounded-full text-xs font-medium ${store.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-700'}`}>
-                                {store.status}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 text-right flex gap-2 justify-end">
-                              <button onClick={() => handleView(store, 'store')} className="px-3 py-1 text-blue-600 text-sm font-medium border border-blue-200 rounded hover:bg-blue-50">View</button>
-                              <button onClick={() => handleEdit(store, 'store')} className="px-3 py-1 text-amber-600 text-sm font-medium border border-amber-200 rounded hover:bg-amber-50">Edit</button>
-                              <button onClick={() => handleDelete(store.id, 'store')} className="px-3 py-1 text-red-600 text-sm font-medium border border-red-200 rounded hover:bg-red-50">Delete</button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </>
-            )}
+
 
             {activeTab === 'advances' && (
               <>
