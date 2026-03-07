@@ -17,6 +17,7 @@ declare global {
 export default function LocationSearch({ value, onChange, placeholder = 'Search location' }: LocationSearchProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const autocompleteRef = useRef<any>(null);
+  const sessionTokenRef = useRef<any>(null);
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
@@ -29,8 +30,14 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
       }
 
       try {
+        // Create a fresh session token for this search session
+        sessionTokenRef.current = new window.google.maps.places.AutocompleteSessionToken();
+
         const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
-          types: ['geocode']
+          types: ['geocode'],
+          sessionToken: sessionTokenRef.current,
+          fields: ['geometry', 'formatted_address', 'name', 'place_id', 'address_components'],
+          componentRestrictions: {} // Empty object allows worldwide search
         });
 
         autocompleteRef.current = autocomplete;
@@ -45,6 +52,9 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
               ? place.geometry.location.lng() 
               : place.geometry.location.lng;
             onChange(place.formatted_address, lat, lng, place.formatted_address);
+            
+            // Reset session token after selection for next search
+            sessionTokenRef.current = new window.google.maps.places.AutocompleteSessionToken();
           }
         });
 
