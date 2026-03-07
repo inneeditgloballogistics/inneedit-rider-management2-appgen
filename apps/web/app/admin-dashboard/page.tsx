@@ -38,24 +38,24 @@ function AdminDashboardContent() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [riders, setRiders] = useState<any[]>([]);
   const [vehicles, setVehicles] = useState<any[]>([]);
-  const [hubs, setHubs] = useState<any[]>([]);
+
   const [stores, setStores] = useState<any[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [modalType, setModalType] = useState<'vehicle' | 'hub' | 'store'>('vehicle');
   const [showMapView, setShowMapView] = useState(false);
   const [formData, setFormData] = useState<any>({});
-  const [hubsForVehicle, setHubsForVehicle] = useState<any[]>([]);
+
   const [viewItem, setViewItem] = useState<any>(null);
   const [editItem, setEditItem] = useState<any>(null);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [hubsForRider, setHubsForRider] = useState<any[]>([]);
+
   const [storesForRider, setStoresForRider] = useState<any[]>([]);
   const [vehiclesForRider, setVehiclesForRider] = useState<any[]>([]);
   
   const [ridersCount, setRidersCount] = useState(0);
   const [vehiclesCount, setVehiclesCount] = useState(0);
-  const [hubsCount, setHubsCount] = useState(0);
+
   const [storesCount, setStoresCount] = useState(0);
 
   const [payrollMode, setPayrollMode] = useState<'manual' | 'ai' | 'history'>('manual');
@@ -78,7 +78,7 @@ function AdminDashboardContent() {
     fetchCounts();
     if (activeTab === 'riders') fetchRiders();
     if (activeTab === 'vehicles') fetchVehicles();
-    if (activeTab === 'hubs') fetchHubs();
+
     if (activeTab === 'advances') fetchAdvances();
     if (activeTab === 'referrals') fetchReferrals();
     if (activeTab === 'payroll') {
@@ -97,23 +97,20 @@ function AdminDashboardContent() {
 
   const fetchCounts = async () => {
     try {
-      const [ridersRes, vehiclesRes, hubsRes, advancesRes, referralsRes] = await Promise.all([
+      const [ridersRes, vehiclesRes, advancesRes, referralsRes] = await Promise.all([
         fetch('/api/riders?action=count'),
         fetch('/api/vehicles?action=count'),
-        fetch('/api/hubs?action=count'),
         fetch('/api/advances?action=count'),
         fetch('/api/referrals?action=count')
       ]);
       
       const ridersData = await ridersRes.json();
       const vehiclesData = await vehiclesRes.json();
-      const hubsData = await hubsRes.json();
       const advancesData = await advancesRes.json();
       const referralsData = await referralsRes.json();
       
       setRidersCount(ridersData.count || 0);
       setVehiclesCount(vehiclesData.count || 0);
-      setHubsCount(hubsData.count || 0);
       setPendingAdvancesCount(advancesData.pendingCount || 0);
       setPendingReferralsCount(referralsData.pendingCount || 0);
     } catch (error) {
@@ -133,11 +130,7 @@ function AdminDashboardContent() {
     setVehicles(data);
   };
 
-  const fetchHubs = async () => {
-    const res = await fetch('/api/hubs');
-    const data = await res.json();
-    setHubs(data);
-  };
+
 
   const fetchStores = async () => {
     const res = await fetch('/api/stores');
@@ -197,11 +190,7 @@ function AdminDashboardContent() {
       setFormData({});
     }
     
-    if (type === 'vehicle') {
-      const res = await fetch('/api/hubs');
-      const data = await res.json();
-      setHubsForVehicle(data);
-    }
+
     
     setShowAddModal(true);
   };
@@ -229,9 +218,7 @@ function AdminDashboardContent() {
   const handleEdit = async (item: any, type: string) => {
     setEditItem({ ...item, type });
     if (type === 'vehicle') {
-      const res = await fetch('/api/hubs');
-      const data = await res.json();
-      setHubsForVehicle(data);
+
     }
     setShowEditModal(true);
   };
@@ -253,7 +240,7 @@ function AdminDashboardContent() {
       
       if (type === 'rider') { fetchRiders(); fetchCounts(); }
       if (type === 'vehicle') { fetchVehicles(); fetchCounts(); }
-      if (type === 'hub') { fetchHubs(); fetchCounts(); }
+      if (type === 'hub') { fetchCounts(); }
       if (type === 'store') { fetchStores(); fetchCounts(); }
     } catch (error) {
       console.error(`Error deleting ${type}:`, error);
@@ -274,7 +261,7 @@ function AdminDashboardContent() {
     setEditItem(null);
     if (type === 'rider') fetchRiders();
     if (type === 'vehicle') fetchVehicles();
-    if (type === 'hub') fetchHubs();
+
     if (type === 'store') fetchStores();
   };
 
@@ -327,7 +314,7 @@ function AdminDashboardContent() {
 
           <nav className="border-t border-slate-200 overflow-x-auto">
             <div className="flex px-6">
-              {['dashboard', 'riders', 'vehicles', 'hubs', 'stores', 'advances', 'referrals', 'payroll'].map((tab) => (
+              {['dashboard', 'riders', 'vehicles', 'stores', 'advances', 'referrals', 'payroll'].map((tab) => (
                 <button 
                   key={tab}
                   onClick={() => setActiveTab(tab)} 
@@ -340,7 +327,7 @@ function AdminDashboardContent() {
                   {tab === 'dashboard' && <i className="ph-bold ph-gauge text-lg"></i>}
                   {tab === 'riders' && <i className="ph-bold ph-users text-lg"></i>}
                   {tab === 'vehicles' && <i className="ph-bold ph-truck text-lg"></i>}
-                  {tab === 'hubs' && <i className="ph-bold ph-buildings text-lg"></i>}
+
                   {tab === 'stores' && <i className="ph-bold ph-storefront text-lg"></i>}
                   {tab === 'advances' && <i className="ph-bold ph-currency-dollar text-lg"></i>}
                   {tab === 'referrals' && <i className="ph-bold ph-user-plus text-lg"></i>}
@@ -379,13 +366,7 @@ function AdminDashboardContent() {
                     </div>
                     <p className="text-4xl font-bold text-slate-900">{vehiclesCount}</p>
                   </div>
-                  <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                    <div className="flex items-center gap-2 mb-3">
-                      <i className="ph-duotone ph-buildings text-2xl text-purple-600"></i>
-                      <h3 className="text-xs font-semibold text-slate-500 uppercase">Active Hubs</h3>
-                    </div>
-                    <p className="text-4xl font-bold text-slate-900">{hubsCount}</p>
-                  </div>
+
                   <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                     <div className="flex items-center gap-2 mb-3">
                       <i className="ph-duotone ph-storefront text-2xl text-green-600"></i>
@@ -482,48 +463,7 @@ function AdminDashboardContent() {
               </>
             )}
 
-            {activeTab === 'hubs' && (
-              <>
-                <div className="flex justify-between items-center">
-                  <h2 className="font-display text-3xl font-bold text-slate-900">Hub Management ({hubsCount})</h2>
-                  <button onClick={() => handleAddNew('hub')} className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium flex items-center gap-2">
-                    <i className="ph-bold ph-plus"></i>Add Hub
-                  </button>
-                </div>
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                  <table className="w-full">
-                    <thead className="bg-slate-50 border-b border-slate-200">
-                      <tr>
-                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Hub Name</th>
-                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Location</th>
-                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Manager</th>
-                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Status</th>
-                        <th className="px-6 py-4 text-right text-sm font-semibold text-slate-900">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {hubs.map((hub: any) => (
-                        <tr key={hub.id} className="border-b border-slate-200 hover:bg-slate-50">
-                          <td className="px-6 py-4 text-sm text-slate-900">{hub.hub_name}</td>
-                          <td className="px-6 py-4 text-sm text-slate-600">{hub.location}</td>
-                          <td className="px-6 py-4 text-sm text-slate-600">{hub.manager_name}</td>
-                          <td className="px-6 py-4 text-sm">
-                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${hub.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-700'}`}>
-                              {hub.status}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 text-right flex gap-2 justify-end">
-                            <button onClick={() => handleView(hub, 'hub')} className="px-3 py-1 text-blue-600 text-sm font-medium border border-blue-200 rounded hover:bg-blue-50">View</button>
-                            <button onClick={() => handleEdit(hub, 'hub')} className="px-3 py-1 text-amber-600 text-sm font-medium border border-amber-200 rounded hover:bg-amber-50">Edit</button>
-                            <button onClick={() => handleDelete(hub.id, 'hub')} className="px-3 py-1 text-red-600 text-sm font-medium border border-red-200 rounded hover:bg-red-50">Delete</button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </>
-            )}
+
 
             {activeTab === 'stores' && (
               <StoresManagement />
