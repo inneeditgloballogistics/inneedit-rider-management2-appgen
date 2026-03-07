@@ -1,5 +1,7 @@
 'use client';
 
+import LocationSearch from './LocationSearch';
+
 export function AddModal({ 
   show, 
   onClose, 
@@ -103,19 +105,46 @@ export function AddModal({
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Location*</label>
-                <input 
-                  type="text" 
-                  required 
-                  className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none" 
-                  onChange={(e) => setFormData({...formData, location: e.target.value})} 
+                <label className="block text-sm font-medium text-slate-700 mb-2">Search Location*</label>
+                <LocationSearch
+                  value={formData.location || ''}
+                  onChange={(location, lat, lng) => {
+                    const parts = location.split(',').map((p: string) => p.trim());
+                    let city = '', state = '', pincode = '';
+                    
+                    if (parts.length >= 2) {
+                      city = parts[parts.length - 3] || '';
+                      state = parts[parts.length - 2] || '';
+                      const lastPart = parts[parts.length - 1];
+                      pincode = lastPart?.match(/\d{6}/) ? lastPart : '';
+                    }
+                    
+                    setFormData({
+                      ...formData,
+                      location,
+                      latitude: lat,
+                      longitude: lng,
+                      city: city || formData.city,
+                      state: state || formData.state,
+                      pincode: pincode || formData.pincode
+                    });
+                  }}
+                  placeholder="Search location (City, Area, State, etc.)"
                 />
               </div>
+              
+              {formData.latitude && formData.longitude && (
+                <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
+                  <strong>Location Selected:</strong> Lat: {formData.latitude.toFixed(4)}, Lng: {formData.longitude.toFixed(4)}
+                </div>
+              )}
+
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">City</label>
                   <input 
                     type="text" 
+                    value={formData.city || ''}
                     className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none" 
                     onChange={(e) => setFormData({...formData, city: e.target.value})} 
                   />
@@ -124,6 +153,7 @@ export function AddModal({
                   <label className="block text-sm font-medium text-slate-700 mb-2">State</label>
                   <input 
                     type="text" 
+                    value={formData.state || ''}
                     className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none" 
                     onChange={(e) => setFormData({...formData, state: e.target.value})} 
                   />
@@ -132,6 +162,7 @@ export function AddModal({
                   <label className="block text-sm font-medium text-slate-700 mb-2">Pincode</label>
                   <input 
                     type="text" 
+                    value={formData.pincode || ''}
                     className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none" 
                     onChange={(e) => setFormData({...formData, pincode: e.target.value})} 
                   />
