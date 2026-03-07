@@ -4,14 +4,12 @@ import { useRouter } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { useAuth } from '@/hooks/useAuth';
 import { useState, useEffect } from 'react';
-import { VehicleList, HubList } from '@/components/VehicleHubStoreManagement';
+import { VehicleList } from '@/components/VehicleHubStoreManagement';
 import { AddModal } from '@/components/AddModal';
 
 function HubManagementContent() {
   const router = useRouter();
   const { user, signOut } = useAuth();
-  const [activeTab, setActiveTab] = useState('vehicles');
-
   // Role-based access control - redirect if not hub manager
   useEffect(() => {
     if (user && user.role && user.role !== 'hub_manager' && user.role !== 'admin') {
@@ -19,16 +17,12 @@ function HubManagementContent() {
     }
   }, [user, router]);
   const [vehicles, setVehicles] = useState<any[]>([]);
-  const [hubs, setHubs] = useState<any[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [modalType, setModalType] = useState<'vehicle' | 'hub'>('vehicle');
   const [formData, setFormData] = useState<any>({});
 
   useEffect(() => {
-    console.log('Active tab changed to:', activeTab);
-    if (activeTab === 'vehicles') fetchVehicles();
-    if (activeTab === 'hubs') fetchHubs();
-  }, [activeTab]);
+    fetchVehicles();
+  }, []);
 
   const fetchVehicles = async () => {
     const res = await fetch('/api/vehicles');
@@ -36,21 +30,14 @@ function HubManagementContent() {
     setVehicles(data);
   };
 
-  const fetchHubs = async () => {
-    const res = await fetch('/api/hubs');
-    const data = await res.json();
-    setHubs(data);
-  };
-
-  const handleAddNew = (type: 'vehicle' | 'hub') => {
-    setModalType(type);
+  const handleAddNew = () => {
     setFormData({});
     setShowAddModal(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const endpoint = `/api/${modalType}s`;
+    const endpoint = '/api/vehicles';
     try {
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -60,14 +47,13 @@ function HubManagementContent() {
       
       if (!res.ok) {
         const error = await res.json();
-        alert('Error: ' + (error.error || 'Failed to create ' + modalType));
+        alert('Error: ' + (error.error || 'Failed to create vehicle'));
         return;
       }
       
       setShowAddModal(false);
       setFormData({});
-      if (modalType === 'vehicle') fetchVehicles();
-      if (modalType === 'hub') fetchHubs();
+      fetchVehicles();
     } catch (error) {
       console.error('Submit error:', error);
       alert('Error: ' + (error instanceof Error ? error.message : 'Unknown error'));
@@ -91,15 +77,7 @@ function HubManagementContent() {
                 </div>
             </div>
 
-            {/* Nav - Mobile & Desktop */}
-            <nav className="flex items-center gap-1 p-1 bg-slate-100/50 rounded-xl border border-slate-200/50 overflow-x-auto">
-                <button onClick={() => setActiveTab('vehicles')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${activeTab === 'vehicles' ? 'bg-white shadow-sm text-slate-900 border border-slate-200' : 'hover:bg-white/50 text-slate-500 hover:text-slate-900'}`}>
-                    <i className="ph-bold ph-truck mr-2"></i>Vehicles
-                </button>
-                <button onClick={() => setActiveTab('hubs')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${activeTab === 'hubs' ? 'bg-white shadow-sm text-slate-900 border border-slate-200' : 'hover:bg-white/50 text-slate-500 hover:text-slate-900'}`}>
-                    <i className="ph-bold ph-map-pin mr-2"></i>Hubs
-                </button>
-            </nav>
+
 
             {/* Actions */}
             <div className="flex items-center gap-4">
@@ -129,20 +107,13 @@ function HubManagementContent() {
         <div className="max-w-7xl mx-auto space-y-8">
             
             {/* Vehicles Tab */}
-            {activeTab === 'vehicles' && (
-              <VehicleList vehicles={vehicles} onAdd={() => handleAddNew('vehicle')} />
-            )}
-
-            {/* Hubs Tab */}
-            {activeTab === 'hubs' && (
-              <HubList hubs={hubs} onAdd={() => handleAddNew('hub')} vehicles={vehicles} />
-            )}
+            <VehicleList vehicles={vehicles} onAdd={() => handleAddNew()} />
 
             {/* Add Modal */}
             <AddModal 
               show={showAddModal}
               onClose={() => setShowAddModal(false)}
-              type={modalType}
+              type='vehicle'
               onSubmit={handleSubmit}
               formData={formData}
               setFormData={setFormData}
