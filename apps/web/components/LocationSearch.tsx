@@ -30,8 +30,7 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
 
       try {
         const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
-          types: ['geocode'],
-          componentRestrictions: { country: 'in' }
+          types: ['geocode']
         });
 
         autocompleteRef.current = autocomplete;
