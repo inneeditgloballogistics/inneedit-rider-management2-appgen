@@ -7,6 +7,7 @@ import { GoogleMapsLoader } from '@/components/GoogleMapsLoader';
 import GooglePlacesAutocomplete from '@/components/GooglePlacesAutocomplete';
 import InvoiceUpload from '@/components/InvoiceUpload';
 import LocationSearch from '@/components/LocationSearch';
+import StoresManagement from '@/components/StoresManagement';
 
 const StoreMapView = dynamic(() => import('@/components/StoreMapView'), {
   ssr: false,
@@ -326,7 +327,7 @@ function AdminDashboardContent() {
 
           <nav className="border-t border-slate-200 overflow-x-auto">
             <div className="flex px-6">
-              {['dashboard', 'riders', 'vehicles', 'hubs', 'advances', 'referrals', 'payroll'].map((tab) => (
+              {['dashboard', 'riders', 'vehicles', 'hubs', 'stores', 'advances', 'referrals', 'payroll'].map((tab) => (
                 <button 
                   key={tab}
                   onClick={() => setActiveTab(tab)} 
@@ -340,6 +341,7 @@ function AdminDashboardContent() {
                   {tab === 'riders' && <i className="ph-bold ph-users text-lg"></i>}
                   {tab === 'vehicles' && <i className="ph-bold ph-truck text-lg"></i>}
                   {tab === 'hubs' && <i className="ph-bold ph-buildings text-lg"></i>}
+                  {tab === 'stores' && <i className="ph-bold ph-storefront text-lg"></i>}
                   {tab === 'advances' && <i className="ph-bold ph-currency-dollar text-lg"></i>}
                   {tab === 'referrals' && <i className="ph-bold ph-user-plus text-lg"></i>}
                   {tab === 'payroll' && <i className="ph-bold ph-wallet text-lg"></i>}
@@ -521,6 +523,10 @@ function AdminDashboardContent() {
                   </table>
                 </div>
               </>
+            )}
+
+            {activeTab === 'stores' && (
+              <StoresManagement />
             )}
 
 
