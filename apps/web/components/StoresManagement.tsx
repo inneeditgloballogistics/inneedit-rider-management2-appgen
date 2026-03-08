@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import LocationSearch from './LocationSearch';
+import WeatherCard from './WeatherCard';
 
 const StoreMapView = dynamic(() => import('./StoreMapView'), {
   ssr: false,
@@ -20,8 +21,23 @@ export default function StoresManagement() {
   const [stores, setStores] = useState<any[]>([]);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
   const [viewItem, setViewItem] = useState<any>(null);
   const [editItem, setEditItem] = useState<any>(null);
+  const [newStore, setNewStore] = useState<any>({
+    store_name: '',
+    store_code: '',
+    location: '',
+    latitude: undefined,
+    longitude: undefined,
+    city: '',
+    state: '',
+    pincode: '',
+    client: '',
+    store_manager_name: '',
+    store_manager_phone: '',
+    status: 'active'
+  });
   const [activeView, setActiveView] = useState<'list' | 'map'>('list');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -97,12 +113,60 @@ export default function StoresManagement() {
     store.store_code?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const handleAddSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!newStore.store_name || !newStore.store_code || !newStore.location) {
+      alert('Please fill in required fields');
+      return;
+    }
+    
+    try {
+      const res = await fetch('/api/stores', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newStore)
+      });
+      
+      if (res.ok) {
+        setShowAddModal(false);
+        setNewStore({
+          store_name: '',
+          store_code: '',
+          location: '',
+          latitude: undefined,
+          longitude: undefined,
+          city: '',
+          state: '',
+          pincode: '',
+          client: '',
+          store_manager_name: '',
+          store_manager_phone: '',
+          status: 'active'
+        });
+        fetchStores();
+        alert('Store added successfully!');
+      } else {
+        alert('Failed to add store');
+      }
+    } catch (error) {
+      console.error('Error adding store:', error);
+      alert('Error adding store');
+    }
+  };
+
   return (
     <>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex justify-between items-center">
           <h2 className="font-display text-3xl font-bold text-slate-900">Store Management ({stores.length})</h2>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium flex items-center gap-2"
+          >
+            <i className="ph-bold ph-plus text-lg"></i>Add Store
+          </button>
         </div>
 
         {/* View Toggle */}
@@ -245,10 +309,175 @@ export default function StoresManagement() {
               {viewItem.latitude && viewItem.longitude && (
                 <div><strong>Coordinates:</strong> Lat: {viewItem.latitude.toFixed(4)}, Lng: {viewItem.longitude.toFixed(4)}</div>
               )}
+              {viewItem.latitude && viewItem.longitude && (
+                <div className="pt-4 border-t border-slate-200">
+                  <p className="text-sm font-semibold text-slate-900 mb-2">Current Weather</p>
+                  <WeatherCard 
+                    latitude={viewItem.latitude} 
+                    longitude={viewItem.longitude}
+                    locationName={viewItem.store_name}
+                    showDetails={true}
+                  />
+                </div>
+              )}
             </div>
             <div className="p-6 border-t border-slate-200 flex gap-3 justify-end">
               <button onClick={() => setShowViewModal(false)} className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 font-medium">Close</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Store Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-slate-200 flex items-center justify-between sticky top-0 bg-white">
+              <h3 className="text-xl font-bold text-slate-900">Add New Store</h3>
+              <button onClick={() => setShowAddModal(false)} className="p-1 hover:bg-slate-100 rounded">
+                <i className="ph-bold ph-x text-xl"></i>
+              </button>
+            </div>
+            <form onSubmit={handleAddSubmit} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-slate-900 mb-2">Search Location</label>
+                <LocationSearch
+                  value={newStore.location || ''}
+                  onChange={(location, lat, lng, address) => {
+                    // Only update if lat/lng are provided (i.e., place was selected from Google)
+                    if (lat !== undefined && lng !== undefined) {
+                      const parts = (address || location).split(',').map((p: string) => p.trim());
+                      let city = '', state = '', pincode = '';
+                      
+                      if (parts.length >= 2) {
+                        city = parts[parts.length - 3] || '';
+                        state = parts[parts.length - 2] || '';
+                        const lastPart = parts[parts.length - 1];
+                        pincode = lastPart?.match(/\\d{6}/) ? lastPart : '';
+                      }
+                      
+                      setNewStore({
+                        ...newStore,
+                        location: address || location,
+                        latitude: lat,
+                        longitude: lng,
+                        city: city || newStore.city,
+                        state: state || newStore.state,
+                        pincode: pincode || newStore.pincode
+                      });
+                    } else {
+                      // Just update the search text if still typing
+                      setNewStore({
+                        ...newStore,
+                        location
+                      });
+                    }
+                  }}
+                  placeholder="Search for store location"
+                />
+              </div>
+              
+              {newStore.latitude && newStore.longitude && (
+                <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
+                  <strong>Location:</strong> Lat: {(typeof newStore.latitude === 'number' ? newStore.latitude : parseFloat(newStore.latitude)).toFixed(4)}, Lng: {(typeof newStore.longitude === 'number' ? newStore.longitude : parseFloat(newStore.longitude)).toFixed(4)}
+                </div>
+              )}
+              
+              <div>
+                <label className="block text-sm font-semibold text-slate-900 mb-2">Store Name <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  value={newStore.store_name || ''}
+                  onChange={(e) => setNewStore({...newStore, store_name: e.target.value})}
+                  placeholder="Store name"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-900 mb-2">Store Code <span className="text-red-500">*</span></label>
+                  <input
+                    type="text"
+                    value={newStore.store_code || ''}
+                    onChange={(e) => setNewStore({...newStore, store_code: e.target.value})}
+                    placeholder="Store code"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-900 mb-2">Client</label>
+                  <input
+                    type="text"
+                    value={newStore.client || ''}
+                    onChange={(e) => setNewStore({...newStore, client: e.target.value})}
+                    placeholder="Client"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-900 mb-2">City</label>
+                  <input
+                    type="text"
+                    value={newStore.city || ''}
+                    onChange={(e) => setNewStore({...newStore, city: e.target.value})}
+                    placeholder="City"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-900 mb-2">State</label>
+                  <input
+                    type="text"
+                    value={newStore.state || ''}
+                    onChange={(e) => setNewStore({...newStore, state: e.target.value})}
+                    placeholder="State"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-semibold text-slate-900 mb-2">Pincode</label>
+                <input
+                  type="text"
+                  value={newStore.pincode || ''}
+                  onChange={(e) => setNewStore({...newStore, pincode: e.target.value})}
+                  placeholder="Pincode"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-semibold text-slate-900 mb-2">Store Manager Name</label>
+                <input
+                  type="text"
+                  value={newStore.store_manager_name || ''}
+                  onChange={(e) => setNewStore({...newStore, store_manager_name: e.target.value})}
+                  placeholder="Store manager name"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-semibold text-slate-900 mb-2">Store Manager Phone</label>
+                <input
+                  type="tel"
+                  value={newStore.store_manager_phone || ''}
+                  onChange={(e) => setNewStore({...newStore, store_manager_phone: e.target.value})}
+                  placeholder="Phone number"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
+                />
+              </div>
+              
+              <div className="flex gap-3 justify-end pt-4 border-t border-slate-200">
+                <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 font-medium">Cancel</button>
+                <button type="submit" className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium">Add Store</button>
+              </div>
+            </form>
           </div>
         </div>
       )}
