@@ -19,44 +19,104 @@ interface PayrollEntry {
   referred_phone?: string;
 }
 
+interface Rider {
+  id: number;
+  rider_id: string;
+  rider_name: string;
+  phone: string;
+  vehicle_type?: string;
+  vehicle_number?: string;
+}
+
 export default function PayrollEntries() {
   const router = useRouter();
   const [entries, setEntries] = useState<PayrollEntry[]>([]);
+  const [ridersList, setRidersList] = useState<Rider[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [selectedWeek, setSelectedWeek] = useState<number | null>(null);
   const [selectedType, setSelectedType] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedRider, setSelectedRider] = useState<Rider | null>(null);
+  const [riderDetails, setRiderDetails] = useState<PayrollEntry[]>([]);
+  const [riderDetailsLoading, setRiderDetailsLoading] = useState(false);
 
   useEffect(() => {
-    fetchEntries();
-  }, [selectedYear, selectedMonth, selectedType, searchQuery]);
+    if (selectedWeek) {
+      fetchRidersList();
+    }
+  }, [selectedYear, selectedMonth, selectedWeek]);
 
-  const fetchEntries = async () => {
+  const getWeekDateRange = (week: number, month: number, year: number) => {
+    let startDate, endDate;
+    
+    if (week === 1) {
+      startDate = new Date(year, month - 1, 1);
+      endDate = new Date(year, month - 1, 7);
+    } else if (week === 2) {
+      startDate = new Date(year, month - 1, 8);
+      endDate = new Date(year, month - 1, 14);
+    } else if (week === 3) {
+      startDate = new Date(year, month - 1, 15);
+      endDate = new Date(year, month - 1, 21);
+    } else if (week === 4) {
+      startDate = new Date(year, month - 1, 22);
+      endDate = new Date(year, month + 1, 0); // Last day of month
+    }
+    
+    return { startDate, endDate };
+  };
+
+  const fetchRidersList = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/payroll/entries', {
+      const { startDate, endDate } = getWeekDateRange(selectedWeek, selectedMonth, selectedYear);
+      
+      const response = await fetch('/api/payroll/riders/filter', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          year: selectedYear,
-          month: selectedMonth,
-          type: selectedType,
-          search: searchQuery
+          status: 'active'
         })
       });
 
       const data = await response.json();
-      setEntries(data.entries || []);
+      setRidersList(data.riders || []);
     } catch (error) {
-      console.error('Error fetching entries:', error);
-      setEntries([]);
+      console.error('Error fetching riders:', error);
+      setRidersList([]);
     }
     setLoading(false);
   };
 
+  const fetchRiderDetails = async (riderId: string) => {
+    setRiderDetailsLoading(true);
+    try {
+      const response = await fetch('/api/payroll/rider-entries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rider_id: riderId })
+      });
+
+      const data = await response.json();
+      setRiderDetails(data.entries || []);
+    } catch (error) {
+      console.error('Error fetching rider details:', error);
+      setRiderDetails([]);
+    }
+    setRiderDetailsLoading(false);
+  };
+
   const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
   const months = Array.from({ length: 12 }, (_, i) => ({ num: i + 1, name: new Date(2024, i, 1).toLocaleString('default', { month: 'long' }) }));
+
+  const weeks = [
+    { id: 1, label: 'Week 1 (1st - 7th)' },
+    { id: 2, label: 'Week 2 (8th - 14th)' },
+    { id: 3, label: 'Week 3 (15th - 21st)' },
+    { id: 4, label: 'Week 4 (22nd - Month End)' }
+  ];
 
   const entryTypes = [
     { value: 'all', label: 'All Entries' },
@@ -68,12 +128,10 @@ export default function PayrollEntries() {
     { value: 'challan', label: 'Challan' }
   ];
 
-  const filteredEntries = entries.filter(entry => {
-    const matchesSearch = searchQuery === '' || 
-      entry.rider_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      entry.rider_id.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesSearch;
-  });
+  const handleRiderClick = (rider: Rider) => {
+    setSelectedRider(rider);
+    fetchRiderDetails(rider.rider_id);
+  };
 
   const getTypeColor = (type: string) => {
     switch(type) {
@@ -124,7 +182,7 @@ export default function PayrollEntries() {
       <main className="pt-[100px] pb-12 px-6">
         <div className="max-w-7xl mx-auto space-y-6">
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-            <h2 className="font-display text-2xl font-bold text-slate-900 mb-6">Payroll Entries</h2>
+            <h2 className="font-display text-2xl font-bold text-slate-900 mb-6">Payroll Entries by Week</h2>
 
             {/* Filters Section */}
             <div className="space-y-4">
@@ -157,105 +215,237 @@ export default function PayrollEntries() {
                 </div>
               </div>
 
-              {/* Search Bar */}
+              {/* Week Selection */}
               <div>
-                <label className="block text-sm font-semibold text-slate-900 mb-2">Search by Rider Name or CEE ID</label>
-                <input
-                  type="text"
-                  placeholder="Search entries..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                />
-              </div>
-
-              {/* Filter Buttons */}
-              <div className="flex flex-wrap gap-2 pt-2">
-                {entryTypes.map(type => (
-                  <button
-                    key={type.value}
-                    onClick={() => setSelectedType(type.value)}
-                    className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
-                      selectedType === type.value
-                        ? 'bg-brand-600 text-white'
-                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                    }`}
-                  >
-                    {type.label}
-                  </button>
-                ))}
+                <label className="block text-sm font-semibold text-slate-900 mb-3">Select Week</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
+                  {weeks.map(week => (
+                    <button
+                      key={week.id}
+                      onClick={() => setSelectedWeek(week.id)}
+                      className={`px-4 py-3 rounded-lg font-medium text-sm transition-all border ${
+                        selectedWeek === week.id
+                          ? 'bg-brand-600 text-white border-brand-600'
+                          : 'bg-white text-slate-700 border-slate-300 hover:border-brand-600'
+                      }`}
+                    >
+                      {week.label}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Entries Table */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-slate-50 border-b border-slate-200">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">CEE ID</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Rider Name</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Type</th>
-                    <th className="px-6 py-4 text-right text-sm font-semibold text-slate-900">Amount (₹)</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Description</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Date</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {loading ? (
-                    <tr>
-                      <td colSpan={7} className="px-6 py-8 text-center text-slate-500">
-                        <div className="inline-block">
-                          <div className="w-8 h-8 border-4 border-slate-200 border-t-brand-600 rounded-full animate-spin"></div>
-                        </div>
-                      </td>
-                    </tr>
-                  ) : filteredEntries.length === 0 ? (
-                    <tr>
-                      <td colSpan={7} className="px-6 py-8 text-center text-slate-500">
-                        No entries found for the selected filters
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredEntries.map(entry => (
-                      <tr key={entry.id} className="border-b border-slate-200 hover:bg-slate-50">
-                        <td className="px-6 py-4 text-sm font-semibold text-slate-900">{entry.rider_id}</td>
-                        <td className="px-6 py-4 text-sm text-slate-900">{entry.rider_name}</td>
-                        <td className="px-6 py-4">
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${getTypeColor(entry.entry_type)}`}>
-                            {entry.entry_type.replace(/_/g, ' ').toUpperCase()}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-sm font-semibold text-slate-900">₹{(parseFloat(entry.amount.toString()) || 0).toFixed(2)}</td>
-                        <td className="px-6 py-4 text-sm text-slate-600 max-w-xs truncate">{entry.description}</td>
-                        <td className="px-6 py-4 text-sm text-slate-600">
-                          {new Date(entry.entry_date || entry.created_at).toLocaleDateString('en-GB', { 
-                            day: '2-digit', 
-                            month: 'short', 
-                            year: 'numeric' 
-                          })}
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(entry.status)}`}>
-                            {entry.status.toUpperCase()}
-                          </span>
-                        </td>
+          {/* Riders List */}
+          {selectedWeek && (
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="p-6 border-b border-slate-200">
+                <h3 className="font-display text-lg font-bold text-slate-900">Active Riders</h3>
+              </div>
+              <div className="overflow-x-auto">
+                {loading ? (
+                  <div className="px-6 py-8 text-center text-slate-500">
+                    <div className="inline-block">
+                      <div className="w-8 h-8 border-4 border-slate-200 border-t-brand-600 rounded-full animate-spin"></div>
+                    </div>
+                  </div>
+                ) : ridersList.length === 0 ? (
+                  <div className="px-6 py-8 text-center text-slate-500">
+                    No riders found
+                  </div>
+                ) : (
+                  <table className="w-full">
+                    <thead className="bg-slate-50 border-b border-slate-200">
+                      <tr>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">CEE ID</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Rider Name</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Phone</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Vehicle Type</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Action</th>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-            {filteredEntries.length > 0 && (
-              <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 text-sm text-slate-600">
-                Showing {filteredEntries.length} entr{filteredEntries.length !== 1 ? 'ies' : 'y'}
+                    </thead>
+                    <tbody>
+                      {ridersList.map(rider => (
+                        <tr key={rider.id} className="border-b border-slate-200 hover:bg-slate-50">
+                          <td className="px-6 py-4 text-sm font-semibold text-slate-900">{rider.rider_id}</td>
+                          <td className="px-6 py-4 text-sm text-slate-900">{rider.rider_name}</td>
+                          <td className="px-6 py-4 text-sm text-slate-600">{rider.phone}</td>
+                          <td className="px-6 py-4 text-sm text-slate-600">{rider.vehicle_type || 'N/A'}</td>
+                          <td className="px-6 py-4">
+                            <button
+                              onClick={() => handleRiderClick(rider)}
+                              className="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-sm font-medium transition-all"
+                            >
+                              View Details
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
               </div>
-            )}
-          </div>
+              {ridersList.length > 0 && (
+                <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 text-sm text-slate-600">
+                  Showing {ridersList.length} rider{ridersList.length !== 1 ? 's' : ''}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </main>
+
+      {/* Rider Details Modal */}
+      {selectedRider && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-auto">
+            {/* Modal Header */}
+            <div className="sticky top-0 bg-white border-b border-slate-200 p-6 flex items-center justify-between">
+              <div>
+                <h2 className="font-display text-2xl font-bold text-slate-900">{selectedRider.rider_name}</h2>
+                <p className="text-sm text-slate-600">CEE ID: {selectedRider.rider_id}</p>
+              </div>
+              <button
+                onClick={() => {
+                  setSelectedRider(null);
+                  setRiderDetails([]);
+                }}
+                className="p-2 hover:bg-slate-100 rounded-lg transition-all"
+              >
+                <i className="ph-bold ph-x text-xl text-slate-600"></i>
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 space-y-6">
+              {/* Rider Info */}
+              <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                <h3 className="font-display text-sm font-bold text-slate-900 mb-3">Rider Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs text-slate-600 font-medium mb-1">Phone</p>
+                    <p className="text-sm text-slate-900 font-semibold">{selectedRider.phone}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-600 font-medium mb-1">Vehicle Type</p>
+                    <p className="text-sm text-slate-900 font-semibold">{selectedRider.vehicle_type || 'N/A'}</p>
+                  </div>
+                  {selectedRider.vehicle_number && (
+                    <div>
+                      <p className="text-xs text-slate-600 font-medium mb-1">Vehicle Number</p>
+                      <p className="text-sm text-slate-900 font-semibold">{selectedRider.vehicle_number}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Entries Tabs */}
+              <div>
+                <h3 className="font-display text-sm font-bold text-slate-900 mb-4">All Entries & Details</h3>
+                {riderDetailsLoading ? (
+                  <div className="flex justify-center py-8">
+                    <div className="w-8 h-8 border-4 border-slate-200 border-t-brand-600 rounded-full animate-spin"></div>
+                  </div>
+                ) : riderDetails.length === 0 ? (
+                  <div className="text-center py-8 text-slate-500">
+                    No entries found for this rider
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {/* Group entries by type */}
+                    {(() => {
+                      const grouped = riderDetails.reduce((acc, entry) => {
+                        const type = entry.entry_type;
+                        if (!acc[type]) acc[type] = [];
+                        acc[type].push(entry);
+                        return acc;
+                      }, {} as Record<string, PayrollEntry[]>);
+
+                      return Object.entries(grouped).map(([type, typeEntries]) => (
+                        <div key={type} className="border border-slate-200 rounded-lg overflow-hidden">
+                          {/* Section Header */}
+                          <div className="bg-slate-50 px-4 py-3 border-b border-slate-200">
+                            <h4 className="font-semibold text-sm text-slate-900 flex items-center gap-2">
+                              <span className={`w-2 h-2 rounded-full ${
+                                type === 'referral' ? 'bg-blue-600' :
+                                type === 'incentive' ? 'bg-green-600' :
+                                type === 'advance' ? 'bg-purple-600' :
+                                type === 'security_deposit' ? 'bg-orange-600' :
+                                type === 'damage' ? 'bg-red-600' :
+                                type === 'challan' ? 'bg-yellow-600' : 'bg-slate-600'
+                              }`}></span>
+                              {type.replace(/_/g, ' ').toUpperCase()} ({typeEntries.length})
+                            </h4>
+                          </div>
+
+                          {/* Section Content */}
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                              <thead className="bg-white border-b border-slate-100">
+                                <tr>
+                                  <th className="px-4 py-3 text-left font-semibold text-slate-700">Description</th>
+                                  <th className="px-4 py-3 text-right font-semibold text-slate-700">Amount (₹)</th>
+                                  <th className="px-4 py-3 text-left font-semibold text-slate-700">Date</th>
+                                  <th className="px-4 py-3 text-left font-semibold text-slate-700">Status</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {typeEntries.map(entry => (
+                                  <tr key={entry.id} className="border-b border-slate-100 hover:bg-slate-50">
+                                    <td className="px-4 py-3 text-slate-900">{entry.description}</td>
+                                    <td className="px-4 py-3 text-right font-semibold text-slate-900">
+                                      ₹{(parseFloat(entry.amount.toString()) || 0).toFixed(2)}
+                                    </td>
+                                    <td className="px-4 py-3 text-slate-600">
+                                      {new Date(entry.entry_date || entry.created_at).toLocaleDateString('en-GB', { 
+                                        day: '2-digit', 
+                                        month: 'short', 
+                                        year: 'numeric' 
+                                      })}
+                                    </td>
+                                    <td className="px-4 py-3">
+                                      <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(entry.status)}`}>
+                                        {entry.status.toUpperCase()}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      ));
+                    })()}
+
+                    {/* Summary */}
+                    <div className="bg-brand-50 border border-brand-200 rounded-lg p-4 mt-4">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div>
+                          <p className="text-xs text-slate-600 font-medium mb-1">Total Referrals</p>
+                          <p className="text-lg font-bold text-slate-900">{riderDetails.filter(e => e.entry_type === 'referral').length}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-slate-600 font-medium mb-1">Total Incentives</p>
+                          <p className="text-lg font-bold text-slate-900">₹{riderDetails.filter(e => e.entry_type === 'incentive').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-slate-600 font-medium mb-1">Total Advances</p>
+                          <p className="text-lg font-bold text-slate-900">₹{riderDetails.filter(e => e.entry_type === 'advance').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-slate-600 font-medium mb-1">Total Deductions</p>
+                          <p className="text-lg font-bold text-slate-900">₹{riderDetails.filter(e => ['security_deposit', 'damage', 'challan'].includes(e.entry_type)).reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
