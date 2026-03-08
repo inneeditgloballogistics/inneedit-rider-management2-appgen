@@ -200,7 +200,7 @@ function extractTableData(table: any) {
 
 function parsePayrollText(text: string) {
   // Simple text parsing fallback
-  const lines = text.split('
+  const lines = text.split('\
 ').filter(line => line.trim());
   const riders = [];
 
