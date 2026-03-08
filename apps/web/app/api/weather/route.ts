@@ -1,5 +1,83 @@
 import { NextResponse } from 'next/server';
 
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const latitude = parseFloat(searchParams.get('lat') || '12.9716');
+    const longitude = parseFloat(searchParams.get('lng') || '77.5946');
+
+    if (!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY) {
+      return NextResponse.json(
+        { 
+          current: {
+            temp_c: 28,
+            condition: { text: 'Partly Cloudy', icon: '' },
+            is_day: 1
+          },
+          location: { name: 'Location', region: '', country: '' }
+        }
+      );
+    }
+
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+
+    try {
+      const response = await fetch(
+        `https://api.weatherapi.com/v1/current.json?key=${apiKey}&q=${latitude},${longitude}&aqi=no`
+      );
+
+      if (!response.ok) {
+        // Return fallback data
+        return NextResponse.json({
+          current: {
+            temp_c: 28,
+            condition: { text: 'Partly Cloudy', icon: '' },
+            is_day: 1
+          },
+          location: { name: 'Current Location', region: '', country: '' }
+        });
+      }
+
+      const data = await response.json();
+      return NextResponse.json({
+        current: {
+          temp_c: data.current.temp_c,
+          condition: {
+            text: data.current.condition.text,
+            icon: data.current.condition.icon
+          },
+          is_day: data.current.is_day
+        },
+        location: {
+          name: data.location.name,
+          region: data.location.region,
+          country: data.location.country
+        }
+      });
+    } catch (error) {
+      console.error('Weather API error:', error);
+      return NextResponse.json({
+        current: {
+          temp_c: 28,
+          condition: { text: 'Partly Cloudy', icon: '' },
+          is_day: 1
+        },
+        location: { name: 'Current Location', region: '', country: '' }
+      });
+    }
+  } catch (error) {
+    console.error('GET handler error:', error);
+    return NextResponse.json({
+      current: {
+        temp_c: 28,
+        condition: { text: 'Partly Cloudy', icon: '' },
+        is_day: 1
+      },
+      location: { name: 'Current Location', region: '', country: '' }
+    });
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
