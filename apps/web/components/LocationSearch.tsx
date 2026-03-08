@@ -82,7 +82,7 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
                   lng = result.geometry.location.lng;
                 }
                 
-                console.log('Extracted coordinates:', { lat, lng, type_lat: typeof lat, type_lng: typeof lng });"
+                console.log('Extracted coordinates:', { lat, lng, type_lat: typeof lat, type_lng: typeof lng });
                 
                 // ✅ GEOCODING API - Validate & enhance address with reverse geocoding
                 try {
