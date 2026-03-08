@@ -9,13 +9,13 @@ interface Rider {
   full_name: string;
   phone: string;
   email: string;
-  vehicle_type: string;
-  assigned_hub_id: number;
   vehicle_ownership: string;
+  assigned_hub_id: number;
   status: string;
   assigned_vehicle_id?: number;
   vehicle_number?: string;
   model?: string;
+  vehicle_type?: string;
   vehicle_year?: number;
   vehicle_status?: string;
 }
@@ -337,7 +337,9 @@ export default function PayrollManagement() {
                         <td className="px-6 py-4 text-sm font-semibold text-slate-900">{rider.cee_id}</td>
                         <td className="px-6 py-4 text-sm text-slate-900">{rider.full_name}</td>
                         <td className="px-6 py-4 text-sm text-slate-600">{rider.phone}</td>
-                        <td className="px-6 py-4 text-sm text-slate-600">{rider.vehicle_type}</td>
+                        <td className="px-6 py-4 text-sm text-slate-600">
+                          {rider.vehicle_ownership === 'own' ? 'Own Vehicle' : rider.vehicle_ownership === 'company_ev' ? 'Company Vehicle' : 'Not Assigned'}
+                        </td>
                         <td className="px-6 py-4">
                           <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                             rider.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-700'
@@ -391,11 +393,14 @@ export default function PayrollManagement() {
             </div>
 
             {/* Rider Info */}
-            <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 space-y-2 text-sm">
+              <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 space-y-2 text-sm">
               <div><strong>CEE ID:</strong> {selectedRider.cee_id}</div>
               <div><strong>Phone:</strong> {selectedRider.phone}</div>
               <div><strong>Email:</strong> {selectedRider.email}</div>
-              <div><strong>Vehicle Type:</strong> {selectedRider.vehicle_type}</div>
+              <div>
+                <strong>Vehicle Type:</strong> {' '}
+                {selectedRider.vehicle_ownership === 'own' ? 'Own Vehicle' : selectedRider.vehicle_ownership === 'company_ev' ? 'Company Vehicle' : 'Not Assigned'}
+              </div>
               {selectedRider.vehicle_number && (
                 <>
                   <div><strong>Vehicle Number:</strong> {selectedRider.vehicle_number}</div>

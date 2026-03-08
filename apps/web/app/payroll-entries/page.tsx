@@ -24,6 +24,7 @@ interface Rider {
   rider_id: string;
   rider_name: string;
   phone: string;
+  vehicle_ownership?: string;
   vehicle_type?: string;
   vehicle_number?: string;
 }
@@ -271,7 +272,9 @@ export default function PayrollEntries() {
                           <td className="px-6 py-4 text-sm font-semibold text-slate-900">{rider.rider_id}</td>
                           <td className="px-6 py-4 text-sm text-slate-900">{rider.rider_name}</td>
                           <td className="px-6 py-4 text-sm text-slate-600">{rider.phone}</td>
-                          <td className="px-6 py-4 text-sm text-slate-600">{rider.vehicle_type || 'N/A'}</td>
+                          <td className="px-6 py-4 text-sm text-slate-600">
+                            {rider.vehicle_ownership === 'own' ? 'Own Vehicle' : rider.vehicle_ownership === 'company_ev' ? 'Company Vehicle' : 'Not Assigned'}
+                          </td>
                           <td className="px-6 py-4">
                             <button
                               onClick={() => handleRiderClick(rider)}
@@ -329,7 +332,9 @@ export default function PayrollEntries() {
                   </div>
                   <div>
                     <p className="text-xs text-slate-600 font-medium mb-1">Vehicle Type</p>
-                    <p className="text-sm text-slate-900 font-semibold">{selectedRider.vehicle_type || 'N/A'}</p>
+                    <p className="text-sm text-slate-900 font-semibold">
+                      {selectedRider.vehicle_ownership === 'own' ? 'Own Vehicle' : selectedRider.vehicle_ownership === 'company_ev' ? 'Company Vehicle' : 'Not Assigned'}
+                    </p>
                   </div>
                   {selectedRider.vehicle_number && (
                     <div>

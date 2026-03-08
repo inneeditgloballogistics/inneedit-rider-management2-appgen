@@ -14,13 +14,13 @@ export async function POST(request: NextRequest) {
         r.full_name as rider_name,
         r.phone,
         r.email,
-        r.vehicle_type,
-        r.assigned_hub_id,
         r.vehicle_ownership,
+        r.assigned_hub_id,
         r.status,
         r.assigned_vehicle_id,
         v.vehicle_number,
         v.model,
+        v.vehicle_type,
         v.year as vehicle_year,
         v.status as vehicle_status
       FROM riders r
