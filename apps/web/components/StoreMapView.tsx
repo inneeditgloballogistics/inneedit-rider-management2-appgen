@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import WeatherCard from './WeatherCard';
 
 interface Store {
   id: number;
@@ -221,6 +222,17 @@ export default function StoreMapView() {
         <div className="text-sm text-slate-600">
           <span className="font-medium">{stores.length}</span> store{stores.length !== 1 ? 's' : ''} displayed
         </div>
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 p-4 border-b border-slate-200">
+        {stores.slice(0, 4).map((store) => (
+          <WeatherCard
+            key={store.id}
+            latitude={store.latitude}
+            longitude={store.longitude}
+            locationName={store.store_name}
+            showDetails={false}
+          />
+        ))}
       </div>
       <div ref={mapRef} style={{ height: '600px', width: '100%' }} />
     </div>
