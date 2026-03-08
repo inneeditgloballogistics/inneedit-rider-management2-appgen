@@ -143,19 +143,13 @@ export async function POST(request: Request) {
   }
 }
 
-// GET endpoint for simple reverse geocoding
+// GET endpoint for reverse geocoding and location search
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const lat = searchParams.get("lat");
     const lng = searchParams.get("lng");
-
-    if (!lat || !lng) {
-      return NextResponse.json(
-        { error: "Latitude and longitude query parameters are required" },
-        { status: 400 }
-      );
-    }
+    const query = searchParams.get("q");
 
     if (!GOOGLE_MAPS_API_KEY) {
       return NextResponse.json(
@@ -164,31 +158,117 @@ export async function GET(request: Request) {
       );
     }
 
-    const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GOOGLE_MAPS_API_KEY}`;
-    const data = await makeGeocodingRequest(url);
+    // Location search by query
+    if (query) {
+      const encodedQuery = encodeURIComponent(query);
+      const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodedQuery}&key=${GOOGLE_MAPS_API_KEY}`;
+      const data = await makeGeocodingRequest(url);
 
-    if (data.status !== "OK") {
-      return NextResponse.json(
-        { error: `Geocoding failed: ${data.status}` },
-        { status: 400 }
-      );
+      if (data.status !== "OK") {
+        return NextResponse.json({
+          success: false,
+          results: [],
+        });
+      }
+
+      const results = data.results.map((result: any) => {
+        // Extract address components
+        const addressComponents: any = {
+          formatted_address: result.formatted_address,
+          lat: result.geometry.location.lat,
+          lon: result.geometry.location.lng,
+          display_name: result.formatted_address,
+          address: {
+            city: "",
+            state: "",
+            country: "",
+          },
+        };
+
+        result.address_components.forEach(
+          (component: { long_name: string; short_name: string; types: string[] }) => {
+            if (
+              component.types.includes("locality") ||
+              component.types.includes("administrative_area_level_3")
+            ) {
+              addressComponents.address.city = component.long_name;
+            }
+            if (component.types.includes("administrative_area_level_1")) {
+              addressComponents.address.state = component.short_name;
+            }
+            if (component.types.includes("country")) {
+              addressComponents.address.country = component.long_name;
+            }
+          }
+        );
+
+        return addressComponents;
+      });
+
+      return NextResponse.json({
+        success: true,
+        results: results,
+      });
     }
 
-    const result = data.results[0];
-    if (!result) {
-      return NextResponse.json(
-        { error: "No address found for these coordinates" },
-        { status: 404 }
+    // Reverse geocoding
+    if (lat && lng) {
+      const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GOOGLE_MAPS_API_KEY}`;
+      const data = await makeGeocodingRequest(url);
+
+      if (data.status !== "OK") {
+        return NextResponse.json(
+          { error: `Geocoding failed: ${data.status}` },
+          { status: 400 }
+        );
+      }
+
+      const result = data.results[0];
+      if (!result) {
+        return NextResponse.json(
+          { error: "No address found for these coordinates" },
+          { status: 404 }
+        );
+      }
+
+      // Extract address components
+      const addressComponents: any = {
+        city: "",
+        state: "",
+        country: "",
+      };
+
+      result.address_components.forEach(
+        (component: { long_name: string; short_name: string; types: string[] }) => {
+          if (
+            component.types.includes("locality") ||
+            component.types.includes("administrative_area_level_3")
+          ) {
+            addressComponents.city = component.long_name;
+          }
+          if (component.types.includes("administrative_area_level_1")) {
+            addressComponents.state = component.short_name;
+          }
+          if (component.types.includes("country")) {
+            addressComponents.country = component.long_name;
+          }
+        }
       );
+
+      return NextResponse.json({
+        success: true,
+        address: result.formatted_address,
+        latitude: result.geometry.location.lat,
+        longitude: result.geometry.location.lng,
+        placeId: result.place_id,
+        addressComponents,
+      });
     }
 
-    return NextResponse.json({
-      success: true,
-      address: result.formatted_address,
-      latitude: result.geometry.location.lat,
-      longitude: result.geometry.location.lng,
-      placeId: result.place_id,
-    });
+    return NextResponse.json(
+      { error: "Either 'lat' and 'lng' or 'q' query parameters are required" },
+      { status: 400 }
+    );
   } catch (error) {
     console.error("Geocoding API GET error:", error);
     return NextResponse.json(

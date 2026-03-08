@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import WeatherSettingsModal from './WeatherSettingsModal';
 
 interface WeatherData {
   current: {
@@ -30,9 +31,27 @@ export default function WeatherBadge({ latitude: propLat, longitude: propLng, lo
   const [time, setTime] = useState<string>('');
   const [latitude, setLatitude] = useState<number | null>(propLat || null);
   const [longitude, setLongitude] = useState<number | null>(propLng || null);
+  const [displayName, setDisplayName] = useState<string>(locationName);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   useEffect(() => {
-    // Auto-detect user location if not provided
+    // Load saved location from localStorage
+    if (typeof window !== 'undefined') {
+      const savedLocation = localStorage.getItem('weatherLocation');
+      if (savedLocation) {
+        try {
+          const parsed = JSON.parse(savedLocation);
+          setLatitude(parsed.latitude);
+          setLongitude(parsed.longitude);
+          setDisplayName(parsed.name);
+          return;
+        } catch (e) {
+          console.error('Error parsing saved location:', e);
+        }
+      }
+    }
+
+    // Auto-detect user location if not provided and not saved
     if (!latitude || !longitude) {
       if (typeof window !== 'undefined' && navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
@@ -116,25 +135,56 @@ export default function WeatherBadge({ latitude: propLat, longitude: propLng, lo
     return weather.current.is_day ? '☀️' : '🌙';
   };
 
-  const displayName = locationName || weather.location.name || 'Your Location';
+  const finalDisplayName = weather ? weather.location.name : displayName;
   const today = new Date();
   const dayName = today.toLocaleDateString('en-US', { weekday: 'short' });
   const monthDay = today.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
+  const handleLocationSelect = (lat: number, lng: number, name: string) => {
+    setLatitude(lat);
+    setLongitude(lng);
+    setDisplayName(name);
+    
+    // Save to localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('weatherLocation', JSON.stringify({
+        latitude: lat,
+        longitude: lng,
+        name: name,
+      }));
+    }
+  };
+
   return (
-    <div className="bg-gradient-to-r from-blue-400 to-blue-500 rounded-full px-4 py-2 text-white shadow-lg hover:shadow-xl transition-shadow flex items-center gap-2 whitespace-nowrap">
-      <div className="text-2xl flex-shrink-0">{getWeatherIcon()}</div>
+    <>
+      <div
+        onClick={() => setIsSettingsOpen(true)}
+        className="bg-gradient-to-r from-blue-400 to-blue-500 rounded-full px-4 py-2 text-white shadow-lg hover:shadow-xl hover:cursor-pointer transition-all flex items-center gap-2 whitespace-nowrap">
       
-      <div className="flex flex-col gap-0">
-        <div className="flex items-center gap-1.5">
-          <span className="text-xs font-semibold">📍 {displayName}</span>
-          <span className="text-base font-bold">{Math.round(weather.current.temp_c)}°C</span>
-        </div>
-        <div className="flex items-center gap-1.5 text-xs opacity-90">
-          <span>{dayName}, {monthDay}</span>
-          <span className="font-medium text-[11px]">{time}</span>
+        <div className="text-2xl flex-shrink-0">{getWeatherIcon()}</div>
+        
+        <div className="flex flex-col gap-0">
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-semibold">📍 {finalDisplayName}</span>
+            <span className="text-base font-bold">{Math.round(weather.current.temp_c)}°C</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-xs opacity-90">
+            <span>{dayName}, {monthDay}</span>
+            <span className="font-medium text-[11px]">{time}</span>
+          </div>
         </div>
       </div>
-    </div>
+
+      <WeatherSettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        onLocationSelect={handleLocationSelect}
+        currentLocation={{
+          latitude: latitude || 0,
+          longitude: longitude || 0,
+          name: finalDisplayName,
+        }}
+      />
+    </>
   );
 }
