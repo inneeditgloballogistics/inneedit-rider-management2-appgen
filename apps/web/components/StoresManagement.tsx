@@ -119,11 +119,20 @@ export default function StoresManagement() {
     store.store_code?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const generateStoreCode = (storeName: string): string => {
-    // Generate code from store name: Take first 3 letters + timestamp
-    const prefix = storeName.substring(0, 3).toUpperCase();
-    const timestamp = Date.now().toString().slice(-4);
-    return `${prefix}${timestamp}`;
+  const generateStoreCode = async (): Promise<string> => {
+    try {
+      // Get the highest existing store code number
+      const maxCode = stores.reduce((max, store) => {
+        const match = store.store_code?.match(/STR-(\d+)/);
+        return match ? Math.max(max, parseInt(match[1])) : max;
+      }, 0);
+      
+      const nextNumber = maxCode + 1;
+      return `STR-${String(nextNumber).padStart(3, '0')}`; // STR-001, STR-002, etc.
+    } catch (error) {
+      console.error('Error generating store code:', error);
+      return `STR-${String(stores.length + 1).padStart(3, '0')}`; // Fallback to count + 1
+    }
   };
 
   const handleAddSubmit = async (e: React.FormEvent) => {
@@ -140,7 +149,7 @@ export default function StoresManagement() {
     }
 
     // Auto-generate code if not provided
-    const storeCode = newStore.store_code.trim() || generateStoreCode(newStore.store_name);
+    const storeCode = newStore.store_code.trim() || await generateStoreCode();
     
     try {
       const payload = {
@@ -434,7 +443,10 @@ export default function StoresManagement() {
                     />
                     <button
                       type="button"
-                      onClick={() => setNewStore({...newStore, store_code: generateStoreCode(newStore.store_name)})}
+                      onClick={async () => {
+                        const code = await generateStoreCode();
+                        setNewStore({...newStore, store_code: code});
+                      }}
                       className="px-3 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 font-medium text-sm whitespace-nowrap"
                       title="Generate a new code"
                     >
@@ -599,7 +611,10 @@ export default function StoresManagement() {
                     />
                     <button
                       type="button"
-                      onClick={() => setEditItem({...editItem, store_code: generateStoreCode(editItem.store_name)})}
+                      onClick={async () => {
+                        const code = await generateStoreCode();
+                        setEditItem({...editItem, store_code: code});
+                      }}
                       className="px-3 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 font-medium text-sm whitespace-nowrap"
                       title="Generate a new code"
                     >

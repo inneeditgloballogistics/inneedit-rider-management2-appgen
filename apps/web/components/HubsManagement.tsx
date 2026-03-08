@@ -82,11 +82,20 @@ export default function HubsManagement() {
     }
   };
 
-  const generateHubCode = (hubName: string): string => {
-    // Generate code from hub name: Take first 3 letters + timestamp
-    const prefix = hubName.substring(0, 3).toUpperCase();
-    const timestamp = Date.now().toString().slice(-4);
-    return `${prefix}${timestamp}`;
+  const generateHubCode = async (): Promise<string> => {
+    try {
+      // Get the highest existing hub code number
+      const maxCode = hubs.reduce((max, hub) => {
+        const match = hub.hub_code?.match(/HUB-(\d+)/);
+        return match ? Math.max(max, parseInt(match[1])) : max;
+      }, 0);
+      
+      const nextNumber = maxCode + 1;
+      return `HUB-${String(nextNumber).padStart(3, '0')}`; // HUB-001, HUB-002, etc.
+    } catch (error) {
+      console.error('Error generating hub code:', error);
+      return `HUB-${String(hubs.length + 1).padStart(3, '0')}`; // Fallback to count + 1
+    }
   };
 
   const handleAddSubmit = async (e: React.FormEvent) => {
@@ -98,7 +107,7 @@ export default function HubsManagement() {
     }
 
     // Auto-generate code if not provided
-    const hubCode = newHub.hub_code.trim() || generateHubCode(newHub.hub_name);
+    const hubCode = newHub.hub_code.trim() || await generateHubCode();
     
     try {
       const res = await fetch('/api/hubs', {
@@ -411,7 +420,10 @@ export default function HubsManagement() {
                     />
                     <button
                       type="button"
-                      onClick={() => setNewHub({...newHub, hub_code: generateHubCode(newHub.hub_name)})}
+                      onClick={async () => {
+                        const code = await generateHubCode();
+                        setNewHub({...newHub, hub_code: code});
+                      }}
                       className="px-3 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 font-medium text-sm whitespace-nowrap"
                       title="Generate a new code"
                     >
@@ -567,7 +579,10 @@ export default function HubsManagement() {
                     />
                     <button
                       type="button"
-                      onClick={() => setEditItem({...editItem, hub_code: generateHubCode(editItem.hub_name)})}
+                      onClick={async () => {
+                        const code = await generateHubCode();
+                        setEditItem({...editItem, hub_code: code});
+                      }}
                       className="px-3 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 font-medium text-sm whitespace-nowrap"
                       title="Generate a new code"
                     >
