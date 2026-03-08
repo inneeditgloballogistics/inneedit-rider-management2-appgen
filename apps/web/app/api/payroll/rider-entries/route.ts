@@ -9,88 +9,85 @@ export async function POST(request: Request) {
       return NextResponse.json({ entries: [] });
     }
 
-    // Get rider's cee_id and full_name first
-    const riderInfo = await sql`
-      SELECT cee_id, full_name FROM riders WHERE user_id = ${rider_id} LIMIT 1
-    `;
-    const cee_id = riderInfo?.[0]?.cee_id || rider_id;
-    const full_name = riderInfo?.[0]?.full_name || '';
-
     let entries: any[] = [];
 
-    // Fetch referrals
+    // Fetch referrals with rider details joined
     const referrals = await sql`
       SELECT 
-        id,
-        referrer_id as rider_id,
-        referrer_name as full_name,
-        '${cee_id}' as cee_id,
+        r.id,
+        r.referrer_id as rider_id,
+        COALESCE(rid.cee_id, r.referrer_cee_id) as cee_id,
+        COALESCE(rid.full_name, r.referrer_name) as full_name,
         'referral' as entry_type,
         0 as amount,
-        CONCAT(referred_name, ' (', referred_phone, ')') as description,
-        status,
-        created_at as entry_date,
-        created_at
-      FROM referrals
-      WHERE referrer_id = ${rider_id}
-      ORDER BY created_at DESC
+        CONCAT(r.referred_name, ' (', r.referred_phone, ')') as description,
+        r.status,
+        r.created_at as entry_date,
+        r.created_at
+      FROM referrals r
+      LEFT JOIN riders rid ON r.referrer_id = rid.user_id
+      WHERE r.referrer_id = ${rider_id}
+      ORDER BY r.created_at DESC
     `;
     entries = [...entries, ...referrals];
 
-    // Fetch incentives
+    // Fetch incentives with rider details joined
     const incentives = await sql`
       SELECT 
-        id,
-        rider_id,
-        '${full_name}' as full_name,
-        '${cee_id}' as cee_id,
+        i.id,
+        i.rider_id,
+        rid.cee_id,
+        rid.full_name,
         'incentive' as entry_type,
-        amount,
-        CONCAT(incentive_type, ': ', description) as description,
+        i.amount,
+        CONCAT(i.incentive_type, ': ', i.description) as description,
         'completed' as status,
-        incentive_date as entry_date,
-        created_at
-      FROM incentives
-      WHERE rider_id = ${rider_id}
-      ORDER BY incentive_date DESC
+        i.incentive_date as entry_date,
+        i.created_at
+      FROM incentives i
+      LEFT JOIN riders rid ON i.rider_id = rid.user_id
+      WHERE i.rider_id = ${rider_id}
+      ORDER BY i.incentive_date DESC
     `;
     entries = [...entries, ...incentives];
 
-    // Fetch advances
+    // Fetch advances with rider details joined
     const advances = await sql`
       SELECT 
-        id,
-        rider_id,
-        rider_name as full_name,
-        '${cee_id}' as cee_id,
+        a.id,
+        a.rider_id,
+        rid.cee_id,
+        rid.full_name,
         'advance' as entry_type,
-        amount,
-        CONCAT('Reason: ', reason) as description,
-        status,
-        requested_at as entry_date,
-        requested_at as created_at
-      FROM advances
-      WHERE rider_id = ${rider_id}
-      ORDER BY requested_at DESC
+        a.amount,
+        CONCAT('Reason: ', a.reason) as description,
+        a.status,
+        a.requested_at as entry_date,
+        a.requested_at as created_at
+      FROM advances a
+      LEFT JOIN riders rid ON a.rider_id = rid.user_id
+      WHERE a.rider_id = ${rider_id}
+      ORDER BY a.requested_at DESC
     `;
     entries = [...entries, ...advances];
 
-    // Fetch deductions
+    // Fetch deductions with rider details joined
     const deductions = await sql`
       SELECT 
-        id,
-        rider_id,
-        '${full_name}' as full_name,
-        '${cee_id}' as cee_id,
-        deduction_type as entry_type,
-        amount,
-        description,
+        d.id,
+        d.rider_id,
+        rid.cee_id,
+        rid.full_name,
+        d.deduction_type as entry_type,
+        d.amount,
+        d.description,
         'completed' as status,
-        deduction_date as entry_date,
-        created_at
-      FROM deductions
-      WHERE rider_id = ${rider_id}
-      ORDER BY deduction_date DESC
+        d.deduction_date as entry_date,
+        d.created_at
+      FROM deductions d
+      LEFT JOIN riders rid ON d.rider_id = rid.user_id
+      WHERE d.rider_id = ${rider_id}
+      ORDER BY d.deduction_date DESC
     `;
     entries = [...entries, ...deductions];
 

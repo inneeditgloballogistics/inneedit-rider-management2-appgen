@@ -22,7 +22,9 @@ interface PayrollEntry {
 interface Rider {
   id: number;
   rider_id: string;
+  cee_id?: string;
   rider_name: string;
+  full_name?: string;
   phone: string;
   vehicle_ownership?: string;
   vehicle_type?: string;
@@ -269,8 +271,8 @@ export default function PayrollEntries() {
                     <tbody>
                       {ridersList.map(rider => (
                         <tr key={rider.id} className="border-b border-slate-200 hover:bg-slate-50">
-                          <td className="px-6 py-4 text-sm font-semibold text-slate-900">{rider.rider_id}</td>
-                          <td className="px-6 py-4 text-sm text-slate-900">{rider.rider_name}</td>
+                          <td className="px-6 py-4 text-sm font-semibold text-slate-900">{rider.cee_id || rider.rider_id}</td>
+                          <td className="px-6 py-4 text-sm text-slate-900">{rider.full_name || rider.rider_name}</td>
                           <td className="px-6 py-4 text-sm text-slate-600">{rider.phone}</td>
                           <td className="px-6 py-4 text-sm text-slate-600">
                             {rider.vehicle_ownership === 'own' ? 'Own Vehicle' : rider.vehicle_ownership === 'company_ev' ? 'Company Vehicle' : 'Not Assigned'}
@@ -306,8 +308,8 @@ export default function PayrollEntries() {
             {/* Modal Header */}
             <div className="sticky top-0 bg-white border-b border-slate-200 p-6 flex items-center justify-between">
               <div>
-                <h2 className="font-display text-2xl font-bold text-slate-900">{selectedRider.rider_name}</h2>
-                <p className="text-sm text-slate-600">CEE ID: {selectedRider.rider_id}</p>
+                <h2 className="font-display text-2xl font-bold text-slate-900">{selectedRider.full_name || selectedRider.rider_name}</h2>
+                <p className="text-sm text-slate-600">CEE ID: {selectedRider.cee_id || selectedRider.rider_id}</p>
               </div>
               <button
                 onClick={() => {
