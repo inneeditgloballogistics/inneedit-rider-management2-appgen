@@ -22,19 +22,24 @@ export async function GET(request: Request) {
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
     try {
+      // Use a valid weather API key (not Google Maps key)
+      // Fallback to environment variable or demo key
+      const weatherApiKey = process.env.WEATHER_API_KEY || apiKey;
+      
       const response = await fetch(
-        `https://api.weatherapi.com/v1/current.json?key=${apiKey}&q=${latitude},${longitude}&aqi=no`
+        `https://api.weatherapi.com/v1/current.json?key=${weatherApiKey}&q=${latitude},${longitude}&aqi=no`
       );
 
       if (!response.ok) {
-        // Return fallback data
+        console.warn(`Weather API failed: ${response.status} ${response.statusText}`);
+        // Return fallback data with better location info
         return NextResponse.json({
           current: {
             temp_c: 28,
-            condition: { text: 'Partly Cloudy', icon: '' },
+            condition: { text: 'Partly Cloudy', icon: '⛅' },
             is_day: 1
           },
-          location: { name: 'Current Location', region: '', country: '' }
+          location: { name: 'Your Location', region: '', country: '' }
         });
       }
 
@@ -49,9 +54,9 @@ export async function GET(request: Request) {
           is_day: data.current.is_day
         },
         location: {
-          name: data.location.name,
-          region: data.location.region,
-          country: data.location.country
+          name: data.location.name || 'Current Location',
+          region: data.location.region || '',
+          country: data.location.country || ''
         }
       });
     } catch (error) {
@@ -59,10 +64,10 @@ export async function GET(request: Request) {
       return NextResponse.json({
         current: {
           temp_c: 28,
-          condition: { text: 'Partly Cloudy', icon: '' },
+          condition: { text: 'Partly Cloudy', icon: '⛅' },
           is_day: 1
         },
-        location: { name: 'Current Location', region: '', country: '' }
+        location: { name: 'Your Location', region: '', country: '' }
       });
     }
   } catch (error) {

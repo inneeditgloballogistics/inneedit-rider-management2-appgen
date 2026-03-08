@@ -92,7 +92,7 @@ export default function WeatherBadge({ latitude = 12.9716, longitude = 77.5946, 
     return weather.current.is_day ? '☀️' : '🌙';
   };
 
-  const displayName = locationName || weather.location.name;
+  const displayName = locationName || weather.location.name || 'Your Location';
   const today = new Date();
   const dayName = today.toLocaleDateString('en-US', { weekday: 'short' });
   const monthDay = today.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -102,9 +102,9 @@ export default function WeatherBadge({ latitude = 12.9716, longitude = 77.5946, 
       <div className="text-3xl flex-shrink-0">{getWeatherIcon()}</div>
       
       <div className="flex flex-col gap-0.5">
-        <div className="flex items-baseline gap-2">
-          <span className="text-lg font-bold">{Math.round(weather.current.temp_c)}°</span>
-          <span className="text-xs font-medium opacity-90">📍 {displayName}</span>
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-semibold">📍 {displayName}</span>
+          <span className="text-lg font-bold">{Math.round(weather.current.temp_c)}°C</span>
         </div>
         <div className="flex items-center gap-2 text-xs opacity-90">
           <span>{dayName}, {monthDay}</span>
