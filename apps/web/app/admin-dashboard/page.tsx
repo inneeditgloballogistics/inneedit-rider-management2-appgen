@@ -356,7 +356,7 @@ function AdminDashboardContent() {
           </nav>
         </header>
 
-        <main className="pt-[140px] pb-12 px-8">
+        <main className="pt-[120px] pb-12 px-8">
           <div className="max-w-7xl mx-auto space-y-8">
             
             {activeTab === 'dashboard' && (

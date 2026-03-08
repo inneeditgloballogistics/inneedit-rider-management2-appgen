@@ -122,17 +122,17 @@ export default function WeatherBadge({ latitude: propLat, longitude: propLng, lo
   const monthDay = today.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
   return (
-    <div className="bg-gradient-to-r from-blue-400 to-blue-500 rounded-full px-5 py-3 text-white shadow-lg hover:shadow-xl transition-shadow flex items-center gap-3 whitespace-nowrap">
-      <div className="text-3xl flex-shrink-0">{getWeatherIcon()}</div>
+    <div className="bg-gradient-to-r from-blue-400 to-blue-500 rounded-full px-4 py-2 text-white shadow-lg hover:shadow-xl transition-shadow flex items-center gap-2 whitespace-nowrap">
+      <div className="text-2xl flex-shrink-0">{getWeatherIcon()}</div>
       
-      <div className="flex flex-col gap-0.5">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold">📍 {displayName}</span>
-          <span className="text-lg font-bold">{Math.round(weather.current.temp_c)}°C</span>
+      <div className="flex flex-col gap-0">
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs font-semibold">📍 {displayName}</span>
+          <span className="text-base font-bold">{Math.round(weather.current.temp_c)}°C</span>
         </div>
-        <div className="flex items-center gap-2 text-xs opacity-90">
+        <div className="flex items-center gap-1.5 text-xs opacity-90">
           <span>{dayName}, {monthDay}</span>
-          <span className="font-medium">{time}</span>
+          <span className="font-medium text-[11px]">{time}</span>
         </div>
       </div>
     </div>
