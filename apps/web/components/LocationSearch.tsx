@@ -36,26 +36,42 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
         const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
           types: ['geocode'],
           sessionToken: sessionTokenRef.current,
-          fields: ['geometry', 'formatted_address', 'name', 'place_id', 'address_components'],
-          componentRestrictions: {} // Empty object allows worldwide search
+          fields: ['place_id', 'formatted_address', 'name']
         });
 
         autocompleteRef.current = autocomplete;
 
         autocomplete.addListener('place_changed', () => {
           const place = autocomplete.getPlace();
-          if (place.geometry?.location && place.formatted_address) {
-            const lat = typeof place.geometry.location.lat === 'function' 
-              ? place.geometry.location.lat() 
-              : place.geometry.location.lat;
-            const lng = typeof place.geometry.location.lng === 'function' 
-              ? place.geometry.location.lng() 
-              : place.geometry.location.lng;
-            onChange(place.formatted_address, lat, lng, place.formatted_address);
-            
-            // Reset session token after selection for next search
-            sessionTokenRef.current = new window.google.maps.places.AutocompleteSessionToken();
+          
+          if (!place.place_id) {
+            console.warn('No place selected');
+            return;
           }
+
+          // Use PlacesService to get full place details including geometry
+          const service = new window.google.maps.places.PlacesService(document.createElement('div'));
+          
+          service.getDetails({
+            placeId: place.place_id,
+            fields: ['geometry', 'formatted_address', 'address_components', 'name']
+          }, (result: any, status: string) => {
+            if (status === window.google.maps.places.PlacesServiceStatus.OK && result.geometry?.location) {
+              const lat = typeof result.geometry.location.lat === 'function' 
+                ? result.geometry.location.lat() 
+                : result.geometry.location.lat;
+              const lng = typeof result.geometry.location.lng === 'function' 
+                ? result.geometry.location.lng() 
+                : result.geometry.location.lng;
+              
+              onChange(result.formatted_address, lat, lng, result.formatted_address);
+              
+              // Reset session token after selection for next search
+              sessionTokenRef.current = new window.google.maps.places.AutocompleteSessionToken();
+            } else {
+              console.error('PlacesService error:', status);
+            }
+          });
         });
 
         setIsInitialized(true);
