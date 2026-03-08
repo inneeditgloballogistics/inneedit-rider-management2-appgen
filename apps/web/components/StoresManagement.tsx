@@ -268,26 +268,35 @@ export default function StoresManagement() {
                 <label className="block text-sm font-semibold text-slate-900 mb-2">Search Location</label>
                 <LocationSearch
                   value={formData.location || ''}
-                  onChange={(location, lat, lng) => {
-                    const parts = location.split(',').map((p: string) => p.trim());
-                    let city = '', state = '', pincode = '';
-                    
-                    if (parts.length >= 2) {
-                      city = parts[parts.length - 3] || '';
-                      state = parts[parts.length - 2] || '';
-                      const lastPart = parts[parts.length - 1];
-                      pincode = lastPart?.match(/\d{6}/) ? lastPart : '';
+                  onChange={(location, lat, lng, address) => {
+                    // Only update if lat/lng are provided (i.e., place was selected from Google)
+                    if (lat !== undefined && lng !== undefined) {
+                      const parts = (address || location).split(',').map((p: string) => p.trim());
+                      let city = '', state = '', pincode = '';
+                      
+                      if (parts.length >= 2) {
+                        city = parts[parts.length - 3] || '';
+                        state = parts[parts.length - 2] || '';
+                        const lastPart = parts[parts.length - 1];
+                        pincode = lastPart?.match(/\d{6}/) ? lastPart : '';
+                      }
+                      
+                      setFormData({
+                        ...formData,
+                        location: address || location,
+                        latitude: lat,
+                        longitude: lng,
+                        city: city || formData.city,
+                        state: state || formData.state,
+                        pincode: pincode || formData.pincode
+                      });
+                    } else {
+                      // Just update the search text if still typing
+                      setFormData({
+                        ...formData,
+                        location
+                      });
                     }
-                    
-                    setFormData({
-                      ...formData,
-                      location,
-                      latitude: lat,
-                      longitude: lng,
-                      city: city || formData.city,
-                      state: state || formData.state,
-                      pincode: pincode || formData.pincode
-                    });
                   }}
                   placeholder="Search location (City, Area, State, etc.)"
                 />
@@ -461,26 +470,35 @@ export default function StoresManagement() {
                 <label className="block text-sm font-semibold text-slate-900 mb-2">Search Location</label>
                 <LocationSearch
                   value={editItem.location || ''}
-                  onChange={(location, lat, lng) => {
-                    const parts = location.split(',').map((p: string) => p.trim());
-                    let city = '', state = '', pincode = '';
-                    
-                    if (parts.length >= 2) {
-                      city = parts[parts.length - 3] || '';
-                      state = parts[parts.length - 2] || '';
-                      const lastPart = parts[parts.length - 1];
-                      pincode = lastPart?.match(/\d{6}/) ? lastPart : '';
+                  onChange={(location, lat, lng, address) => {
+                    // Only update if lat/lng are provided (i.e., place was selected from Google)
+                    if (lat !== undefined && lng !== undefined) {
+                      const parts = (address || location).split(',').map((p: string) => p.trim());
+                      let city = '', state = '', pincode = '';
+                      
+                      if (parts.length >= 2) {
+                        city = parts[parts.length - 3] || '';
+                        state = parts[parts.length - 2] || '';
+                        const lastPart = parts[parts.length - 1];
+                        pincode = lastPart?.match(/\d{6}/) ? lastPart : '';
+                      }
+                      
+                      setEditItem({
+                        ...editItem,
+                        location: address || location,
+                        latitude: lat,
+                        longitude: lng,
+                        city: city || editItem.city,
+                        state: state || editItem.state,
+                        pincode: pincode || editItem.pincode
+                      });
+                    } else {
+                      // Just update the search text if still typing
+                      setEditItem({
+                        ...editItem,
+                        location
+                      });
                     }
-                    
-                    setEditItem({
-                      ...editItem,
-                      location,
-                      latitude: lat,
-                      longitude: lng,
-                      city: city || editItem.city,
-                      state: state || editItem.state,
-                      pincode: pincode || editItem.pincode
-                    });
                   }}
                   placeholder="Update location"
                 />
