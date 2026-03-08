@@ -119,10 +119,17 @@ export default function StoresManagement() {
     store.store_code?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const generateStoreCode = (storeName: string): string => {
+    // Generate code from store name: Take first 3 letters + timestamp
+    const prefix = storeName.substring(0, 3).toUpperCase();
+    const timestamp = Date.now().toString().slice(-4);
+    return `${prefix}${timestamp}`;
+  };
+
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!newStore.store_name || !newStore.store_code || !newStore.location) {
+    if (!newStore.store_name || !newStore.location) {
       alert('Please fill in required fields');
       return;
     }
@@ -131,6 +138,9 @@ export default function StoresManagement() {
       alert('Please select a location from the search results');
       return;
     }
+
+    // Auto-generate code if not provided
+    const storeCode = newStore.store_code.trim() || generateStoreCode(newStore.store_name);
     
     try {
       const payload = {
@@ -142,7 +152,7 @@ export default function StoresManagement() {
       const res = await fetch('/api/stores', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({...payload, store_code: storeCode})
       });
       
       if (res.ok) {
@@ -413,14 +423,25 @@ export default function StoresManagement() {
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-slate-900 mb-2">Store Code <span className="text-red-500">*</span></label>
-                  <input
-                    type="text"
-                    value={newStore.store_code || ''}
-                    onChange={(e) => setNewStore({...newStore, store_code: e.target.value})}
-                    placeholder="Store code"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                  />
+                  <label className="block text-sm font-semibold text-slate-900 mb-2">Store Code</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newStore.store_code || ''}
+                      onChange={(e) => setNewStore({...newStore, store_code: e.target.value})}
+                      placeholder="Auto-generated code"
+                      className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setNewStore({...newStore, store_code: generateStoreCode(newStore.store_name)})}
+                      className="px-3 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 font-medium text-sm whitespace-nowrap"
+                      title="Generate a new code"
+                    >
+                      <i className="ph-bold ph-shuffle text-lg"></i>
+                    </button>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">Leave empty to auto-generate</p>
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-slate-900 mb-2">Client</label>
@@ -568,13 +589,23 @@ export default function StoresManagement() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-slate-900 mb-2">Store Code</label>
-                  <input
-                    type="text"
-                    value={editItem.store_code || ''}
-                    onChange={(e) => setEditItem({...editItem, store_code: e.target.value})}
-                    placeholder="Store code"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={editItem.store_code || ''}
+                      onChange={(e) => setEditItem({...editItem, store_code: e.target.value})}
+                      placeholder="Store code"
+                      className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setEditItem({...editItem, store_code: generateStoreCode(editItem.store_name)})}
+                      className="px-3 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 font-medium text-sm whitespace-nowrap"
+                      title="Generate a new code"
+                    >
+                      <i className="ph-bold ph-shuffle text-lg"></i>
+                    </button>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-slate-900 mb-2">Client</label>

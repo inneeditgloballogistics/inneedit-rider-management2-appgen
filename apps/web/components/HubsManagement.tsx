@@ -82,19 +82,29 @@ export default function HubsManagement() {
     }
   };
 
+  const generateHubCode = (hubName: string): string => {
+    // Generate code from hub name: Take first 3 letters + timestamp
+    const prefix = hubName.substring(0, 3).toUpperCase();
+    const timestamp = Date.now().toString().slice(-4);
+    return `${prefix}${timestamp}`;
+  };
+
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!newHub.hub_name || !newHub.hub_code || !newHub.location) {
+    if (!newHub.hub_name || !newHub.location) {
       alert('Please fill in required fields');
       return;
     }
+
+    // Auto-generate code if not provided
+    const hubCode = newHub.hub_code.trim() || generateHubCode(newHub.hub_name);
     
     try {
       const res = await fetch('/api/hubs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newHub)
+        body: JSON.stringify({...newHub, hub_code: hubCode})
       });
       
       if (res.ok) {
@@ -390,14 +400,25 @@ export default function HubsManagement() {
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-slate-900 mb-2">Hub Code <span className="text-red-500">*</span></label>
-                  <input
-                    type="text"
-                    value={newHub.hub_code || ''}
-                    onChange={(e) => setNewHub({...newHub, hub_code: e.target.value})}
-                    placeholder="Hub code"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                  />
+                  <label className="block text-sm font-semibold text-slate-900 mb-2">Hub Code</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newHub.hub_code || ''}
+                      onChange={(e) => setNewHub({...newHub, hub_code: e.target.value})}
+                      placeholder="Auto-generated code"
+                      className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setNewHub({...newHub, hub_code: generateHubCode(newHub.hub_name)})}
+                      className="px-3 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 font-medium text-sm whitespace-nowrap"
+                      title="Generate a new code"
+                    >
+                      <i className="ph-bold ph-shuffle text-lg"></i>
+                    </button>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">Leave empty to auto-generate</p>
                 </div>
                 <div></div>
               </div>
@@ -536,13 +557,23 @@ export default function HubsManagement() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-slate-900 mb-2">Hub Code</label>
-                  <input
-                    type="text"
-                    value={editItem.hub_code || ''}
-                    onChange={(e) => setEditItem({...editItem, hub_code: e.target.value})}
-                    placeholder="Hub code"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={editItem.hub_code || ''}
+                      onChange={(e) => setEditItem({...editItem, hub_code: e.target.value})}
+                      placeholder="Hub code"
+                      className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setEditItem({...editItem, hub_code: generateHubCode(editItem.hub_name)})}
+                      className="px-3 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 font-medium text-sm whitespace-nowrap"
+                      title="Generate a new code"
+                    >
+                      <i className="ph-bold ph-shuffle text-lg"></i>
+                    </button>
+                  </div>
                 </div>
                 <div></div>
               </div>
