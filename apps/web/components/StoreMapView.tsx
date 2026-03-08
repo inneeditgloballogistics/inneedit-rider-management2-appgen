@@ -48,7 +48,8 @@ export default function StoreMapView() {
   };
 
   useEffect(() => {
-    if (!mapRef.current || !window.google || stores.length === 0 || map) return;
+    if (!mapRef.current || !window.google || stores.length === 0) return;
+    if (map) return;
 
     // Initialize map centered on first store or default location
     const center = stores[0]
