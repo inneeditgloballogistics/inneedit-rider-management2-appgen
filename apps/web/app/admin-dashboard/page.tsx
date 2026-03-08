@@ -57,7 +57,7 @@ function AdminDashboardContent() {
   
   const [ridersCount, setRidersCount] = useState(0);
   const [vehiclesCount, setVehiclesCount] = useState(0);
-
+  const [hubsCount, setHubsCount] = useState(0);
   const [storesCount, setStoresCount] = useState(0);
 
   const [payrollMode, setPayrollMode] = useState<'manual' | 'ai' | 'history'>('manual');
@@ -99,20 +99,26 @@ function AdminDashboardContent() {
 
   const fetchCounts = async () => {
     try {
-      const [ridersRes, vehiclesRes, advancesRes, referralsRes] = await Promise.all([
+      const [ridersRes, vehiclesRes, hubsRes, storesRes, advancesRes, referralsRes] = await Promise.all([
         fetch('/api/riders?action=count'),
         fetch('/api/vehicles?action=count'),
+        fetch('/api/hubs?action=count'),
+        fetch('/api/stores?action=count'),
         fetch('/api/advances?action=count'),
         fetch('/api/referrals?action=count')
       ]);
       
       const ridersData = await ridersRes.json();
       const vehiclesData = await vehiclesRes.json();
+      const hubsData = await hubsRes.json();
+      const storesData = await storesRes.json();
       const advancesData = await advancesRes.json();
       const referralsData = await referralsRes.json();
       
       setRidersCount(ridersData.count || 0);
       setVehiclesCount(vehiclesData.count || 0);
+      setHubsCount(hubsData.count || 0);
+      setStoresCount(storesData.count || 0);
       setPendingAdvancesCount(advancesData.pendingCount || 0);
       setPendingReferralsCount(referralsData.pendingCount || 0);
     } catch (error) {
@@ -371,7 +377,13 @@ function AdminDashboardContent() {
                     </div>
                     <p className="text-4xl font-bold text-slate-900">{vehiclesCount}</p>
                   </div>
-
+                  <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <div className="flex items-center gap-2 mb-3">
+                      <i className="ph-duotone ph-building text-2xl text-purple-600"></i>
+                      <h3 className="text-xs font-semibold text-slate-500 uppercase">Active Hubs</h3>
+                    </div>
+                    <p className="text-4xl font-bold text-slate-900">{hubsCount}</p>
+                  </div>
                   <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                     <div className="flex items-center gap-2 mb-3">
                       <i className="ph-duotone ph-storefront text-2xl text-green-600"></i>
