@@ -10,8 +10,8 @@ export async function POST(request: NextRequest) {
     const result = await sql`
       SELECT 
         r.id,
-        r.cee_id as rider_id,
-        r.full_name as rider_name,
+        r.cee_id,
+        r.full_name,
         r.phone,
         r.email,
         r.vehicle_ownership,
