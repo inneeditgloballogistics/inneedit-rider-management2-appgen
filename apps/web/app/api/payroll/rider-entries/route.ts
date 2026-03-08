@@ -9,6 +9,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ entries: [] });
     }
 
+    // Get rider's cee_id and full_name first
+    const riderInfo = await sql`
+      SELECT cee_id, full_name FROM riders WHERE user_id = ${rider_id} LIMIT 1
+    `;
+    const cee_id = riderInfo?.[0]?.cee_id || rider_id;
+    const full_name = riderInfo?.[0]?.full_name || '';
+
     let entries: any[] = [];
 
     // Fetch referrals
@@ -16,7 +23,8 @@ export async function POST(request: Request) {
       SELECT 
         id,
         referrer_id as rider_id,
-        referrer_name as rider_name,
+        referrer_name as full_name,
+        '${cee_id}' as cee_id,
         'referral' as entry_type,
         0 as amount,
         CONCAT(referred_name, ' (', referred_phone, ')') as description,
@@ -34,7 +42,8 @@ export async function POST(request: Request) {
       SELECT 
         id,
         rider_id,
-        'Incentive' as rider_name,
+        '${full_name}' as full_name,
+        '${cee_id}' as cee_id,
         'incentive' as entry_type,
         amount,
         CONCAT(incentive_type, ': ', description) as description,
@@ -52,7 +61,8 @@ export async function POST(request: Request) {
       SELECT 
         id,
         rider_id,
-        rider_name,
+        rider_name as full_name,
+        '${cee_id}' as cee_id,
         'advance' as entry_type,
         amount,
         CONCAT('Reason: ', reason) as description,
@@ -70,7 +80,8 @@ export async function POST(request: Request) {
       SELECT 
         id,
         rider_id,
-        'Deduction' as rider_name,
+        '${full_name}' as full_name,
+        '${cee_id}' as cee_id,
         deduction_type as entry_type,
         amount,
         description,
