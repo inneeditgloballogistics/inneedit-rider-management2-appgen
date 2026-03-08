@@ -20,8 +20,22 @@ export default function HubsManagement() {
   const [hubs, setHubs] = useState<any[]>([]);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
   const [viewItem, setViewItem] = useState<any>(null);
   const [editItem, setEditItem] = useState<any>(null);
+  const [newHub, setNewHub] = useState<any>({
+    hub_name: '',
+    hub_code: '',
+    location: '',
+    latitude: undefined,
+    longitude: undefined,
+    city: '',
+    state: '',
+    pincode: '',
+    manager_name: '',
+    manager_phone: '',
+    status: 'active'
+  });
   const [activeView, setActiveView] = useState<'list' | 'map'>('list');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -67,6 +81,47 @@ export default function HubsManagement() {
     }
   };
 
+  const handleAddSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!newHub.hub_name || !newHub.hub_code || !newHub.location) {
+      alert('Please fill in required fields');
+      return;
+    }
+    
+    try {
+      const res = await fetch('/api/hubs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newHub)
+      });
+      
+      if (res.ok) {
+        setShowAddModal(false);
+        setNewHub({
+          hub_name: '',
+          hub_code: '',
+          location: '',
+          latitude: undefined,
+          longitude: undefined,
+          city: '',
+          state: '',
+          pincode: '',
+          manager_name: '',
+          manager_phone: '',
+          status: 'active'
+        });
+        fetchHubs();
+        alert('Hub added successfully!');
+      } else {
+        alert('Failed to add hub');
+      }
+    } catch (error) {
+      console.error('Error adding hub:', error);
+      alert('Error adding hub');
+    }
+  };
+
   const handleUpdateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -102,6 +157,12 @@ export default function HubsManagement() {
         {/* Header */}
         <div className="flex justify-between items-center">
           <h2 className="font-display text-3xl font-bold text-slate-900">Hub Management ({hubs.length})</h2>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium flex items-center gap-2"
+          >
+            <i className="ph-bold ph-plus text-lg"></i>Add Hub
+          </button>
         </div>
 
         {/* View Toggle */}
@@ -245,6 +306,151 @@ export default function HubsManagement() {
             <div className="p-6 border-t border-slate-200 flex gap-3 justify-end">
               <button onClick={() => setShowViewModal(false)} className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 font-medium">Close</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Hub Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-slate-200 flex items-center justify-between sticky top-0 bg-white">
+              <h3 className="text-xl font-bold text-slate-900">Add New Hub</h3>
+              <button onClick={() => setShowAddModal(false)} className="p-1 hover:bg-slate-100 rounded">
+                <i className="ph-bold ph-x text-xl"></i>
+              </button>
+            </div>
+            <form onSubmit={handleAddSubmit} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-slate-900 mb-2">Search Location</label>
+                <LocationSearch
+                  value={newHub.location || ''}
+                  onChange={(location, lat, lng, address) => {
+                    // Only update if lat/lng are provided (i.e., place was selected from Google)
+                    if (lat !== undefined && lng !== undefined) {
+                      const parts = (address || location).split(',').map((p: string) => p.trim());
+                      let city = '', state = '', pincode = '';
+                      
+                      if (parts.length >= 2) {
+                        city = parts[parts.length - 3] || '';
+                        state = parts[parts.length - 2] || '';
+                        const lastPart = parts[parts.length - 1];
+                        pincode = lastPart?.match(/\d{6}/) ? lastPart : '';
+                      }
+                      
+                      setNewHub({
+                        ...newHub,
+                        location: address || location,
+                        latitude: lat,
+                        longitude: lng,
+                        city: city || newHub.city,
+                        state: state || newHub.state,
+                        pincode: pincode || newHub.pincode
+                      });
+                    } else {
+                      // Just update the search text if still typing
+                      setNewHub({
+                        ...newHub,
+                        location
+                      });
+                    }
+                  }}
+                  placeholder="Search for hub location"
+                />
+              </div>
+              
+              {newHub.latitude && newHub.longitude && (
+                <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
+                  <strong>Location:</strong> Lat: {(typeof newHub.latitude === 'number' ? newHub.latitude : parseFloat(newHub.latitude)).toFixed(4)}, Lng: {(typeof newHub.longitude === 'number' ? newHub.longitude : parseFloat(newHub.longitude)).toFixed(4)}
+                </div>
+              )}
+              
+              <div>
+                <label className="block text-sm font-semibold text-slate-900 mb-2">Hub Name <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  value={newHub.hub_name || ''}
+                  onChange={(e) => setNewHub({...newHub, hub_name: e.target.value})}
+                  placeholder="Hub name"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-900 mb-2">Hub Code <span className="text-red-500">*</span></label>
+                  <input
+                    type="text"
+                    value={newHub.hub_code || ''}
+                    onChange={(e) => setNewHub({...newHub, hub_code: e.target.value})}
+                    placeholder="Hub code"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
+                  />
+                </div>
+                <div></div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-900 mb-2">City</label>
+                  <input
+                    type="text"
+                    value={newHub.city || ''}
+                    onChange={(e) => setNewHub({...newHub, city: e.target.value})}
+                    placeholder="City"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-900 mb-2">State</label>
+                  <input
+                    type="text"
+                    value={newHub.state || ''}
+                    onChange={(e) => setNewHub({...newHub, state: e.target.value})}
+                    placeholder="State"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-semibold text-slate-900 mb-2">Pincode</label>
+                <input
+                  type="text"
+                  value={newHub.pincode || ''}
+                  onChange={(e) => setNewHub({...newHub, pincode: e.target.value})}
+                  placeholder="Pincode"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-semibold text-slate-900 mb-2">Hub In-charge Name</label>
+                <input
+                  type="text"
+                  value={newHub.manager_name || ''}
+                  onChange={(e) => setNewHub({...newHub, manager_name: e.target.value})}
+                  placeholder="Hub in-charge name"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-semibold text-slate-900 mb-2">Hub In-charge Phone</label>
+                <input
+                  type="tel"
+                  value={newHub.manager_phone || ''}
+                  onChange={(e) => setNewHub({...newHub, manager_phone: e.target.value})}
+                  placeholder="Phone number"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
+                />
+              </div>
+              
+              <div className="flex gap-3 justify-end pt-4 border-t border-slate-200">
+                <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 font-medium">Cancel</button>
+                <button type="submit" className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium">Add Hub</button>
+              </div>
+            </form>
           </div>
         </div>
       )}
