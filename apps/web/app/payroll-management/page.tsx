@@ -370,30 +370,33 @@ export default function PayrollManagement() {
         </div>
       </main>
 
-      {/* Side Panel */}
+      {/* Big Popup Modal */}
       {showPanel && selectedRider && (
-        <div className="fixed inset-0 z-50 flex">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           {/* Overlay */}
           <div 
-            className="flex-1 bg-black/50 cursor-pointer"
+            className="absolute inset-0 bg-black/50 cursor-pointer"
             onClick={() => setShowPanel(false)}
           />
 
-          {/* Panel */}
-          <div className="w-96 bg-white shadow-2xl flex flex-col">
+          {/* Modal */}
+          <div className="relative bg-white shadow-2xl flex flex-col max-w-2xl w-full max-h-[90vh] rounded-2xl overflow-hidden">
             {/* Header */}
-            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
-              <h3 className="font-bold text-lg text-slate-900">{selectedRider.full_name}</h3>
+            <div className="px-8 py-6 border-b border-slate-200 flex items-center justify-between bg-gradient-to-r from-slate-50 to-white">
+              <div>
+                <h2 className="font-display font-bold text-2xl text-slate-900">{selectedRider.full_name}</h2>
+                <p className="text-sm text-slate-500 mt-1">CEE ID: {selectedRider.cee_id}</p>
+              </div>
               <button 
                 onClick={() => setShowPanel(false)}
-                className="p-1 hover:bg-slate-100 rounded transition-all"
+                className="p-2 hover:bg-slate-200 rounded-lg transition-all"
               >
-                <i className="ph-bold ph-x text-xl"></i>
+                <i className="ph-bold ph-x text-2xl"></i>
               </button>
             </div>
 
             {/* Rider Info */}
-              <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 space-y-2 text-sm">
+              <div className="px-8 py-5 bg-slate-50 border-b border-slate-200 space-y-2 text-sm grid grid-cols-2 gap-4">
               <div><strong>CEE ID:</strong> {selectedRider.cee_id}</div>
               <div><strong>Phone:</strong> {selectedRider.phone}</div>
               <div><strong>Email:</strong> {selectedRider.email}</div>
@@ -418,7 +421,7 @@ export default function PayrollManagement() {
             </div>
 
             {/* Tabs */}
-            <div className="flex border-b border-slate-200 bg-white overflow-x-auto">
+            <div className="flex border-b border-slate-200 bg-white overflow-x-auto px-8">
               {['referral', 'incentive', 'advance', 'security', 'damage', 'challan', 'history'].map(tab => (
                 <button
                   key={tab}
@@ -440,7 +443,7 @@ export default function PayrollManagement() {
             </div>
 
             {/* Forms */}
-            <div className="flex-1 overflow-y-auto px-6 py-4">
+            <div className="flex-1 overflow-y-auto px-8 py-6">
               {panelMode === 'referral' && (
                 <div className="space-y-4">
                   <input
@@ -643,10 +646,10 @@ export default function PayrollManagement() {
             </div>
 
             {/* Footer */}
-            <div className="px-6 py-4 border-t border-slate-200 flex gap-3">
+            <div className="px-8 py-5 border-t border-slate-200 flex gap-4 bg-slate-50">
               <button
                 onClick={() => setShowPanel(false)}
-                className="flex-1 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 font-medium transition-all"
+                className="flex-1 px-4 py-2.5 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 font-medium transition-all"
               >
                 {panelMode === 'history' ? 'Close' : 'Cancel'}
               </button>
@@ -654,9 +657,9 @@ export default function PayrollManagement() {
                 <button
                   onClick={saveEntry}
                   disabled={savingEntry}
-                  className="flex-1 px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium transition-all disabled:opacity-50"
+                  className="flex-1 px-4 py-2.5 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium transition-all disabled:opacity-50"
                 >
-                  {savingEntry ? 'Saving...' : 'Save'}
+                  {savingEntry ? 'Saving...' : 'Save Entry'}
                 </button>
               )}
             </div>
