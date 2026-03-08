@@ -87,10 +87,16 @@ export default function StoresManagement() {
   const handleUpdateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const payload = {
+        ...editItem,
+        latitude: editItem.latitude ? (typeof editItem.latitude === 'string' ? parseFloat(editItem.latitude) : editItem.latitude) : null,
+        longitude: editItem.longitude ? (typeof editItem.longitude === 'string' ? parseFloat(editItem.longitude) : editItem.longitude) : null
+      };
+
       const res = await fetch('/api/stores', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editItem)
+        body: JSON.stringify(payload)
       });
       
       if (res.ok) {
@@ -120,12 +126,23 @@ export default function StoresManagement() {
       alert('Please fill in required fields');
       return;
     }
+
+    if (!newStore.latitude || !newStore.longitude) {
+      alert('Please select a location from the search results');
+      return;
+    }
     
     try {
+      const payload = {
+        ...newStore,
+        latitude: typeof newStore.latitude === 'string' ? parseFloat(newStore.latitude) : newStore.latitude,
+        longitude: typeof newStore.longitude === 'string' ? parseFloat(newStore.longitude) : newStore.longitude
+      };
+
       const res = await fetch('/api/stores', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newStore)
+        body: JSON.stringify(payload)
       });
       
       if (res.ok) {
