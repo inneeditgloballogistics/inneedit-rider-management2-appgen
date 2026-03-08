@@ -60,16 +60,7 @@ function AdminDashboardContent() {
   const [hubsCount, setHubsCount] = useState(0);
   const [storesCount, setStoresCount] = useState(0);
 
-  const [payrollMode, setPayrollMode] = useState<'manual' | 'ai' | 'history'>('manual');
-  const [manualEntries, setManualEntries] = useState<any[]>([]);
-  const [payoutHistory, setPayoutHistory] = useState<any[]>([]);
-  const [selectedRiders, setSelectedRiders] = useState<Set<number>>(new Set());
-  const [calculatedPayouts, setCalculatedPayouts] = useState<any[]>([]);
-  const [weekNumber, setWeekNumber] = useState(1);
-  const [weekPeriod, setWeekPeriod] = useState('');
-  const [month, setMonth] = useState(new Date().getMonth() + 1);
-  const [year, setYear] = useState(new Date().getFullYear());
-  const [settings, setSettings] = useState<any>({});
+
 
   const [advances, setAdvances] = useState<any[]>([]);
   const [referrals, setReferrals] = useState<any[]>([]);
@@ -83,11 +74,6 @@ function AdminDashboardContent() {
 
     if (activeTab === 'advances') fetchAdvances();
     if (activeTab === 'referrals') fetchReferrals();
-    if (activeTab === 'payroll') {
-      fetchRiders();
-      fetchPayoutHistory();
-      fetchSettings();
-    }
   }, [activeTab]);
 
   useEffect(() => {
@@ -166,29 +152,7 @@ function AdminDashboardContent() {
     }
   };
 
-  const fetchPayoutHistory = async () => {
-    try {
-      const res = await fetch('/api/payroll?action=history');
-      const data = await res.json();
-      setPayoutHistory(data);
-    } catch (error) {
-      console.error('Error fetching payout history:', error);
-    }
-  };
 
-  const fetchSettings = async () => {
-    try {
-      const res = await fetch('/api/settings');
-      const data = await res.json();
-      const settingsObj: any = {};
-      data.forEach((setting: any) => {
-        settingsObj[setting.setting_key] = setting.setting_value;
-      });
-      setSettings(settingsObj);
-    } catch (error) {
-      console.error('Error fetching settings:', error);
-    }
-  };
 
   const handleAddNew = async (type: 'vehicle' | 'hub' | 'store') => {
     setModalType(type);
@@ -325,7 +289,7 @@ function AdminDashboardContent() {
 
           <nav className="border-t border-slate-200 overflow-x-auto">
             <div className="flex px-6">
-              {['dashboard', 'riders', 'vehicles', 'hubs', 'stores', 'advances', 'referrals', 'payroll'].map((tab) => (
+              {['dashboard', 'riders', 'vehicles', 'hubs', 'stores', 'advances', 'referrals'].map((tab) => (
                 <button 
                   key={tab}
                   onClick={() => setActiveTab(tab)} 
@@ -342,7 +306,7 @@ function AdminDashboardContent() {
                   {tab === 'stores' && <i className="ph-bold ph-storefront text-lg"></i>}
                   {tab === 'advances' && <i className="ph-bold ph-currency-dollar text-lg"></i>}
                   {tab === 'referrals' && <i className="ph-bold ph-user-plus text-lg"></i>}
-                  {tab === 'payroll' && <i className="ph-bold ph-wallet text-lg"></i>}
+
                   <span className="capitalize">{tab}</span>
                   {tab === 'advances' && pendingAdvancesCount > 0 && (
                     <span className="ml-2 px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full">{pendingAdvancesCount}</span>
@@ -570,14 +534,7 @@ function AdminDashboardContent() {
               </>
             )}
 
-            {activeTab === 'payroll' && (
-              <>
-                <h2 className="font-display text-3xl font-bold text-slate-900">Payroll Management</h2>
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-                  <p className="text-slate-600">Payroll module content here</p>
-                </div>
-              </>
-            )}
+
           </div>
         </main>
 
