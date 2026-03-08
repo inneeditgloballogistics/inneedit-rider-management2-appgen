@@ -68,13 +68,21 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
               placeId: place.place_id,
               fields: ['geometry', 'formatted_address', 'address_components', 'name']
             }, async (result: any, status: string) => {
-              if (status === window.google.maps.places.PlacesServiceStatus.OK && result.geometry?.location) {
-                const lat = typeof result.geometry.location.lat === 'function' 
-                  ? result.geometry.location.lat() 
-                  : result.geometry.location.lat;
-                const lng = typeof result.geometry.location.lng === 'function' 
-                  ? result.geometry.location.lng() 
-                  : result.geometry.location.lng;
+              console.log('PlacesService response:', { status, hasGeometry: !!result?.geometry, geometry: result?.geometry });
+              
+              if (status === window.google.maps.places.PlacesServiceStatus.OK && result?.geometry?.location) {
+                let lat, lng;
+                
+                // Handle both function and property access
+                if (typeof result.geometry.location.lat === 'function') {
+                  lat = result.geometry.location.lat();
+                  lng = result.geometry.location.lng();
+                } else {
+                  lat = result.geometry.location.lat;
+                  lng = result.geometry.location.lng;
+                }
+                
+                console.log('Extracted coordinates:', { lat, lng, type_lat: typeof lat, type_lng: typeof lng });"
                 
                 // ✅ GEOCODING API - Validate & enhance address with reverse geocoding
                 try {
