@@ -116,7 +116,7 @@ function TechnicianDashboardContent() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-grow pt-28 pb-12 px-6">
+      <main className="flex-grow pt-40 pb-12 px-6">
         <div className="max-w-7xl mx-auto space-y-8">
           
           {/* Navigation Tabs */}
