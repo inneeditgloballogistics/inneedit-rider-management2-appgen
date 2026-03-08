@@ -27,6 +27,7 @@ export default function WeatherSettingsModal({
       navigator.geolocation.getCurrentPosition(
         async (position) => {
           const { latitude, longitude } = position.coords;
+          console.log('Detected location:', latitude, longitude);
           
           // Get location name from coordinates
           try {
@@ -34,7 +35,10 @@ export default function WeatherSettingsModal({
               `/api/geocoding?lat=${latitude}&lng=${longitude}`
             );
             const data = await response.json();
-            const locationName = data.address?.city || data.address?.state || 'Current Location';
+            console.log('Geocoding response:', data);
+            
+            const locationName = data.addressComponents?.city || data.addressComponents?.state || data.address || 'Current Location';
+            console.log('Location name:', locationName);
             
             onLocationSelect(latitude, longitude, locationName);
             setLoading(false);
@@ -52,10 +56,15 @@ export default function WeatherSettingsModal({
           alert('Unable to access your location. Please enable location services.');
         }
       );
+    } else {
+      setLoading(false);
+      alert('Geolocation is not supported by your browser.');
     }
   };
 
   const handleSearch = async (query: string) => {
+    setSearchQuery(query);
+    
     if (query.length < 2) {
       setSearchResults([]);
       return;
@@ -67,11 +76,14 @@ export default function WeatherSettingsModal({
         `/api/geocoding?q=${encodeURIComponent(query)}`
       );
       const data = await response.json();
+      console.log('Search response:', data);
       
-      if (data.results) {
+      if (data.results && Array.isArray(data.results)) {
         setSearchResults(data.results.slice(0, 5));
+        console.log('Found results:', data.results.length);
       } else {
         setSearchResults([]);
+        console.log('No results found');
       }
     } catch (error) {
       console.error('Search error:', error);
@@ -143,10 +155,7 @@ export default function WeatherSettingsModal({
               type="text"
               placeholder="Search city, area, or address..."
               value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                handleSearch(e.target.value);
-              }}
+              onChange={(e) => handleSearch(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
