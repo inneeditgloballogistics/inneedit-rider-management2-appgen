@@ -36,7 +36,12 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
         const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
           types: ['geocode'],
           sessionToken: sessionTokenRef.current,
-          fields: ['place_id', 'formatted_address', 'name']
+          fields: ['place_id', 'formatted_address', 'name'],
+          componentRestrictions: { country: 'in' },
+          bounds: new window.google.maps.LatLngBounds(
+            new window.google.maps.LatLng(17.2403, 78.3432), // Southwest corner of Hyderabad
+            new window.google.maps.LatLng(17.5, 78.65)       // Northeast corner of Hyderabad
+          )
         });
 
         autocompleteRef.current = autocomplete;
