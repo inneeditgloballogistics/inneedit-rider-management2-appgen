@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useState, useEffect } from 'react';
 import { VehicleList, HubList, StoreList } from '@/components/VehicleHubStoreManagement';
 import { AddModal } from '@/components/AddModal';
+import WeatherBadge from '@/components/WeatherBadge';
 
 function TechnicianDashboardContent() {
   const router = useRouter();
@@ -90,6 +91,9 @@ function TechnicianDashboardContent() {
 
           {/* Actions */}
           <div className="flex items-center gap-4">
+            <div className="hidden md:block">
+              <WeatherBadge latitude={12.9352} longitude={77.6245} locationName="Koramangala" />
+            </div>
             <button className="relative p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-all">
               <i className="ph ph-bell text-xl"></i>
               <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-white"></span>

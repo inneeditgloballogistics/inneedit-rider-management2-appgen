@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Bell, LogOut, Package, TrendingUp, Users, Wallet, AlertCircle, Gift, DollarSign } from 'lucide-react';
 import WeatherCard from '@/components/WeatherCard';
+import WeatherBadge from '@/components/WeatherBadge';
 
 interface RiderData {
   id: number;
@@ -375,7 +376,14 @@ export default function RiderDashboard() {
             <p className="text-sm text-gray-600">CEE ID: {rider.ceeId}</p>
           </div>
           <div className="flex items-center gap-4">
-            <div className="text-right">
+            <div className="hidden md:block">
+              <WeatherBadge 
+                latitude={rider.latitude || 12.9716} 
+                longitude={rider.longitude || 77.5946} 
+                locationName={rider.city || 'Your Location'} 
+              />
+            </div>
+            <div className="text-right hidden sm:block">
               <p className="text-sm font-medium text-gray-900">{rider.full_name}</p>
               <p className="text-xs text-gray-500">{rider.client || 'N/A'}</p>
             </div>

@@ -9,6 +9,7 @@ import InvoiceUpload from '@/components/InvoiceUpload';
 import LocationSearch from '@/components/LocationSearch';
 import StoresManagement from '@/components/StoresManagement';
 import HubsManagement from '@/components/HubsManagement';
+import WeatherBadge from '@/components/WeatherBadge';
 
 const StoreMapView = dynamic(() => import('@/components/StoreMapView'), {
   ssr: false,
@@ -299,6 +300,9 @@ function AdminDashboardContent() {
             </div>
 
             <div className="flex items-center gap-4">
+              <div className="hidden md:block">
+                <WeatherBadge latitude={12.9716} longitude={77.5946} locationName="HQ" />
+              </div>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-slate-700 to-slate-900 flex items-center justify-center text-white text-sm font-bold">A</div>
                 <div className="hidden md:block">
