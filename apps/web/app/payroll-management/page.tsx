@@ -33,7 +33,6 @@ export default function PayrollManagement() {
   const router = useRouter();
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
-  const [selectedWeek, setSelectedWeek] = useState(1);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
@@ -55,7 +54,7 @@ export default function PayrollManagement() {
   // Fetch riders based on filters
   useEffect(() => {
     fetchRiders();
-  }, [selectedYear, selectedMonth, selectedWeek, selectedDate, selectedFilter, searchQuery]);
+  }, [selectedYear, selectedMonth, selectedDate, selectedFilter, searchQuery]);
 
   const fetchRiders = async () => {
     setLoading(true);
@@ -66,7 +65,6 @@ export default function PayrollManagement() {
         body: JSON.stringify({
           year: selectedYear,
           month: selectedMonth,
-          week: selectedWeek,
           date: selectedDate,
           filter: selectedFilter,
           search: searchQuery
@@ -142,18 +140,10 @@ export default function PayrollManagement() {
     setSavingEntry(false);
   };
 
-  const getCurrentWeekRange = () => {
-    const now = new Date(selectedYear, selectedMonth - 1, selectedDate.split('-')[2] || 1);
-    const weekStart = new Date(now);
-    weekStart.setDate(now.getDate() - now.getDay() + (selectedWeek - 1) * 7);
-    const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekStart.getDate() + 6);
-    return `${weekStart.toLocaleDateString()} - ${weekEnd.toLocaleDateString()}`;
-  };
+
 
   const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
   const months = Array.from({ length: 12 }, (_, i) => ({ num: i + 1, name: new Date(2024, i, 1).toLocaleString('default', { month: 'long' }) }));
-  const weeks = Array.from({ length: 4 }, (_, i) => i + 1);
 
   const filteredRiders = riders.filter(rider => {
     const matchesSearch = searchQuery === '' || 
@@ -204,7 +194,7 @@ export default function PayrollManagement() {
             {/* Filters Section */}
             <div className="space-y-4">
               {/* Date Selection */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-slate-900 mb-2">Year</label>
                   <select
@@ -227,19 +217,6 @@ export default function PayrollManagement() {
                   >
                     {months.map(month => (
                       <option key={month.num} value={month.num}>{month.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-slate-900 mb-2">Week</label>
-                  <select
-                    value={selectedWeek}
-                    onChange={(e) => setSelectedWeek(parseInt(e.target.value))}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                  >
-                    {weeks.map(week => (
-                      <option key={week} value={week}>Week {week}</option>
                     ))}
                   </select>
                 </div>
@@ -292,10 +269,7 @@ export default function PayrollManagement() {
             </div>
           </div>
 
-          {/* Week Info */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p className="text-sm text-blue-900"><strong>Week {selectedWeek}:</strong> {getCurrentWeekRange()}</p>
-          </div>
+
 
           {/* Riders Table */}
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">

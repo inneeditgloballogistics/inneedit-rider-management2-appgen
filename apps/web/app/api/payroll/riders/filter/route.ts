@@ -4,7 +4,7 @@ import sql from '@/app/api/utils/sql';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { year, month, week, date, filter, search } = body;
+    const { year, month, date, filter, search } = body;
 
     // Fetch riders with vehicle information
     const result = await sql`
