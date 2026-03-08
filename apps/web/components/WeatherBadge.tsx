@@ -24,13 +24,37 @@ interface WeatherBadgeProps {
   locationName?: string;
 }
 
-export default function WeatherBadge({ latitude = 12.9716, longitude = 77.5946, locationName = 'Current Location' }: WeatherBadgeProps) {
+export default function WeatherBadge({ latitude: propLat, longitude: propLng, locationName = 'Current Location' }: WeatherBadgeProps) {
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(true);
   const [time, setTime] = useState<string>('');
+  const [latitude, setLatitude] = useState<number | null>(propLat || null);
+  const [longitude, setLongitude] = useState<number | null>(propLng || null);
 
   useEffect(() => {
-    fetchWeather();
+    // Auto-detect user location if not provided
+    if (!latitude || !longitude) {
+      if (typeof window !== 'undefined' && navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            setLatitude(position.coords.latitude);
+            setLongitude(position.coords.longitude);
+          },
+          (error) => {
+            console.warn('Geolocation error:', error);
+            // Fallback to Hyderabad coordinates
+            setLatitude(17.3850);
+            setLongitude(78.4867);
+          }
+        );
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (latitude && longitude) {
+      fetchWeather();
+    }
     
     // Update time every second
     const updateTime = () => {
