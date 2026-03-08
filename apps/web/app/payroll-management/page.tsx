@@ -13,6 +13,11 @@ interface Rider {
   assigned_hub_id: number;
   vehicle_ownership: string;
   status: string;
+  assigned_vehicle_id?: number;
+  vehicle_number?: string;
+  model?: string;
+  vehicle_year?: number;
+  vehicle_status?: string;
 }
 
 interface DeductionEntry {
@@ -385,7 +390,21 @@ export default function PayrollManagement() {
               <div><strong>CEE ID:</strong> {selectedRider.cee_id}</div>
               <div><strong>Phone:</strong> {selectedRider.phone}</div>
               <div><strong>Email:</strong> {selectedRider.email}</div>
-              <div><strong>Vehicle:</strong> {selectedRider.vehicle_type}</div>
+              <div><strong>Vehicle Type:</strong> {selectedRider.vehicle_type}</div>
+              {selectedRider.vehicle_number && (
+                <>
+                  <div><strong>Vehicle Number:</strong> {selectedRider.vehicle_number}</div>
+                  <div><strong>Vehicle Model:</strong> {selectedRider.model || 'N/A'}</div>
+                  <div>
+                    <strong>Vehicle Status:</strong>{' '}
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${
+                      selectedRider.vehicle_status === 'active' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                    }`}>
+                      {selectedRider.vehicle_status || 'Not Assigned'}
+                    </span>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Tabs */}

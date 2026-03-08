@@ -6,8 +6,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { year, month, week, date, filter, search } = body;
 
-    // Base query
-    let query = `
+    // Fetch riders with vehicle information
+    const result = await sql`
       SELECT 
         r.id,
         r.cee_id,
@@ -17,34 +17,16 @@ export async function POST(request: NextRequest) {
         r.vehicle_type,
         r.assigned_hub_id,
         r.vehicle_ownership,
-        r.status
+        r.status,
+        r.assigned_vehicle_id,
+        v.vehicle_number,
+        v.model,
+        v.year as vehicle_year,
+        v.status as vehicle_status
       FROM riders r
-      WHERE 1=1
-    `;
-
-    const params: any[] = [];
-
-    // Apply date filters if provided
-    if (date) {
-      query += ` AND r.created_at::date <= $${params.length + 1}`;
-      params.push(date);
-    }
-
-    // Build the final query dynamically
-    const result = await sql`
-      SELECT 
-        id,
-        cee_id,
-        full_name,
-        phone,
-        email,
-        vehicle_type,
-        assigned_hub_id,
-        vehicle_ownership,
-        status
-      FROM riders
-      WHERE status IS NOT NULL
-      ORDER BY full_name ASC
+      LEFT JOIN vehicles v ON r.assigned_vehicle_id = v.id
+      WHERE r.status IS NOT NULL
+      ORDER BY r.full_name ASC
     `;
 
     // Filter based on filter type
