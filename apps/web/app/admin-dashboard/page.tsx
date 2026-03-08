@@ -289,7 +289,7 @@ function AdminDashboardContent() {
 
           <nav className="border-t border-slate-200 overflow-x-auto">
             <div className="flex px-6">
-              {['dashboard', 'riders', 'vehicles', 'hubs', 'stores', 'advances', 'referrals', 'payroll'].map((tab) => (
+              {['dashboard', 'riders', 'vehicles', 'hubs', 'stores', 'advances', 'referrals', 'payroll', 'entries'].map((tab) => (
                 <button 
                   key={tab}
                   onClick={() => setActiveTab(tab)} 
@@ -307,8 +307,9 @@ function AdminDashboardContent() {
                   {tab === 'advances' && <i className="ph-bold ph-currency-dollar text-lg"></i>}
                   {tab === 'referrals' && <i className="ph-bold ph-user-plus text-lg"></i>}
                   {tab === 'payroll' && <i className="ph-bold ph-money text-lg"></i>}
+                  {tab === 'entries' && <i className="ph-bold ph-list text-lg"></i>}
 
-                  <span className="capitalize">{tab}</span>
+                  <span className="capitalize">{tab === 'entries' ? 'Payroll Entries' : tab}</span>
                   {tab === 'advances' && pendingAdvancesCount > 0 && (
                     <span className="ml-2 px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full">{pendingAdvancesCount}</span>
                   )}
@@ -548,6 +549,24 @@ function AdminDashboardContent() {
                   <p className="text-slate-600 mb-4">Manage rider payroll, deductions, incentives, and more.</p>
                   <button onClick={() => router.push('/payroll-management')} className="px-6 py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium">
                     Go to Payroll Management
+                  </button>
+                </div>
+              </>
+            )}
+
+            {activeTab === 'entries' && (
+              <>
+                <div className="flex justify-between items-center">
+                  <h2 className="font-display text-3xl font-bold text-slate-900">Payroll Entries</h2>
+                  <button onClick={() => router.push('/payroll-entries')} className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium flex items-center gap-2">
+                    <i className="ph-bold ph-arrow-right"></i>View All Entries
+                  </button>
+                </div>
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-8 text-center">
+                  <i className="ph-duotone ph-list text-6xl text-brand-200 mb-4 block"></i>
+                  <p className="text-slate-600 mb-4">View and manage all payroll entries including referrals, incentives, advances, and deductions.</p>
+                  <button onClick={() => router.push('/payroll-entries')} className="px-6 py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium">
+                    Go to Payroll Entries
                   </button>
                 </div>
               </>

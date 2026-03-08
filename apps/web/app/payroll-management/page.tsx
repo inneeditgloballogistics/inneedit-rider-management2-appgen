@@ -40,7 +40,9 @@ export default function PayrollManagement() {
   const [loading, setLoading] = useState(false);
   const [selectedRider, setSelectedRider] = useState<Rider | null>(null);
   const [showPanel, setShowPanel] = useState(false);
-  const [panelMode, setPanelMode] = useState<'referral' | 'incentive' | 'advance' | 'security' | 'damage' | 'challan'>('referral');
+  const [panelMode, setPanelMode] = useState<'referral' | 'incentive' | 'advance' | 'security' | 'damage' | 'challan' | 'history'>('referral');
+  const [riderEntries, setRiderEntries] = useState<any[]>([]);
+  const [loadingEntries, setLoadingEntries] = useState(false);
 
   // Form states for entries
   const [referralForm, setReferralForm] = useState({ referred_name: '', referred_phone: '', preferred_location: '', notes: '' });
@@ -91,6 +93,28 @@ export default function PayrollManagement() {
     setSecurityForm({ amount: '', reason: '' });
     setDamageForm({ amount: '', description: '' });
     setChallanForm({ amount: '', description: '' });
+    
+    // Load entry history if opening history tab
+    if (mode === 'history') {
+      fetchRiderEntries(rider.cee_id);
+    }
+  };
+
+  const fetchRiderEntries = async (riderId: string) => {
+    setLoadingEntries(true);
+    try {
+      const response = await fetch('/api/payroll/rider-entries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rider_id: riderId })
+      });
+      const data = await response.json();
+      setRiderEntries(data.entries || []);
+    } catch (error) {
+      console.error('Error fetching rider entries:', error);
+      setRiderEntries([]);
+    }
+    setLoadingEntries(false);
   };
 
   const saveEntry = async () => {
@@ -390,17 +414,22 @@ export default function PayrollManagement() {
 
             {/* Tabs */}
             <div className="flex border-b border-slate-200 bg-white overflow-x-auto">
-              {['referral', 'incentive', 'advance', 'security', 'damage', 'challan'].map(tab => (
+              {['referral', 'incentive', 'advance', 'security', 'damage', 'challan', 'history'].map(tab => (
                 <button
                   key={tab}
-                  onClick={() => setPanelMode(tab as any)}
+                  onClick={() => {
+                    setPanelMode(tab as any);
+                    if (tab === 'history') {
+                      fetchRiderEntries(selectedRider!.cee_id);
+                    }
+                  }}
                   className={`px-4 py-3 text-sm font-medium transition-all whitespace-nowrap ${
                     panelMode === tab
                       ? 'border-b-2 border-brand-600 text-brand-600'
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                  {tab === 'history' ? 'History' : tab.charAt(0).toUpperCase() + tab.slice(1)}
                 </button>
               ))}
             </div>
@@ -552,6 +581,22 @@ export default function PayrollManagement() {
                   />
                 </div>
               )}
+
+              {panelMode === 'history' && (
+                <div className="space-y-3">
+                  {loadingEntries ? (
+                    <div className="flex justify-center py-8">
+                      <div className="w-8 h-8 border-4 border-slate-200 border-t-brand-600 rounded-full animate-spin"></div>
+                    </div>
+                  ) : riderEntries.length === 0 ? (
+                    <p className="text-center text-slate-500 py-8">No entries found for this rider</p>
+                  ) : (
+                    <div className="max-h-96 overflow-y-auto space-y-3">
+                      {riderEntries.map(entry => (
+                        <div key={entry.id} className="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                          <div className="flex justify-between items-start mb-2">
+                            <span className={`px-2 py-1 rounded text-xs font-medium ${\n                              entry.entry_type === 'referral' ? 'bg-blue-100 text-blue-700' :\n                              entry.entry_type === 'incentive' ? 'bg-green-100 text-green-700' :\n                              entry.entry_type === 'advance' ? 'bg-purple-100 text-purple-700' :\n                              entry.entry_type === 'security_deposit' ? 'bg-orange-100 text-orange-700' :\n                              entry.entry_type === 'damage' ? 'bg-red-100 text-red-700' :\n                              entry.entry_type === 'challan' ? 'bg-yellow-100 text-yellow-700' :\n                              'bg-slate-100 text-slate-700'\n                            }`}>\n                              {entry.entry_type.replace(/_/g, ' ').toUpperCase()}\n                            </span>\n                            {entry.amount > 0 && (\n                              <span className=\"font-semibold text-slate-900\">₹{entry.amount.toFixed(2)}</span>\n                            )}\n                          </div>\n                          <p className="text-xs text-slate-600 mb-2\">{entry.description}</p>\n                          <div className=\"flex justify-between text-xs text-slate-500\">\n                            <span>\n                              {new Date(entry.entry_date).toLocaleDateString('en-GB', {\n                                day: '2-digit',\n                                month: 'short',\n                                year: 'numeric'\n                              })}\n                            </span>\n                            {entry.status && (\n                              <span className={`px-2 py-0.5 rounded text-xs font-medium ${\n                                entry.status === 'completed' ? 'bg-green-100 text-green-700' :\n                                entry.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :\n                                'bg-slate-100 text-slate-700'\n                              }`}>\n                                {entry.status.toUpperCase()}\n                              </span>\n                            )}\n                          </div>\n                        </div>\n                      ))}\n                    </div>\n                  )}\n                </div>
+              )}
             </div>
 
             {/* Footer */}
@@ -560,15 +605,17 @@ export default function PayrollManagement() {
                 onClick={() => setShowPanel(false)}
                 className="flex-1 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 font-medium transition-all"
               >
-                Cancel
+                {panelMode === 'history' ? 'Close' : 'Cancel'}
               </button>
-              <button
-                onClick={saveEntry}
-                disabled={savingEntry}
-                className="flex-1 px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium transition-all disabled:opacity-50"
-              >
-                {savingEntry ? 'Saving...' : 'Save'}
-              </button>
+              {panelMode !== 'history' && (
+                <button
+                  onClick={saveEntry}
+                  disabled={savingEntry}
+                  className="flex-1 px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium transition-all disabled:opacity-50"
+                >
+                  {savingEntry ? 'Saving...' : 'Save'}
+                </button>
+              )}
             </div>
           </div>
         </div>
