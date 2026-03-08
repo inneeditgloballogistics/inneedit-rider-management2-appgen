@@ -289,7 +289,7 @@ function AdminDashboardContent() {
 
           <nav className="border-t border-slate-200 overflow-x-auto">
             <div className="flex px-6">
-              {['dashboard', 'riders', 'vehicles', 'hubs', 'stores', 'advances', 'referrals'].map((tab) => (
+              {['dashboard', 'riders', 'vehicles', 'hubs', 'stores', 'advances', 'referrals', 'payroll'].map((tab) => (
                 <button 
                   key={tab}
                   onClick={() => setActiveTab(tab)} 
@@ -306,6 +306,7 @@ function AdminDashboardContent() {
                   {tab === 'stores' && <i className="ph-bold ph-storefront text-lg"></i>}
                   {tab === 'advances' && <i className="ph-bold ph-currency-dollar text-lg"></i>}
                   {tab === 'referrals' && <i className="ph-bold ph-user-plus text-lg"></i>}
+                  {tab === 'payroll' && <i className="ph-bold ph-money text-lg"></i>}
 
                   <span className="capitalize">{tab}</span>
                   {tab === 'advances' && pendingAdvancesCount > 0 && (
@@ -530,6 +531,24 @@ function AdminDashboardContent() {
                       ))}
                     </tbody>
                   </table>
+                </div>
+              </>
+            )}
+
+            {activeTab === 'payroll' && (
+              <>
+                <div className="flex justify-between items-center">
+                  <h2 className="font-display text-3xl font-bold text-slate-900">Payroll Management</h2>
+                  <button onClick={() => router.push('/payroll-management')} className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium flex items-center gap-2">
+                    <i className="ph-bold ph-arrow-right"></i>Open Payroll
+                  </button>
+                </div>
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-8 text-center">
+                  <i className="ph-duotone ph-money text-6xl text-brand-200 mb-4 block"></i>
+                  <p className="text-slate-600 mb-4">Manage rider payroll, deductions, incentives, and more.</p>
+                  <button onClick={() => router.push('/payroll-management')} className="px-6 py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium">
+                    Go to Payroll Management
+                  </button>
                 </div>
               </>
             )}
