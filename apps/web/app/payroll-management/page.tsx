@@ -222,13 +222,20 @@ export default function PayrollManagement() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-slate-900 mb-2">Date</label>
+                  <label className="block text-sm font-semibold text-slate-900 mb-2">Date (DD MMM YYYY)</label>
                   <input
                     type="date"
                     value={selectedDate}
                     onChange={(e) => setSelectedDate(e.target.value)}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
                   />
+                  <p className="text-xs text-slate-500 mt-1">
+                    {selectedDate && new Date(selectedDate).toLocaleDateString('en-GB', { 
+                      day: '2-digit', 
+                      month: 'short', 
+                      year: 'numeric' 
+                    })}
+                  </p>
                 </div>
               </div>
 
