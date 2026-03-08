@@ -67,9 +67,7 @@ function HomeContent() {
                 <button onClick={() => router.push('/hub-management')} className="px-4 py-2 hover:bg-white/50 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-900 transition-all">
                     Hub Manager
                 </button>
-                <button onClick={() => router.push('/payroll-system')} className="px-4 py-2 hover:bg-white/50 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-900 transition-all">
-                    Payroll
-                </button>
+
             </nav>
 
             {/* Actions */}
@@ -205,12 +203,7 @@ function HomeContent() {
                                 <p className="text-xs text-slate-500 mt-1">Vehicle Handover</p>
                             </button>
                             
-                            {/* Card 4 */}
-                            <button onClick={() => router.push('/payroll-system')} className="p-5 rounded-xl bg-slate-50 border border-slate-100 hover:border-secondary-500/30 hover:bg-blue-50/50 transition-all text-left group">
-                                <i className="ph-duotone ph-money text-3xl text-slate-400 group-hover:text-secondary-600 mb-3 transition-colors"></i>
-                                <h4 className="font-semibold text-slate-900">Payroll</h4>
-                                <p className="text-xs text-slate-500 mt-1">Salary & Invoices</p>
-                            </button>
+
                             
                             {/* Card 5 (Technician) */}
                             <button className="p-5 rounded-xl bg-slate-50 border border-slate-100 hover:border-slate-300 transition-all text-left group opacity-75">
@@ -314,19 +307,7 @@ function HomeContent() {
                                 </div>
                             </div>
 
-                            {/* Notif Item 4 */}
-                            <div className="p-3 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer group border-t border-slate-50">
-                                <div className="flex gap-3">
-                                    <div className="mt-1 w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 flex-shrink-0">
-                                        <i className="ph-fill ph-file-text"></i>
-                                    </div>
-                                    <div>
-                                        <p className="text-sm text-slate-800">Weekly payroll invoice generated.</p>
-                                        <p className="text-xs text-slate-400 mt-1">Yesterday • ₹12,40,000</p>
-                                        <button onClick={() => router.push('/payroll-system')} className="mt-2 text-xs font-medium text-purple-600 hover:text-purple-700">View Invoice &rarr;</button>
-                                    </div>
-                                </div>
-                            </div>
+
 
                         </div>
                     </div>

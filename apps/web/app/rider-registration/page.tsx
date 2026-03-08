@@ -222,9 +222,7 @@ function RiderRegistrationContent() {
                 <button onClick={() => router.push('/admin-dashboard')} className="px-4 py-2 hover:bg-white/50 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-900 transition-all">
                     <i className="ph-bold ph-storefront mr-2"></i>Stores
                 </button>
-                <button onClick={() => router.push('/payroll-system')} className="px-4 py-2 hover:bg-white/50 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-900 transition-all">
-                    <i className="ph-bold ph-currency-inr mr-2"></i>Payroll
-                </button>
+
             </nav>
 
             {/* Actions */}
