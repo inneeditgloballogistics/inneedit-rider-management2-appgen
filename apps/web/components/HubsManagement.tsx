@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import LocationSearch from './LocationSearch';
+import WeatherCard from './WeatherCard';
 
 const HubMapView = dynamic(() => import('./HubMapView'), {
   ssr: false,
@@ -301,6 +302,17 @@ export default function HubsManagement() {
               <div><strong>Status:</strong> {viewItem.status}</div>
               {viewItem.latitude && viewItem.longitude && (
                 <div><strong>Coordinates:</strong> Lat: {viewItem.latitude.toFixed(4)}, Lng: {viewItem.longitude.toFixed(4)}</div>
+              )}
+              {viewItem.latitude && viewItem.longitude && (
+                <div className="pt-4 border-t border-slate-200">
+                  <p className="text-sm font-semibold text-slate-900 mb-2">Current Weather</p>
+                  <WeatherCard 
+                    latitude={viewItem.latitude} 
+                    longitude={viewItem.longitude}
+                    locationName={viewItem.hub_name}
+                    showDetails={true}
+                  />
+                </div>
               )}
             </div>
             <div className="p-6 border-t border-slate-200 flex gap-3 justify-end">

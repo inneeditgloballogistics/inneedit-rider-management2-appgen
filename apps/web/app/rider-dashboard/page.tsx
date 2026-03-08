@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Bell, LogOut, Package, TrendingUp, Users, Wallet, AlertCircle, Gift, DollarSign } from 'lucide-react';
+import WeatherCard from '@/components/WeatherCard';
 
 interface RiderData {
   id: number;
@@ -34,6 +35,8 @@ interface RiderData {
   status: string;
   phone_verified?: boolean;
   created_at?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 interface OrderStats {
@@ -385,10 +388,9 @@ export default function RiderDashboard() {
           </div>
         </div>
       </header>
-
-      {/* Stats Overview */}
+        {/* Stats Overview and Weather */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
           <div className="bg-white p-6 rounded-lg shadow-sm border">
             <div className="flex items-center justify-between">
               <div>
@@ -436,6 +438,24 @@ export default function RiderDashboard() {
               <Gift className="w-10 h-10 text-orange-500" />
             </div>
           </div>
+
+          {/* Current Location Weather */}
+          {rider && rider.latitude && rider.longitude && (
+            <WeatherCard
+              latitude={rider.latitude || 12.9716}
+              longitude={rider.longitude || 77.5946}
+              locationName={`${rider.city || 'Your Location'}`}
+              showDetails={true}
+            />
+          )}
+          {(!rider || !rider.latitude || !rider.longitude) && (
+            <WeatherCard
+              latitude={12.9716}
+              longitude={77.5946}
+              locationName="Hyderabad"
+              showDetails={true}
+            />
+          )}
         </div>
 
         {/* Tabs */}

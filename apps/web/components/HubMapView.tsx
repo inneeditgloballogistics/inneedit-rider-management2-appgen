@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import WeatherCard from './WeatherCard';
 
 interface Hub {
   id: number;
@@ -209,6 +210,7 @@ export default function HubMapView() {
           <span className="font-medium">{hubs.length}</span> hub{hubs.length !== 1 ? 's' : ''} displayed
         </div>
       </div>
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 p-4 border-b border-slate-200">\n        {hubs.slice(0, 4).map((hub) => (\n          <WeatherCard\n            key={hub.id}\n            latitude={hub.latitude}\n            longitude={hub.longitude}\n            locationName={hub.hub_name}\n            showDetails={false}\n          />\n        ))}\n      </div>
       <div ref={mapRef} style={{ height: '600px', width: '100%' }} />
     </div>
   );
