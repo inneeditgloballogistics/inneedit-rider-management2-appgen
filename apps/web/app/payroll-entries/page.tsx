@@ -96,10 +96,16 @@ export default function PayrollEntries() {
   const fetchRiderDetails = async (riderId: string) => {
     setRiderDetailsLoading(true);
     try {
+      const { startDate, endDate } = getWeekDateRange(selectedWeek, selectedMonth, selectedYear);
+      
       const response = await fetch('/api/payroll/rider-entries', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rider_id: riderId })
+        body: JSON.stringify({ 
+          rider_id: riderId,
+          start_date: startDate.toISOString().split('T')[0],
+          end_date: endDate.toISOString().split('T')[0]
+        })
       });
 
       const data = await response.json();

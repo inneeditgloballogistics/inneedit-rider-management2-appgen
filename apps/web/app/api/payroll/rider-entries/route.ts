@@ -3,13 +3,14 @@ import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   try {
-    const { rider_id } = await request.json();
+    const { rider_id, start_date, end_date } = await request.json();
 
     if (!rider_id) {
       return NextResponse.json({ entries: [] });
     }
 
     let entries: any[] = [];
+    const whereClause = start_date && end_date ? `AND DATE(${'{date_field}'}) BETWEEN ${`'${start_date}'`} AND ${`'${end_date}'`}` : '';
 
     // Fetch referrals with rider details joined
     const referrals = await sql`
@@ -27,6 +28,7 @@ export async function POST(request: Request) {
       FROM referrals r
       LEFT JOIN riders rid ON r.referrer_id = rid.user_id
       WHERE r.referrer_id = ${rider_id}
+      ${start_date && end_date ? sql`AND DATE(r.created_at) BETWEEN ${start_date} AND ${end_date}` : sql``}
       ORDER BY r.created_at DESC
     `;
     entries = [...entries, ...referrals];
@@ -47,6 +49,7 @@ export async function POST(request: Request) {
       FROM incentives i
       LEFT JOIN riders rid ON i.rider_id = rid.user_id
       WHERE i.rider_id = ${rider_id}
+      ${start_date && end_date ? sql`AND DATE(i.incentive_date) BETWEEN ${start_date} AND ${end_date}` : sql``}
       ORDER BY i.incentive_date DESC
     `;
     entries = [...entries, ...incentives];
@@ -67,6 +70,7 @@ export async function POST(request: Request) {
       FROM advances a
       LEFT JOIN riders rid ON a.rider_id = rid.user_id
       WHERE a.rider_id = ${rider_id}
+      ${start_date && end_date ? sql`AND DATE(a.requested_at) BETWEEN ${start_date} AND ${end_date}` : sql``}
       ORDER BY a.requested_at DESC
     `;
     entries = [...entries, ...advances];
@@ -87,6 +91,7 @@ export async function POST(request: Request) {
       FROM deductions d
       LEFT JOIN riders rid ON d.rider_id = rid.user_id
       WHERE d.rider_id = ${rider_id}
+      ${start_date && end_date ? sql`AND DATE(d.deduction_date) BETWEEN ${start_date} AND ${end_date}` : sql``}
       ORDER BY d.deduction_date DESC
     `;
     entries = [...entries, ...deductions];
