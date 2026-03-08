@@ -140,8 +140,6 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
         ref={inputRef}
         type="text"
         placeholder={placeholder}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
         className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent"
         disabled={isValidating}
       />
