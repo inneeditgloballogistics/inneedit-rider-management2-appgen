@@ -135,7 +135,7 @@ export default function WeatherBadge({ latitude: propLat, longitude: propLng, lo
     return weather.current.is_day ? '☀️' : '🌙';
   };
 
-  const finalDisplayName = weather ? weather.location.name : displayName;
+  const finalDisplayName = displayName || (weather ? weather.location.name : 'Current Location');
   const today = new Date();
   const dayName = today.toLocaleDateString('en-US', { weekday: 'short' });
   const monthDay = today.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
