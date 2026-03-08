@@ -228,7 +228,7 @@ export default function PayrollEntries() {
                             {entry.entry_type.replace(/_/g, ' ').toUpperCase()}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-sm font-semibold text-slate-900">₹{entry.amount.toFixed(2)}</td>
+                        <td className="px-6 py-4 text-sm font-semibold text-slate-900">₹{(parseFloat(entry.amount.toString()) || 0).toFixed(2)}</td>
                         <td className="px-6 py-4 text-sm text-slate-600 max-w-xs truncate">{entry.description}</td>
                         <td className="px-6 py-4 text-sm text-slate-600">
                           {new Date(entry.entry_date || entry.created_at).toLocaleDateString('en-GB', { 

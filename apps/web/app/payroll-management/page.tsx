@@ -595,7 +595,45 @@ export default function PayrollManagement() {
                       {riderEntries.map(entry => (
                         <div key={entry.id} className="p-3 bg-slate-50 rounded-lg border border-slate-200">
                           <div className="flex justify-between items-start mb-2">
-                            <span className={`px-2 py-1 rounded text-xs font-medium ${\n                              entry.entry_type === 'referral' ? 'bg-blue-100 text-blue-700' :\n                              entry.entry_type === 'incentive' ? 'bg-green-100 text-green-700' :\n                              entry.entry_type === 'advance' ? 'bg-purple-100 text-purple-700' :\n                              entry.entry_type === 'security_deposit' ? 'bg-orange-100 text-orange-700' :\n                              entry.entry_type === 'damage' ? 'bg-red-100 text-red-700' :\n                              entry.entry_type === 'challan' ? 'bg-yellow-100 text-yellow-700' :\n                              'bg-slate-100 text-slate-700'\n                            }`}>\n                              {entry.entry_type.replace(/_/g, ' ').toUpperCase()}\n                            </span>\n                            {entry.amount > 0 && (\n                              <span className=\"font-semibold text-slate-900\">₹{entry.amount.toFixed(2)}</span>\n                            )}\n                          </div>\n                          <p className="text-xs text-slate-600 mb-2\">{entry.description}</p>\n                          <div className=\"flex justify-between text-xs text-slate-500\">\n                            <span>\n                              {new Date(entry.entry_date).toLocaleDateString('en-GB', {\n                                day: '2-digit',\n                                month: 'short',\n                                year: 'numeric'\n                              })}\n                            </span>\n                            {entry.status && (\n                              <span className={`px-2 py-0.5 rounded text-xs font-medium ${\n                                entry.status === 'completed' ? 'bg-green-100 text-green-700' :\n                                entry.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :\n                                'bg-slate-100 text-slate-700'\n                              }`}>\n                                {entry.status.toUpperCase()}\n                              </span>\n                            )}\n                          </div>\n                        </div>\n                      ))}\n                    </div>\n                  )}\n                </div>
+                            <span className={`px-2 py-1 rounded text-xs font-medium ${
+                              entry.entry_type === 'referral' ? 'bg-blue-100 text-blue-700' :
+                              entry.entry_type === 'incentive' ? 'bg-green-100 text-green-700' :
+                              entry.entry_type === 'advance' ? 'bg-purple-100 text-purple-700' :
+                              entry.entry_type === 'security_deposit' ? 'bg-orange-100 text-orange-700' :
+                              entry.entry_type === 'damage' ? 'bg-red-100 text-red-700' :
+                              entry.entry_type === 'challan' ? 'bg-yellow-100 text-yellow-700' :
+                              'bg-slate-100 text-slate-700'
+                            }`}>
+                              {entry.entry_type.replace(/_/g, ' ').toUpperCase()}
+                            </span>
+                            {entry.amount > 0 && (
+                              <span className="font-semibold text-slate-900">₹{(parseFloat(entry.amount.toString()) || 0).toFixed(2)}</span>
+                            )}
+                          </div>
+                          <p className="text-xs text-slate-600 mb-2">{entry.description}</p>
+                          <div className="flex justify-between text-xs text-slate-500">
+                            <span>
+                              {new Date(entry.entry_date).toLocaleDateString('en-GB', {
+                                day: '2-digit',
+                                month: 'short',
+                                year: 'numeric'
+                              })}
+                            </span>
+                            {entry.status && (
+                              <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                                entry.status === 'completed' ? 'bg-green-100 text-green-700' :
+                                entry.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                                'bg-slate-100 text-slate-700'
+                              }`}>
+                                {entry.status.toUpperCase()}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               )}
             </div>
 
