@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useGeocoding } from '@/hooks/useGeocoding';
 
 interface LocationSearchProps {
   value: string;
@@ -19,6 +20,8 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
   const autocompleteRef = useRef<any>(null);
   const sessionTokenRef = useRef<any>(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
+  const { reverseGeocode } = useGeocoding();
 
   useEffect(() => {
     const initAutocomplete = () => {
@@ -33,6 +36,7 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
         // Create a fresh session token for this search session
         sessionTokenRef.current = new window.google.maps.places.AutocompleteSessionToken();
 
+        // ✅ PLACES API - Autocomplete with Telangana bounds
         const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
           types: ['geocode'],
           sessionToken: sessionTokenRef.current,
@@ -46,7 +50,7 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
 
         autocompleteRef.current = autocomplete;
 
-        autocomplete.addListener('place_changed', () => {
+        autocomplete.addListener('place_changed', async () => {
           const place = autocomplete.getPlace();
           
           if (!place.place_id) {
@@ -54,29 +58,57 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
             return;
           }
 
-          // Use PlacesService to get full place details including geometry
-          const service = new window.google.maps.places.PlacesService(document.createElement('div'));
-          
-          service.getDetails({
-            placeId: place.place_id,
-            fields: ['geometry', 'formatted_address', 'address_components', 'name']
-          }, (result: any, status: string) => {
-            if (status === window.google.maps.places.PlacesServiceStatus.OK && result.geometry?.location) {
-              const lat = typeof result.geometry.location.lat === 'function' 
-                ? result.geometry.location.lat() 
-                : result.geometry.location.lat;
-              const lng = typeof result.geometry.location.lng === 'function' 
-                ? result.geometry.location.lng() 
-                : result.geometry.location.lng;
-              
-              onChange(result.formatted_address, lat, lng, result.formatted_address);
-              
-              // Reset session token after selection for next search
-              sessionTokenRef.current = new window.google.maps.places.AutocompleteSessionToken();
-            } else {
-              console.error('PlacesService error:', status);
-            }
-          });
+          setIsValidating(true);
+
+          try {
+            // ✅ MAPS JAVASCRIPT API & PLACES API - Get place details with geometry
+            const service = new window.google.maps.places.PlacesService(document.createElement('div'));
+            
+            service.getDetails({
+              placeId: place.place_id,
+              fields: ['geometry', 'formatted_address', 'address_components', 'name']
+            }, async (result: any, status: string) => {
+              if (status === window.google.maps.places.PlacesServiceStatus.OK && result.geometry?.location) {
+                const lat = typeof result.geometry.location.lat === 'function' 
+                  ? result.geometry.location.lat() 
+                  : result.geometry.location.lat;
+                const lng = typeof result.geometry.location.lng === 'function' 
+                  ? result.geometry.location.lng() 
+                  : result.geometry.location.lng;
+                
+                // ✅ GEOCODING API - Validate & enhance address with reverse geocoding
+                try {
+                  const geocodedAddress = await reverseGeocode(lat, lng);
+                  const validatedAddress = geocodedAddress?.formatted_address || result.formatted_address;
+                  
+                  // Pass all details back
+                  onChange(validatedAddress, lat, lng, validatedAddress);
+                  
+                  console.log('📍 Location confirmed:', { 
+                    address: validatedAddress,
+                    latitude: lat, 
+                    longitude: lng,
+                    city: geocodedAddress?.city,
+                    state: geocodedAddress?.state,
+                    pincode: geocodedAddress?.pincode
+                  });
+                } catch (geocodingError) {
+                  // Fallback if Geocoding API fails
+                  console.warn('Geocoding API validation skipped, using Places data:', geocodingError);
+                  onChange(result.formatted_address, lat, lng, result.formatted_address);
+                }
+                
+                // Reset session token after selection for next search
+                sessionTokenRef.current = new window.google.maps.places.AutocompleteSessionToken();
+              } else {
+                console.error('PlacesService error:', status);
+              }
+              setIsValidating(false);
+            });
+          } catch (error) {
+            console.error('Error processing location:', error);
+            setIsValidating(false);
+          }
         });
 
         setIsInitialized(true);
@@ -92,7 +124,7 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
         window.google?.maps?.event?.clearInstanceListeners(autocompleteRef.current);
       }
     };
-  }, [onChange]);
+  }, [onChange, reverseGeocode]);
 
   return (
     <div className="relative">
@@ -103,8 +135,9 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent"
+        disabled={isValidating}
       />
-      {!isInitialized && (
+      {(!isInitialized || isValidating) && (
         <div className="absolute right-3 top-2.5">
           <div className="w-4 h-4 border-2 border-brand-600 border-t-transparent rounded-full animate-spin"></div>
         </div>
