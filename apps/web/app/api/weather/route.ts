@@ -6,77 +6,115 @@ export async function GET(request: Request) {
     const latitude = parseFloat(searchParams.get('lat') || '12.9716');
     const longitude = parseFloat(searchParams.get('lng') || '77.5946');
 
-    if (!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY) {
-      return NextResponse.json(
-        { 
-          current: {
-            temp_c: 28,
-            condition: { text: 'Partly Cloudy', icon: '' },
-            is_day: 1
-          },
-          location: { name: 'Location', region: '', country: '' }
-        }
-      );
-    }
-
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-
     try {
-      // Use a valid weather API key (not Google Maps key)
-      // Fallback to environment variable or demo key
-      const weatherApiKey = process.env.WEATHER_API_KEY || apiKey;
-      
+      // Using Open-Meteo (free, no API key required, real-time weather data)
       const response = await fetch(
-        `https://api.weatherapi.com/v1/current.json?key=${weatherApiKey}&q=${latitude},${longitude}&aqi=no`
+        `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code,is_day&timezone=auto`
       );
 
       if (!response.ok) {
         console.warn(`Weather API failed: ${response.status} ${response.statusText}`);
-        // Return fallback data with better location info
-        return NextResponse.json({
-          current: {
-            temp_c: 28,
-            condition: { text: 'Partly Cloudy', icon: '⛅' },
-            is_day: 1
-          },
-          location: { name: 'Your Location', region: '', country: '' }
-        });
+        throw new Error('Weather API failed');
       }
 
       const data = await response.json();
+      const current = data.current;
+      
+      // Map weather codes to readable conditions
+      const weatherCodeMap: { [key: number]: string } = {
+        0: 'Clear sky',
+        1: 'Mainly clear',
+        2: 'Partly cloudy',
+        3: 'Overcast',
+        45: 'Foggy',
+        48: 'Foggy',
+        51: 'Light drizzle',
+        53: 'Moderate drizzle',
+        55: 'Dense drizzle',
+        61: 'Slight rain',
+        63: 'Moderate rain',
+        65: 'Heavy rain',
+        71: 'Slight snow',
+        73: 'Moderate snow',
+        75: 'Heavy snow',
+        80: 'Slight showers',
+        81: 'Moderate showers',
+        82: 'Heavy showers',
+        85: 'Slight snow showers',
+        86: 'Heavy snow showers',
+        95: 'Thunderstorm',
+        96: 'Thunderstorm with hail',
+        99: 'Thunderstorm with hail'
+      };
+
+      const conditionText = weatherCodeMap[current.weather_code] || 'Unknown';
+      
+      // Map weather codes to emojis
+      const weatherEmojiMap: { [key: number]: string } = {
+        0: '☀️',      // Clear sky
+        1: '🌤️',     // Mainly clear
+        2: '⛅',      // Partly cloudy
+        3: '☁️',      // Overcast
+        45: '🌫️',    // Foggy
+        48: '🌫️',    // Foggy
+        51: '🌧️',    // Light drizzle
+        53: '🌧️',    // Moderate drizzle
+        55: '🌧️',    // Dense drizzle
+        61: '🌧️',    // Slight rain
+        63: '🌧️',    // Moderate rain
+        65: '⛈️',     // Heavy rain
+        71: '❄️',     // Slight snow
+        73: '❄️',     // Moderate snow
+        75: '❄️',     // Heavy snow
+        80: '🌦️',    // Slight showers
+        81: '🌦️',    // Moderate showers
+        82: '⛈️',     // Heavy showers
+        85: '🌨️',    // Slight snow showers
+        86: '🌨️',    // Heavy snow showers
+        95: '⛈️',     // Thunderstorm
+        96: '⛈️',     // Thunderstorm with hail
+        99: '⛈️'      // Thunderstorm with hail
+      };
+
+      const icon = weatherEmojiMap[current.weather_code] || '🌡️';
+
       return NextResponse.json({
         current: {
-          temp_c: data.current.temp_c,
+          temp_c: current.temperature_2m,
           condition: {
-            text: data.current.condition.text,
-            icon: data.current.condition.icon
+            text: conditionText,
+            icon: icon,
+            code: current.weather_code
           },
-          is_day: data.current.is_day
+          is_day: current.is_day
         },
         location: {
-          name: data.location.name || 'Current Location',
-          region: data.location.region || '',
-          country: data.location.country || ''
+          name: 'Current Location',
+          region: '',
+          country: '',
+          latitude,
+          longitude
         }
       });
     } catch (error) {
       console.error('Weather API error:', error);
+      // Fallback with reasonable defaults
       return NextResponse.json({
         current: {
-          temp_c: 28,
-          condition: { text: 'Partly Cloudy', icon: '⛅' },
-          is_day: 1
+          temp_c: 25,
+          condition: { text: 'Unable to fetch', icon: '🌡️', code: -1 },
+          is_day: new Date().getHours() > 6 && new Date().getHours() < 18 ? 1 : 0
         },
-        location: { name: 'Your Location', region: '', country: '' }
+        location: { name: 'Current Location', region: '', country: '', latitude, longitude }
       });
     }
   } catch (error) {
     console.error('GET handler error:', error);
     return NextResponse.json({
       current: {
-        temp_c: 28,
-        condition: { text: 'Partly Cloudy', icon: '' },
-        is_day: 1
+        temp_c: 25,
+        condition: { text: 'Unable to fetch', icon: '🌡️', code: -1 },
+        is_day: new Date().getHours() > 6 && new Date().getHours() < 18 ? 1 : 0
       },
       location: { name: 'Current Location', region: '', country: '' }
     });
