@@ -39,8 +39,8 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
           fields: ['place_id', 'formatted_address', 'name'],
           componentRestrictions: { country: 'in' },
           bounds: new window.google.maps.LatLngBounds(
-            new window.google.maps.LatLng(17.2403, 78.3432), // Southwest corner of Hyderabad
-            new window.google.maps.LatLng(17.5, 78.65)       // Northeast corner of Hyderabad
+            new window.google.maps.LatLng(15.5, 77.9),   // Southwest corner of Telangana
+            new window.google.maps.LatLng(17.8, 79.8)    // Northeast corner of Telangana
           )
         });
 
