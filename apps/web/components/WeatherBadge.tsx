@@ -141,9 +141,11 @@ export default function WeatherBadge({ latitude: propLat, longitude: propLng, lo
   const monthDay = today.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
   const handleLocationSelect = (lat: number, lng: number, name: string) => {
+    console.log('Location selected:', { lat, lng, name });
     setLatitude(lat);
     setLongitude(lng);
     setDisplayName(name);
+    setLoading(true); // Reset loading state to show loading while fetching new weather
     
     // Save to localStorage
     if (typeof window !== 'undefined') {

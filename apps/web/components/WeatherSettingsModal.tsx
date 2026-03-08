@@ -95,10 +95,13 @@ export default function WeatherSettingsModal({
 
   const handleSelectLocation = (result: any) => {
     const locationName = result.address?.city || result.display_name || 'Selected Location';
-    onLocationSelect(result.lat, result.lon, locationName);
+    const lat = parseFloat(result.lat);
+    const lon = parseFloat(result.lon);
+    console.log('Selected location:', { lat, lon, locationName });
+    onLocationSelect(lat, lon, locationName);
     setSearchQuery('');
     setSearchResults([]);
-    onClose();
+    setTimeout(() => onClose(), 100);
   };
 
   if (!isOpen) return null;
@@ -162,22 +165,28 @@ export default function WeatherSettingsModal({
 
           {/* Search results */}
           {searchResults.length > 0 && (
-            <div className="space-y-2 max-h-64 overflow-y-auto">
-              {searchResults.map((result, index) => (
-                <button
-                  key={index}
-                  onClick={() => handleSelectLocation(result)}
-                  className="w-full text-left p-3 hover:bg-gray-100 rounded-lg border border-gray-200 transition-colors"
-                >
-                  <p className="font-medium text-gray-900 text-sm">
-                    {result.address?.city || result.display_name?.split(',')[0]}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {result.address?.state && `${result.address.state}, `}
-                    {result.address?.country || result.display_name?.split(',').pop()}
-                  </p>
-                </button>
-              ))}
+            <div>
+              <p className="text-xs font-semibold text-gray-600 mb-2">Found {searchResults.length} locations:</p>
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {searchResults.map((result, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleSelectLocation(result)}
+                    className="w-full text-left p-3 hover:bg-blue-50 rounded-lg border border-gray-200 hover:border-blue-400 transition-all hover:shadow-sm"
+                  >
+                    <p className="font-medium text-gray-900 text-sm">
+                      {result.address?.city || result.display_name?.split(',')[0]}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {result.address?.state && `${result.address.state}, `}
+                      {result.address?.country || result.display_name?.split(',').pop()}
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      {result.display_name}
+                    </p>
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
