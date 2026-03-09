@@ -101,7 +101,7 @@ export default function RiderDashboard() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('Session verification error:', errorData);
+        console.error('Session verification error:', errorData.error || errorData);
         setLoading(false);
         setTimeout(() => router.push('/rider-login'), 500);
         return;
@@ -111,8 +111,8 @@ export default function RiderDashboard() {
       console.log('Auth successful, rider data:', data);
       setRider(data.rider);
       await fetchAllData(data.rider.user_id);
-    } catch (error) {
-      console.error('Auth check failed:', error);
+    } catch (error: any) {
+      console.error('Auth check failed:', error.message || error);
       setLoading(false);
       setTimeout(() => router.push('/rider-login'), 500);
     } finally {

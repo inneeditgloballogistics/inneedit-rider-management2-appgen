@@ -7,23 +7,35 @@ export async function GET(request: NextRequest) {
     const sessionToken = request.cookies.get('session_token')?.value;
 
     if (!sessionToken) {
+      console.error('No session token in cookies');
       return NextResponse.json(
         { error: 'Not authenticated' },
         { status: 401 }
       );
     }
 
+    console.log('Session token found:', sessionToken);
+
     // Verify session in database
-    const sessions = await sql`
-      SELECT s."userId", s."expiresAt", u.name, u.email, u.role
-      FROM session s
-      JOIN "user" u ON u.id = s."userId"
-      WHERE s.token = ${sessionToken}
-      AND s."expiresAt" > NOW()
-      LIMIT 1
-    `;
+    let sessions;
+    try {
+      sessions = await sql`
+        SELECT s."userId", s."expiresAt", u.name, u.email, u.role
+        FROM session s
+        JOIN "user" u ON u.id = s."userId"
+        WHERE s.token = ${sessionToken}
+        AND s."expiresAt" > NOW()
+        LIMIT 1
+      `;
+    } catch (dbError: any) {
+      console.error('Database query error:', dbError);
+      throw dbError;
+    }
+
+    console.log('Session query result:', sessions);
 
     if (sessions.length === 0) {
+      console.error('Session not found or expired for token:', sessionToken);
       return NextResponse.json(
         { error: 'Invalid or expired session' },
         { status: 401 }
