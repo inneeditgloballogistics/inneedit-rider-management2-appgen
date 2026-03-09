@@ -52,23 +52,9 @@ export default function RiderLoginPage() {
         return;
       }
 
-      // Login successful - verify session before redirecting
-      // Wait a bit for cookie to be set, then verify session exists
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Verify the session is actually set before redirecting
-      const verifyResponse = await fetch('/api/rider-auth', {
-        method: 'GET',
-        credentials: 'include',
-      });
-
-      if (verifyResponse.ok) {
-        setLoading(false);
-        router.push('/rider-dashboard');
-      } else {
-        setError('Session verification failed. Please try again.');
-        setLoading(false);
-      }
+      // Login successful - redirect immediately
+      setLoading(false);
+      router.push('/rider-dashboard');
     } catch (err: any) {
       console.error('Login error:', err);
       setError(err.message || 'An error occurred. Please try again.');
