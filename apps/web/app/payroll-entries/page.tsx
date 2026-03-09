@@ -65,7 +65,7 @@ export default function PayrollEntries() {
       endDate = new Date(year, month - 1, 21);
     } else if (week === 4) {
       startDate = new Date(year, month - 1, 22);
-      endDate = new Date(year, month + 1, 0); // Last day of month
+      endDate = new Date(year, month, 0); // Last day of month - month parameter is 0-indexed
     }
     
     return { startDate, endDate };
