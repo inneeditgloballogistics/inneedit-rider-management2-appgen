@@ -45,43 +45,47 @@ export async function GET(request: NextRequest) {
     const session = sessions[0];
 
     // Get rider details with all fields
-    const riders = await sql`
-      SELECT 
-        id, 
-        user_id, 
-        cee_id, 
-        full_name, 
-        phone, 
-        email, 
-        date_of_birth,
-        gender,
-        address,
-        city, 
-        state, 
-        pincode,
-        emergency_contact_name,
-        emergency_contact_phone,
-        client,
-        driving_license_number,
-        driving_license_expiry,
-        driving_license_url,
-        aadhar_number,
-        aadhar_url,
-        bank_name,
-        account_number,
-        ifsc_code,
-        vehicle_type,
-        assigned_hub_id,
-        assigned_vehicle_id,
-        status,
-        phone_verified,
-        created_at,
-        latitude,
-        longitude
-      FROM riders
-      WHERE user_id = ${session.userId}
-      LIMIT 1
-    `;
+    let riders;
+    try {
+      riders = await sql`
+        SELECT 
+          id, 
+          user_id, 
+          cee_id, 
+          full_name, 
+          phone, 
+          email, 
+          date_of_birth,
+          gender,
+          address,
+          city, 
+          state, 
+          pincode,
+          emergency_contact_name,
+          emergency_contact_phone,
+          client,
+          driving_license_number,
+          driving_license_expiry,
+          driving_license_url,
+          aadhar_number,
+          aadhar_url,
+          bank_name,
+          account_number,
+          ifsc_code,
+          vehicle_type,
+          assigned_hub_id,
+          assigned_vehicle_id,
+          status,
+          phone_verified,
+          created_at
+        FROM riders
+        WHERE user_id = ${session.userId}
+        LIMIT 1
+      `;
+    } catch (riderError: any) {
+      console.error('Rider query error:', riderError);
+      throw riderError;
+    }
 
     if (riders.length === 0) {
       return NextResponse.json(
@@ -124,8 +128,6 @@ export async function GET(request: NextRequest) {
         status: rider.status,
         phone_verified: rider.phone_verified,
         created_at: rider.created_at,
-        latitude: rider.latitude,
-        longitude: rider.longitude,
       },
     });
   } catch (error: any) {

@@ -106,10 +106,10 @@ export async function POST(request: NextRequest) {
 
     // Create session
     const sessionToken = `rider_${crypto.randomUUID()}`;
-    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+    const expiresAtDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
     const sessionId = crypto.randomUUID();
 
-    console.log('Creating session:', { sessionId, userId, sessionToken, expiresAt });
+    console.log('Creating session:', { sessionId, userId, sessionToken, expiresAt: expiresAtDate });
 
     try {
       await sql`
@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
           ${sessionId},
           ${userId},
           ${sessionToken},
-          ${expiresAt.toISOString()},
+          ${expiresAtDate},
           NOW(),
           NOW()
         )
