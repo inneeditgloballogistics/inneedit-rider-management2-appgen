@@ -149,16 +149,27 @@ export async function POST(request: Request) {
       console.log('Advances query error (non-critical):', e);
     }
 
-    // Fetch deductions
+    // Fetch deductions - get rider's cee_id first
     try {
       let deductions: any[] = [];
+      
+      // First get the rider info to find cee_id
+      const riderInfo = await sql`
+        SELECT cee_id, full_name FROM riders 
+        WHERE user_id = ${rider_id} OR cee_id = ${rider_id}
+        LIMIT 1
+      `;
+      
+      const cee_id = riderInfo?.[0]?.cee_id || rider_id;
+      const full_name = riderInfo?.[0]?.full_name || 'Unknown';
+      
       if (start_date && end_date) {
         deductions = await sql`
           SELECT 
             d.id,
             d.rider_id,
-            COALESCE(r.cee_id, 'N/A') as cee_id,
-            COALESCE(r.full_name, 'Unknown') as full_name,
+            ${cee_id} as cee_id,
+            ${full_name} as full_name,
             d.deduction_type as entry_type,
             COALESCE(d.amount, 0) as amount,
             COALESCE(d.description, '') as description,
@@ -166,8 +177,7 @@ export async function POST(request: Request) {
             d.deduction_date as entry_date,
             d.created_at
           FROM deductions d
-          LEFT JOIN riders r ON d.rider_id = r.user_id OR d.rider_id = r.cee_id
-          WHERE (d.rider_id = ${rider_id})
+          WHERE (d.rider_id = ${rider_id} OR d.rider_id = ${cee_id})
           AND DATE(d.deduction_date) BETWEEN ${start_date} AND ${end_date}
           ORDER BY d.deduction_date DESC
         `;
@@ -176,8 +186,8 @@ export async function POST(request: Request) {
           SELECT 
             d.id,
             d.rider_id,
-            COALESCE(r.cee_id, 'N/A') as cee_id,
-            COALESCE(r.full_name, 'Unknown') as full_name,
+            ${cee_id} as cee_id,
+            ${full_name} as full_name,
             d.deduction_type as entry_type,
             COALESCE(d.amount, 0) as amount,
             COALESCE(d.description, '') as description,
@@ -185,8 +195,7 @@ export async function POST(request: Request) {
             d.deduction_date as entry_date,
             d.created_at
           FROM deductions d
-          LEFT JOIN riders r ON d.rider_id = r.user_id OR d.rider_id = r.cee_id
-          WHERE (d.rider_id = ${rider_id})
+          WHERE (d.rider_id = ${rider_id} OR d.rider_id = ${cee_id})
           ORDER BY d.deduction_date DESC
         `;
       }
