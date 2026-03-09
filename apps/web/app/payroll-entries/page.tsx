@@ -464,23 +464,23 @@ export default function PayrollEntries() {
                       {/* Final Amount Calculation */}
                       <div className="border-t border-brand-300 pt-4">
                         <div className="space-y-2 text-sm text-slate-700">
-                          <p className="font-semibold text-slate-900 mb-3">Note: Advances are loans deducted from payouts after calculation. They are tracked separately and not shown in this summary.</p>
-                          <div className="flex items-center justify-between">
-                            <span>Incentives: ₹{riderDetails.filter(e => e.entry_type === 'incentive').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}</span>
-                            <span className="text-xs">+</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span>Deductions: ₹{riderDetails.filter(e => ['security_deposit', 'damage', 'challan'].includes(e.entry_type)).reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}</span>
-                            <span className="text-xs">-</span>
-                          </div>
+                          <p className="font-semibold text-slate-900 mb-3">Note: Advances are loans deducted from payouts after calculation. They are tracked separately and not included in adjustments.</p>
                           {riderDetails.filter(e => e.entry_type === 'referral').length > 0 && (
                             <div className="flex items-center justify-between">
                               <span>Referrals: ₹{riderDetails.filter(e => e.entry_type === 'referral').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}</span>
                               <span className="text-xs">+</span>
                             </div>
                           )}
+                          <div className="flex items-center justify-between">
+                            <span>Incentives: ₹{riderDetails.filter(e => e.entry_type === 'incentive').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}</span>
+                            <span className="text-xs">+</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span>Deductions (Damage, Challan, etc.): ₹{riderDetails.filter(e => ['security_deposit', 'damage', 'challan'].includes(e.entry_type)).reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}</span>
+                            <span className="text-xs">-</span>
+                          </div>
                         </div>
-                        <div className="flex items-center justify-between border-t border-brand-300 mt-4 pt-4">
+                          <div className="flex items-center justify-between border-t border-brand-300 mt-4 pt-4">
                           <span className="text-sm font-semibold text-slate-900">ADJUSTMENTS TO BASE PAYOUT</span>
                           <span className="text-2xl font-bold text-brand-600">
                             {(() => {
