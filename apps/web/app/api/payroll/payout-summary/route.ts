@@ -75,8 +75,8 @@ export async function POST(request: Request) {
         // Final Amount = Referrals + Incentives - Advances - Deductions
         const finalAmount = totalReferrals + totalIncentives - totalAdvances - totalDeductions;
         
-        // Final Payout = Base Payout - Final Amount
-        const finalPayout = entry.base_payout - finalAmount;
+        // Final Payout = Base Payout + Final Amount (Final Amount is already signed)
+        const finalPayout = entry.base_payout + finalAmount;
 
         return {
           cee_id: entry.cee_id,
