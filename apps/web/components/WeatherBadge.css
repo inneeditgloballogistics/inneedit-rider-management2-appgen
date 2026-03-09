@@ -1,0 +1,148 @@
+/* Rain Animation */
+@keyframes rainDrop {
+  0% {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.8;
+  }
+  90% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+}
+
+/* Snow Animation */
+@keyframes snowFall {
+  0% {
+    transform: translateY(-10px) translateX(0px);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(30px) translateX(10px);
+    opacity: 0;
+  }
+}
+
+/* Cloud drift animation */
+@keyframes cloudDrift {
+  0%, 100% {
+    transform: translateX(-5px);
+  }
+  50% {
+    transform: translateX(5px);
+  }
+}
+
+/* Fog fade animation */
+@keyframes fogFade {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+/* Storm lightning flash */
+@keyframes stormFlash {
+  0%, 100% {
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+  }
+  25% {
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+  }
+  50% {
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+  }
+  75% {
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+  }
+}
+
+/* Apply animations to badge */
+.weather-rain-animation {
+  animation: rainIntensity 3s ease-in-out infinite;
+}
+
+.weather-snow-animation {
+  animation: snowIntensity 3s ease-in-out infinite;
+}
+
+.weather-cloud-animation {
+  animation: cloudDrift 4s ease-in-out infinite;
+}
+
+.weather-fog-animation {
+  animation: fogFade 3s ease-in-out infinite;
+}
+
+.weather-storm-animation {
+  animation: stormFlash 1.5s ease-in-out infinite;
+}
+
+/* Intensity animations for badge background */
+@keyframes rainIntensity {
+  0%, 100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.1);
+  }
+}
+
+@keyframes snowIntensity {
+  0%, 100% {
+    filter: brightness(0.95);
+  }
+  50% {
+    filter: brightness(1.05);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  @keyframes rainDrop {
+    0% {
+      transform: translateY(-8px);
+      opacity: 0;
+    }
+    10% {
+      opacity: 0.8;
+    }
+    90% {
+      opacity: 0.8;
+    }
+    100% {
+      transform: translateY(24px);
+      opacity: 0;
+    }
+  }
+
+  @keyframes snowFall {
+    0% {
+      transform: translateY(-8px) translateX(0px);
+      opacity: 0;
+    }
+    10% {
+      opacity: 1;
+    }
+    90% {
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(24px) translateX(8px);
+      opacity: 0;
+    }
+  }
+}

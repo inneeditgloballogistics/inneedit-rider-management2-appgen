@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import WeatherSettingsModal from './WeatherSettingsModal';
+import './WeatherBadge.css';
 
 interface WeatherData {
   current: {
@@ -135,6 +136,82 @@ export default function WeatherBadge({ latitude: propLat, longitude: propLng, lo
     return weather.current.is_day ? '☀️' : '🌙';
   };
 
+  // Get dynamic gradient based on weather condition and time
+  const getWeatherGradient = () => {
+    const condition = weather.current.condition.text.toLowerCase();
+    const isDay = weather.current.is_day === 1;
+
+    // Rainy conditions
+    if (condition.includes('rain') || condition.includes('drizzle')) {
+      return isDay
+        ? 'from-slate-400 to-slate-500'
+        : 'from-slate-700 to-slate-800';
+    }
+
+    // Thunderstorm
+    if (condition.includes('thunder') || condition.includes('storm')) {
+      return isDay
+        ? 'from-purple-500 to-purple-600'
+        : 'from-purple-900 to-purple-950';
+    }
+
+    // Snow
+    if (condition.includes('snow')) {
+      return isDay
+        ? 'from-cyan-300 to-cyan-400'
+        : 'from-cyan-900 to-cyan-950';
+    }
+
+    // Cloudy
+    if (condition.includes('cloud') || condition.includes('overcast')) {
+      return isDay
+        ? 'from-gray-400 to-gray-500'
+        : 'from-gray-700 to-gray-800';
+    }
+
+    // Mist/Fog
+    if (condition.includes('mist') || condition.includes('fog')) {
+      return isDay
+        ? 'from-blue-300 to-gray-400'
+        : 'from-blue-900 to-gray-700';
+    }
+
+    // Clear/Sunny - default
+    if (condition.includes('clear') || condition.includes('sunny')) {
+      return isDay
+        ? 'from-yellow-400 to-blue-400'
+        : 'from-indigo-900 to-slate-800';
+    }
+
+    // Default: day blue / night indigo
+    return isDay
+      ? 'from-blue-400 to-blue-500'
+      : 'from-indigo-800 to-slate-900';
+  };
+
+  // Get animation class based on weather
+  const getWeatherAnimation = () => {
+    const condition = weather.current.condition.text.toLowerCase();
+
+    if (condition.includes('rain') || condition.includes('drizzle')) {
+      return 'weather-rain-animation';
+    }
+    if (condition.includes('snow')) {
+      return 'weather-snow-animation';
+    }
+    if (condition.includes('thunder') || condition.includes('storm')) {
+      return 'weather-storm-animation';
+    }
+    if (condition.includes('cloud') || condition.includes('overcast')) {
+      return 'weather-cloud-animation';
+    }
+    if (condition.includes('mist') || condition.includes('fog')) {
+      return 'weather-fog-animation';
+    }
+
+    return '';
+  };
+
   const finalDisplayName = displayName || (weather ? weather.location.name : 'Current Location');
   const today = new Date();
   const dayName = today.toLocaleDateString('en-US', { weekday: 'short' });
@@ -157,15 +234,57 @@ export default function WeatherBadge({ latitude: propLat, longitude: propLng, lo
     }
   };
 
+  const gradientClass = getWeatherGradient();
+  const animationClass = getWeatherAnimation();
+
   return (
     <>
       <div
         onClick={() => setIsSettingsOpen(true)}
-        className="bg-gradient-to-r from-blue-400 to-blue-500 rounded-full px-4 py-2 text-white shadow-lg hover:shadow-xl hover:cursor-pointer transition-all flex items-center gap-2 whitespace-nowrap">
+        className={`bg-gradient-to-r ${gradientClass} rounded-full px-4 py-2 text-white shadow-lg hover:shadow-xl hover:cursor-pointer transition-all flex items-center gap-2 whitespace-nowrap relative overflow-hidden ${animationClass}`}>
       
-        <div className="text-2xl flex-shrink-0">{getWeatherIcon()}</div>
+        {/* Animation overlay for rain, snow, etc. */}
+        <div className="absolute inset-0 opacity-20 pointer-events-none">
+          {animationClass === 'weather-rain-animation' && (
+            <div className="absolute inset-0">
+              {[...Array(8)].map((_, i) => (
+                <div
+                  key={i}
+                  className="absolute w-1 h-3 bg-white rounded-full opacity-60"
+                  style={{
+                    left: `${(i % 4) * 25}%`,
+                    top: `${(i / 4) * 50}%`,
+                    animation: `rainDrop 1s linear infinite`,
+                    animationDelay: `${i * 0.125}s`,
+                  }}
+                />
+              ))}
+            </div>
+          )}
+          {animationClass === 'weather-snow-animation' && (
+            <div className="absolute inset-0">
+              {[...Array(6)].map((_, i) => (
+                <div
+                  key={i}
+                  className="absolute w-1.5 h-1.5 bg-white rounded-full opacity-70"
+                  style={{
+                    left: `${(i % 3) * 33}%`,
+                    top: `${(i / 3) * 50}%`,
+                    animation: `snowFall 2s linear infinite`,
+                    animationDelay: `${i * 0.2}s`,
+                  }}
+                />
+              ))}
+            </div>
+          )}
+          {animationClass === 'weather-storm-animation' && (
+            <div className="absolute inset-0 animate-pulse" style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }} />
+          )}
+        </div>
+      
+        <div className="text-2xl flex-shrink-0 relative z-10">{getWeatherIcon()}</div>
         
-        <div className="flex flex-col gap-0">
+        <div className="flex flex-col gap-0 relative z-10">
           <div className="flex items-center gap-1.5">
             <span className="text-xs font-semibold">📍 {finalDisplayName}</span>
             <span className="text-base font-bold">{Math.round(weather.current.temp_c)}°C</span>
