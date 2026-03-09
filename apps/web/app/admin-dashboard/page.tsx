@@ -318,7 +318,7 @@ function AdminDashboardContent() {
 
           <nav className="border-t border-slate-200 overflow-x-auto">
             <div className="flex px-6">
-              {['dashboard', 'riders', 'vehicles', 'hubs', 'stores', 'advances', 'referrals', 'payroll', 'entries'].map((tab) => (
+              {['dashboard', 'riders', 'vehicles', 'hubs', 'stores', 'advances', 'referrals', 'payroll', 'entries', 'payout'].map((tab) => (
                 <button 
                   key={tab}
                   onClick={() => setActiveTab(tab)} 
@@ -337,8 +337,9 @@ function AdminDashboardContent() {
                   {tab === 'referrals' && <i className="ph-bold ph-user-plus text-lg"></i>}
                   {tab === 'payroll' && <i className="ph-bold ph-money text-lg"></i>}
                   {tab === 'entries' && <i className="ph-bold ph-list text-lg"></i>}
+                  {tab === 'payout' && <i className="ph-bold ph-credit-card text-lg"></i>}
 
-                  <span className="capitalize">{tab === 'entries' ? 'Payroll Entries' : tab}</span>
+                  <span className="capitalize">{tab === 'entries' ? 'Payroll Entries' : tab === 'payout' ? 'Payout' : tab}</span>
                   {tab === 'advances' && pendingAdvancesCount > 0 && (
                     <span className="ml-2 px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full">{pendingAdvancesCount}</span>
                   )}
@@ -606,6 +607,24 @@ function AdminDashboardContent() {
                   <p className="text-slate-600 mb-4">View and manage all payroll entries including referrals, incentives, advances, and deductions.</p>
                   <button onClick={() => router.push('/payroll-entries')} className="px-6 py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium">
                     Go to Payroll Entries
+                  </button>
+                </div>
+              </>
+            )}
+
+            {activeTab === 'payout' && (
+              <>
+                <div className="flex justify-between items-center">
+                  <h2 className="font-display text-3xl font-bold text-slate-900">Payroll Payout</h2>
+                  <button onClick={() => router.push('/payroll-payout')} className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium flex items-center gap-2">
+                    <i className="ph-bold ph-arrow-right"></i>Open Payout
+                  </button>
+                </div>
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-8 text-center">
+                  <i className="ph-duotone ph-credit-card text-6xl text-brand-200 mb-4 block"></i>
+                  <p className="text-slate-600 mb-4">Upload invoices, download templates, and manage rider payouts with automatic calculations.</p>
+                  <button onClick={() => router.push('/payroll-payout')} className="px-6 py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium">
+                    Go to Payout Management
                   </button>
                 </div>
               </>
