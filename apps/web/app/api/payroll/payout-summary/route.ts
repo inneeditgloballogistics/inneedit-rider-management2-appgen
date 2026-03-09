@@ -75,16 +75,19 @@ export async function POST(request: Request) {
         // Final Amount = Referrals + Incentives - Advances - Deductions
         const finalAmount = totalReferrals + totalIncentives - totalAdvances - totalDeductions;
         
+        // Convert base_payout to number
+        const basePayout = parseFloat(entry.base_payout) || 0;
+        
         // Final Payout = Base Payout + Final Amount (Final Amount is already signed)
-        const finalPayout = entry.base_payout + finalAmount;
+        const finalPayout = basePayout + finalAmount;
 
         return {
           cee_id: entry.cee_id,
           rider_name: entry.rider_name,
           week: entry.week,
-          base_payout: parseFloat(entry.base_payout),
+          base_payout: basePayout,
           final_amount: finalAmount,
-          final_payout: finalPayout
+          final_payout: Number(finalPayout.toFixed(2))
         };
       })
     );
