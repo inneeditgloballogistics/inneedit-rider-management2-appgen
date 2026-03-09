@@ -165,10 +165,12 @@ export default function PayrollEntries() {
 
   // Calculate totals
   const calculateFinalAmount = () => {
+    const totalReferrals = riderDetails.filter(e => e.entry_type === 'referral').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0);
     const totalIncentives = riderDetails.filter(e => e.entry_type === 'incentive').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0);
     const totalAdvances = riderDetails.filter(e => e.entry_type === 'advance').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0);
     const totalDeductions = riderDetails.filter(e => ['security_deposit', 'damage', 'challan'].includes(e.entry_type)).reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0);
-    return totalIncentives + totalAdvances - totalDeductions;
+    // Formula: Referrals + Incentives - Advances - Deductions = Final Amount
+    return totalReferrals + totalIncentives - totalAdvances - totalDeductions;
   };
 
   return (
@@ -443,8 +445,8 @@ export default function PayrollEntries() {
                     <div className="bg-brand-50 border border-brand-200 rounded-lg p-4 mt-4">
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                         <div>
-                          <p className="text-xs text-slate-600 font-medium mb-1">Total Referrals</p>
-                          <p className="text-lg font-bold text-slate-900">{riderDetails.filter(e => e.entry_type === 'referral').length}</p>
+                          <p className="text-xs text-slate-600 font-medium mb-1">Total Referrals Amount</p>
+                          <p className="text-lg font-bold text-slate-900">₹{riderDetails.filter(e => e.entry_type === 'referral').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}</p>
                         </div>
                         <div>
                           <p className="text-xs text-slate-600 font-medium mb-1">Total Incentives</p>
@@ -462,7 +464,24 @@ export default function PayrollEntries() {
 
                       {/* Final Amount Calculation */}
                       <div className="border-t border-brand-300 pt-4">
-                        <div className="flex items-center justify-between">
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-sm text-slate-700">
+                            <span>Referrals: ₹{riderDetails.filter(e => e.entry_type === 'referral').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}</span>
+                            <span>+</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm text-slate-700">
+                            <span>Incentives: ₹{riderDetails.filter(e => e.entry_type === 'incentive').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}</span>
+                            <span>-</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm text-slate-700">
+                            <span>Advances: ₹{riderDetails.filter(e => e.entry_type === 'advance').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}</span>
+                            <span>-</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm text-slate-700">
+                            <span>Deductions: ₹{riderDetails.filter(e => ['security_deposit', 'damage', 'challan'].includes(e.entry_type)).reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between border-t border-brand-300 mt-4 pt-4">
                           <span className="text-sm font-semibold text-slate-900">= FINAL AMOUNT</span>
                           <span className="text-2xl font-bold text-brand-600">
                             ₹{calculateFinalAmount().toFixed(2)}
