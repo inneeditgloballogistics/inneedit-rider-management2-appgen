@@ -464,29 +464,36 @@ export default function PayrollEntries() {
 
                       {/* Final Amount Calculation */}
                       <div className="border-t border-brand-300 pt-4">
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between text-sm text-slate-700">
-                            <span>Referrals: ₹{riderDetails.filter(e => e.entry_type === 'referral').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}</span>
-                            <span>+</span>
-                          </div>
-                          <div className="flex items-center justify-between text-sm text-slate-700">
+                        <div className="space-y-2 text-sm text-slate-700">
+                          <p className="font-semibold text-slate-900 mb-3">Note: Advances are loans deducted from payouts after calculation. They are tracked separately and not shown in this summary.</p>
+                          <div className="flex items-center justify-between">
                             <span>Incentives: ₹{riderDetails.filter(e => e.entry_type === 'incentive').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}</span>
-                            <span>-</span>
+                            <span className="text-xs">+</span>
                           </div>
-                          <div className="flex items-center justify-between text-sm text-slate-700">
-                            <span>Advances: ₹{riderDetails.filter(e => e.entry_type === 'advance').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}</span>
-                            <span>-</span>
-                          </div>
-                          <div className="flex items-center justify-between text-sm text-slate-700">
+                          <div className="flex items-center justify-between">
                             <span>Deductions: ₹{riderDetails.filter(e => ['security_deposit', 'damage', 'challan'].includes(e.entry_type)).reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}</span>
+                            <span className="text-xs">-</span>
                           </div>
+                          {riderDetails.filter(e => e.entry_type === 'referral').length > 0 && (
+                            <div className="flex items-center justify-between">
+                              <span>Referrals: ₹{riderDetails.filter(e => e.entry_type === 'referral').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}</span>
+                              <span className="text-xs">+</span>
+                            </div>
+                          )}
                         </div>
                         <div className="flex items-center justify-between border-t border-brand-300 mt-4 pt-4">
-                          <span className="text-sm font-semibold text-slate-900">= FINAL AMOUNT</span>
+                          <span className="text-sm font-semibold text-slate-900">ADJUSTMENTS TO BASE PAYOUT</span>
                           <span className="text-2xl font-bold text-brand-600">
-                            ₹{calculateFinalAmount().toFixed(2)}
+                            {(() => {
+                              const incentives = riderDetails.filter(e => e.entry_type === 'incentive').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0);
+                              const deductions = riderDetails.filter(e => ['security_deposit', 'damage', 'challan'].includes(e.entry_type)).reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0);
+                              const referrals = riderDetails.filter(e => e.entry_type === 'referral').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0);
+                              const total = referrals + incentives - deductions;
+                              return (total >= 0 ? '+' : '') + total.toFixed(2);
+                            })()}
                           </span>
                         </div>
+                        <p className="text-xs text-slate-600 mt-3 pt-3 border-t border-brand-300">For your complete payroll with base payout, visit the Rider Dashboard.</p>
                       </div>
                     </div>
                   </div>
