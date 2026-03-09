@@ -100,16 +100,21 @@ export default function RiderDashboard() {
       });
 
       if (!response.ok) {
-        router.push('/rider-login');
+        const errorData = await response.json();
+        console.error('Session verification error:', errorData);
+        setLoading(false);
+        setTimeout(() => router.push('/rider-login'), 500);
         return;
       }
 
       const data = await response.json();
+      console.log('Auth successful, rider data:', data);
       setRider(data.rider);
       await fetchAllData(data.rider.user_id);
     } catch (error) {
       console.error('Auth check failed:', error);
-      router.push('/rider-login');
+      setLoading(false);
+      setTimeout(() => router.push('/rider-login'), 500);
     } finally {
       setLoading(false);
     }

@@ -107,18 +107,27 @@ export async function POST(request: NextRequest) {
     // Create session
     const sessionToken = `rider_${crypto.randomUUID()}`;
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+    const sessionId = crypto.randomUUID();
 
-    await sql`
-      INSERT INTO session (id, "userId", token, "expiresAt", "createdAt", "updatedAt")
-      VALUES (
-        ${crypto.randomUUID()},
-        ${userId},
-        ${sessionToken},
-        ${expiresAt.toISOString()},
-        NOW(),
-        NOW()
-      )
-    `;
+    console.log('Creating session:', { sessionId, userId, sessionToken, expiresAt });
+
+    try {
+      await sql`
+        INSERT INTO session (id, "userId", token, "expiresAt", "createdAt", "updatedAt")
+        VALUES (
+          ${sessionId},
+          ${userId},
+          ${sessionToken},
+          ${expiresAt.toISOString()},
+          NOW(),
+          NOW()
+        )
+      `;
+      console.log('Session created successfully');
+    } catch (sessionError: any) {
+      console.error('Session creation error:', sessionError);
+      throw new Error(`Failed to create session: ${sessionError.message}`);
+    }
 
     // Return success response
     const response = NextResponse.json({
@@ -141,6 +150,7 @@ export async function POST(request: NextRequest) {
       path: '/',
     });
 
+    console.log('Login response sent with session cookie');
     return response;
   } catch (error: any) {
     console.error('Rider login error:', error);
