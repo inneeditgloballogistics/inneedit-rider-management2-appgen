@@ -139,7 +139,10 @@ export default function WeatherBadge({ latitude: propLat, longitude: propLng, lo
   // Get dynamic gradient based on weather condition and time
   const getWeatherGradient = () => {
     const condition = weather.current.condition.text.toLowerCase();
-    const isDay = weather.current.is_day === 1;
+    
+    // Determine if it's day or night based on current time (6 AM - 6 PM)
+    const currentHour = new Date().getHours();
+    const isDay = currentHour >= 6 && currentHour < 18;
 
     // Rainy conditions
     if (condition.includes('rain') || condition.includes('drizzle')) {
