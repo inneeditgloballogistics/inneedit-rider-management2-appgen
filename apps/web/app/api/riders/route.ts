@@ -141,21 +141,39 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    // Update rider record
+    // Update rider record with all available fields
     const result = await sql`
       UPDATE riders 
       SET 
-        full_name = ${otherFields.full_name},
-        phone = ${otherFields.phone},
+        full_name = ${otherFields.full_name || null},
+        phone = ${otherFields.phone || null},
         email = ${otherFields.email || null},
+        date_of_birth = ${otherFields.date_of_birth || null},
+        gender = ${otherFields.gender || null},
         address = ${otherFields.address || null},
         city = ${otherFields.city || null},
         state = ${otherFields.state || null},
         pincode = ${otherFields.pincode || null},
+        emergency_contact_name = ${otherFields.emergency_contact_name || null},
+        emergency_contact_phone = ${otherFields.emergency_contact_phone || null},
         client = ${otherFields.client || null},
+        driving_license_number = ${otherFields.driving_license_number || null},
+        driving_license_expiry = ${otherFields.driving_license_expiry || null},
+        driving_license_url = ${otherFields.driving_license_url || null},
+        aadhar_number = ${otherFields.aadhar_number || null},
+        aadhar_url = ${otherFields.aadhar_url || null},
+        bank_name = ${otherFields.bank_name || null},
+        account_number = ${otherFields.account_number || null},
+        ifsc_code = ${otherFields.ifsc_code || null},
+        vehicle_type = ${otherFields.vehicle_type || null},
         assigned_hub_id = ${otherFields.assigned_hub_id || null},
         assigned_vehicle_id = ${assigned_vehicle_id || null},
         store_id = ${otherFields.store_id || null},
+        vehicle_ownership = ${otherFields.vehicle_ownership || null},
+        ev_monthly_rent = ${otherFields.ev_monthly_rent || null},
+        ev_weekly_rent = ${otherFields.ev_weekly_rent || null},
+        is_leader = ${otherFields.is_leader || false},
+        leader_discount_percentage = ${otherFields.leader_discount_percentage || 0},
         status = ${otherFields.status || 'active'}
       WHERE id = ${id}
       RETURNING *
