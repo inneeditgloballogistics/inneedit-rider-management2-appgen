@@ -163,6 +163,14 @@ export default function PayrollEntries() {
     }
   };
 
+  // Calculate totals
+  const calculateFinalAmount = () => {
+    const totalIncentives = riderDetails.filter(e => e.entry_type === 'incentive').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0);
+    const totalAdvances = riderDetails.filter(e => e.entry_type === 'advance').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0);
+    const totalDeductions = riderDetails.filter(e => ['security_deposit', 'damage', 'challan'].includes(e.entry_type)).reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0);
+    return totalIncentives + totalAdvances - totalDeductions;
+  };
+
   return (
     <div className="mesh-bg text-slate-800 antialiased min-h-screen">
       {/* Header */}
@@ -433,7 +441,7 @@ export default function PayrollEntries() {
 
                     {/* Summary */}
                     <div className="bg-brand-50 border border-brand-200 rounded-lg p-4 mt-4">
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                         <div>
                           <p className="text-xs text-slate-600 font-medium mb-1">Total Referrals</p>
                           <p className="text-lg font-bold text-slate-900">{riderDetails.filter(e => e.entry_type === 'referral').length}</p>
@@ -449,6 +457,16 @@ export default function PayrollEntries() {
                         <div>
                           <p className="text-xs text-slate-600 font-medium mb-1">Total Deductions</p>
                           <p className="text-lg font-bold text-slate-900">₹{riderDetails.filter(e => ['security_deposit', 'damage', 'challan'].includes(e.entry_type)).reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}</p>
+                        </div>
+                      </div>
+
+                      {/* Final Amount Calculation */}
+                      <div className="border-t border-brand-300 pt-4">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-semibold text-slate-900">= FINAL AMOUNT</span>
+                          <span className="text-2xl font-bold text-brand-600">
+                            ₹{calculateFinalAmount().toFixed(2)}
+                          </span>
                         </div>
                       </div>
                     </div>
