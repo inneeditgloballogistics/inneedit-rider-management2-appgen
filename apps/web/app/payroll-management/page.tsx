@@ -40,17 +40,15 @@ export default function PayrollManagement() {
   const [loading, setLoading] = useState(false);
   const [selectedRider, setSelectedRider] = useState<Rider | null>(null);
   const [showPanel, setShowPanel] = useState(false);
-  const [panelMode, setPanelMode] = useState<'referral' | 'incentive' | 'advance' | 'security' | 'damage' | 'challan' | 'history'>('referral');
+  const [panelMode, setPanelMode] = useState<'additions' | 'deductions'>('additions');
+  const [additionsType, setAdditionsType] = useState<'referral' | 'incentive' | 'others'>('referral');
+  const [deductionsType, setDeductionsType] = useState<'advance' | 'security' | 'damage' | 'challan' | 'others'>('advance');
   const [riderEntries, setRiderEntries] = useState<any[]>([]);
   const [loadingEntries, setLoadingEntries] = useState(false);
 
   // Form states for entries
-  const [referralForm, setReferralForm] = useState({ referred_name: '', referred_phone: '', preferred_location: '', notes: '' });
-  const [incentiveForm, setIncentiveForm] = useState({ incentive_type: '', amount: '', description: '' });
-  const [advanceForm, setAdvanceForm] = useState({ amount: '', reason: '', admin_notes: '' });
-  const [securityForm, setSecurityForm] = useState({ amount: '', reason: '' });
-  const [damageForm, setDamageForm] = useState({ amount: '', description: '' });
-  const [challanForm, setChallanForm] = useState({ amount: '', description: '' });
+  const [additionsForm, setAdditionsForm] = useState({ amount: '', description: '', notes: '' });
+  const [deductionsForm, setDeductionsForm] = useState({ amount: '', description: '', notes: '' });
   const [savingEntry, setSavingEntry] = useState(false);
 
   // Fetch riders based on filters
@@ -82,22 +80,16 @@ export default function PayrollManagement() {
     setLoading(false);
   };
 
-  const openPanel = (rider: Rider, mode: typeof panelMode) => {
+  const openPanel = (rider: Rider, mode: 'additions' | 'deductions') => {
     setSelectedRider(rider);
     setPanelMode(mode);
     setShowPanel(true);
     // Reset forms
-    setReferralForm({ referred_name: '', referred_phone: '', preferred_location: '', notes: '' });
-    setIncentiveForm({ incentive_type: '', amount: '', description: '' });
-    setAdvanceForm({ amount: '', reason: '', admin_notes: '' });
-    setSecurityForm({ amount: '', reason: '' });
-    setDamageForm({ amount: '', description: '' });
-    setChallanForm({ amount: '', description: '' });
-    
-    // Load entry history if opening history tab
-    if (mode === 'history') {
-      fetchRiderEntries(rider.cee_id);
-    }
+    setAdditionsForm({ amount: '', description: '', notes: '' });
+    setDeductionsForm({ amount: '', description: '', notes: '' });
+    // Reset type dropdowns
+    setAdditionsType('referral');
+    setDeductionsType('advance');
   };
 
   const fetchRiderEntries = async (riderId: string) => {
@@ -124,26 +116,46 @@ export default function PayrollManagement() {
     try {
       let payload: any = {
         rider_id: selectedRider.cee_id,
-        rider_name: selectedRider.full_name
+        rider_name: selectedRider.full_name,
+        status: 'approved'
       };
 
-      if (panelMode === 'referral') {
-        payload = { ...payload, ...referralForm, type: 'referral' };
-      } else if (panelMode === 'incentive') {
-        payload = { ...payload, ...incentiveForm, type: 'incentive', incentive_date: selectedDate };
-      } else if (panelMode === 'advance') {
-        payload = { ...payload, ...advanceForm, type: 'advance', status: 'pending' };
-      } else if (panelMode === 'security') {
-        payload = { ...payload, amount: securityForm.amount, reason: securityForm.reason, type: 'security_deposit', deduction_date: selectedDate };
-      } else if (panelMode === 'damage') {
-        payload = { ...payload, amount: damageForm.amount, description: damageForm.description, type: 'damage', deduction_date: selectedDate };
-      } else if (panelMode === 'challan') {
-        payload = { ...payload, amount: challanForm.amount, description: challanForm.description, type: 'challan', deduction_date: selectedDate };
-      }
+      let endpoint = '';
 
-      const endpoint = panelMode === 'referral' ? '/api/payroll/referrals' : 
-                       panelMode === 'incentive' ? '/api/payroll/incentives' :
-                       panelMode === 'advance' ? '/api/payroll/advances' : '/api/payroll/deductions';
+      if (panelMode === 'additions') {
+        if (additionsType === 'referral') {
+          payload = { ...payload, referred_name: additionsForm.description, referred_phone: '', preferred_location: '', notes: additionsForm.notes, type: 'referral' };
+          endpoint = '/api/payroll/referrals';
+        } else if (additionsType === 'incentive') {
+          payload = { ...payload, incentive_type: additionsType, amount: additionsForm.amount, description: additionsForm.description, incentive_date: selectedDate };
+          endpoint = '/api/payroll/incentives';
+        } else {
+          // Others - treat as incentive
+          payload = { ...payload, incentive_type: 'others', amount: additionsForm.amount, description: additionsForm.description, incentive_date: selectedDate };
+          endpoint = '/api/payroll/incentives';
+        }
+      } else if (panelMode === 'deductions') {
+        payload = { ...payload, amount: deductionsForm.amount, description: deductionsForm.description, deduction_date: selectedDate };
+        
+        if (deductionsType === 'advance') {
+          payload.type = 'advance';
+          payload.reason = deductionsForm.description;
+          endpoint = '/api/payroll/advances';
+        } else if (deductionsType === 'security') {
+          payload.type = 'security_deposit';
+          endpoint = '/api/payroll/deductions';
+        } else if (deductionsType === 'damage') {
+          payload.type = 'damage';
+          endpoint = '/api/payroll/deductions';
+        } else if (deductionsType === 'challan') {
+          payload.type = 'challan';
+          endpoint = '/api/payroll/deductions';
+        } else {
+          // Others
+          payload.type = 'others';
+          endpoint = '/api/payroll/deductions';
+        }
+      }
 
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -152,7 +164,7 @@ export default function PayrollManagement() {
       });
 
       if (response.ok) {
-        alert(`${panelMode.charAt(0).toUpperCase() + panelMode.slice(1)} added successfully!`);
+        alert(`Entry added successfully and marked as Approved!`);
         setShowPanel(false);
       } else {
         alert('Failed to save entry');
@@ -349,7 +361,7 @@ export default function PayrollManagement() {
                         </td>
                         <td className="px-6 py-4 text-right">
                           <button
-                            onClick={() => openPanel(rider, 'referral')}
+                            onClick={() => openPanel(rider, 'additions')}
                             className="text-brand-600 hover:text-brand-700 text-sm font-medium"
                           >
                             View Details
@@ -422,225 +434,116 @@ export default function PayrollManagement() {
 
             {/* Tabs */}
             <div className="flex border-b border-slate-200 bg-white overflow-x-auto px-8">
-              {['referral', 'incentive', 'advance', 'security', 'damage', 'challan', 'history'].map(tab => (
+              {['additions', 'deductions'].map(tab => (
                 <button
                   key={tab}
-                  onClick={() => {
-                    setPanelMode(tab as any);
-                    if (tab === 'history') {
-                      fetchRiderEntries(selectedRider!.cee_id);
-                    }
-                  }}
+                  onClick={() => setPanelMode(tab as 'additions' | 'deductions')}
                   className={`px-4 py-3 text-sm font-medium transition-all whitespace-nowrap ${
                     panelMode === tab
                       ? 'border-b-2 border-brand-600 text-brand-600'
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  {tab === 'history' ? 'History' : tab.charAt(0).toUpperCase() + tab.slice(1)}
+                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
                 </button>
               ))}
             </div>
 
             {/* Forms */}
             <div className="flex-1 overflow-y-auto px-8 py-6">
-              {panelMode === 'referral' && (
+              {panelMode === 'additions' && (
                 <div className="space-y-4">
-                  <input
-                    type="text"
-                    placeholder="Referred Person Name"
-                    value={referralForm.referred_name}
-                    onChange={(e) => setReferralForm({...referralForm, referred_name: e.target.value})}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                  />
-                  <input
-                    type="tel"
-                    placeholder="Referred Phone"
-                    value={referralForm.referred_phone}
-                    onChange={(e) => setReferralForm({...referralForm, referred_phone: e.target.value})}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Preferred Location"
-                    value={referralForm.preferred_location}
-                    onChange={(e) => setReferralForm({...referralForm, preferred_location: e.target.value})}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                  />
-                  <textarea
-                    placeholder="Notes"
-                    value={referralForm.notes}
-                    onChange={(e) => setReferralForm({...referralForm, notes: e.target.value})}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 resize-none"
-                    rows={4}
-                  />
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-900 mb-2">Addition Type</label>
+                    <select
+                      value={additionsType}
+                      onChange={(e) => setAdditionsType(e.target.value as 'referral' | 'incentive' | 'others')}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
+                    >
+                      <option value="referral">Referrals</option>
+                      <option value="incentive">Incentives</option>
+                      <option value="others">Others</option>
+                    </select>
+                  </div>
+                  
+                  {additionsType === 'referral' && (
+                    <>
+                      <input
+                        type="text"
+                        placeholder="Referred Person Name"
+                        value={additionsForm.description}
+                        onChange={(e) => setAdditionsForm({...additionsForm, description: e.target.value})}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
+                      />
+                      <textarea
+                        placeholder="Notes"
+                        value={additionsForm.notes}
+                        onChange={(e) => setAdditionsForm({...additionsForm, notes: e.target.value})}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 resize-none"
+                        rows={4}
+                      />
+                    </>
+                  )}
+                  
+                  {(additionsType === 'incentive' || additionsType === 'others') && (
+                    <>
+                      <input
+                        type="number"
+                        placeholder="Amount (₹)"
+                        value={additionsForm.amount}
+                        onChange={(e) => setAdditionsForm({...additionsForm, amount: e.target.value})}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
+                      />
+                      <textarea
+                        placeholder="Description"
+                        value={additionsForm.description}
+                        onChange={(e) => setAdditionsForm({...additionsForm, description: e.target.value})}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 resize-none"
+                        rows={4}
+                      />
+                    </>
+                  )}
                 </div>
               )}
 
-              {panelMode === 'incentive' && (
+              {panelMode === 'deductions' && (
                 <div className="space-y-4">
-                  <select
-                    value={incentiveForm.incentive_type}
-                    onChange={(e) => setIncentiveForm({...incentiveForm, incentive_type: e.target.value})}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                  >
-                    <option value="">Select Incentive Type</option>
-                    <option value="performance_bonus">Performance Bonus</option>
-                    <option value="referral_bonus">Referral Bonus</option>
-                    <option value="attendance_bonus">Attendance Bonus</option>
-                    <option value="other">Other</option>
-                  </select>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-900 mb-2">Deduction Type</label>
+                    <select
+                      value={deductionsType}
+                      onChange={(e) => setDeductionsType(e.target.value as 'advance' | 'security' | 'damage' | 'challan' | 'others')}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
+                    >
+                      <option value="security">Security Deposit</option>
+                      <option value="advance">Advance</option>
+                      <option value="damage">Damage</option>
+                      <option value="challan">Challans</option>
+                      <option value="others">Others</option>
+                    </select>
+                  </div>
+                  
                   <input
                     type="number"
                     placeholder="Amount (₹)"
-                    value={incentiveForm.amount}
-                    onChange={(e) => setIncentiveForm({...incentiveForm, amount: e.target.value})}
+                    value={deductionsForm.amount}
+                    onChange={(e) => setDeductionsForm({...deductionsForm, amount: e.target.value})}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
                   />
                   <textarea
                     placeholder="Description"
-                    value={incentiveForm.description}
-                    onChange={(e) => setIncentiveForm({...incentiveForm, description: e.target.value})}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 resize-none"
-                    rows={4}
-                  />
-                </div>
-              )}
-
-              {panelMode === 'advance' && (
-                <div className="space-y-4">
-                  <input
-                    type="number"
-                    placeholder="Amount (₹)"
-                    value={advanceForm.amount}
-                    onChange={(e) => setAdvanceForm({...advanceForm, amount: e.target.value})}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                  />
-                  <textarea
-                    placeholder="Reason for Advance"
-                    value={advanceForm.reason}
-                    onChange={(e) => setAdvanceForm({...advanceForm, reason: e.target.value})}
+                    value={deductionsForm.description}
+                    onChange={(e) => setDeductionsForm({...deductionsForm, description: e.target.value})}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 resize-none"
                     rows={4}
                   />
                   <textarea
-                    placeholder="Admin Notes"
-                    value={advanceForm.admin_notes}
-                    onChange={(e) => setAdvanceForm({...advanceForm, admin_notes: e.target.value})}
+                    placeholder="Notes (optional)"
+                    value={deductionsForm.notes}
+                    onChange={(e) => setDeductionsForm({...deductionsForm, notes: e.target.value})}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 resize-none"
                     rows={3}
                   />
-                </div>
-              )}
-
-              {panelMode === 'security' && (
-                <div className="space-y-4">
-                  <input
-                    type="number"
-                    placeholder="Amount (₹)"
-                    value={securityForm.amount}
-                    onChange={(e) => setSecurityForm({...securityForm, amount: e.target.value})}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                  />
-                  <textarea
-                    placeholder="Reason"
-                    value={securityForm.reason}
-                    onChange={(e) => setSecurityForm({...securityForm, reason: e.target.value})}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 resize-none"
-                    rows={4}
-                  />
-                </div>
-              )}
-
-              {panelMode === 'damage' && (
-                <div className="space-y-4">
-                  <input
-                    type="number"
-                    placeholder="Amount (₹)"
-                    value={damageForm.amount}
-                    onChange={(e) => setDamageForm({...damageForm, amount: e.target.value})}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                  />
-                  <textarea
-                    placeholder="Damage Description"
-                    value={damageForm.description}
-                    onChange={(e) => setDamageForm({...damageForm, description: e.target.value})}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 resize-none"
-                    rows={4}
-                  />
-                </div>
-              )}
-
-              {panelMode === 'challan' && (
-                <div className="space-y-4">
-                  <input
-                    type="number"
-                    placeholder="Amount (₹)"
-                    value={challanForm.amount}
-                    onChange={(e) => setChallanForm({...challanForm, amount: e.target.value})}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                  />
-                  <textarea
-                    placeholder="Challan Details"
-                    value={challanForm.description}
-                    onChange={(e) => setChallanForm({...challanForm, description: e.target.value})}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 resize-none"
-                    rows={4}
-                  />
-                </div>
-              )}
-
-              {panelMode === 'history' && (
-                <div className="space-y-3">
-                  {loadingEntries ? (
-                    <div className="flex justify-center py-8">
-                      <div className="w-8 h-8 border-4 border-slate-200 border-t-brand-600 rounded-full animate-spin"></div>
-                    </div>
-                  ) : riderEntries.length === 0 ? (
-                    <p className="text-center text-slate-500 py-8">No entries found for this rider</p>
-                  ) : (
-                    <div className="max-h-96 overflow-y-auto space-y-3">
-                      {riderEntries.map(entry => (
-                        <div key={entry.id} className="p-3 bg-slate-50 rounded-lg border border-slate-200">
-                          <div className="flex justify-between items-start mb-2">
-                            <span className={`px-2 py-1 rounded text-xs font-medium ${
-                              entry.entry_type === 'referral' ? 'bg-blue-100 text-blue-700' :
-                              entry.entry_type === 'incentive' ? 'bg-green-100 text-green-700' :
-                              entry.entry_type === 'advance' ? 'bg-purple-100 text-purple-700' :
-                              entry.entry_type === 'security_deposit' ? 'bg-orange-100 text-orange-700' :
-                              entry.entry_type === 'damage' ? 'bg-red-100 text-red-700' :
-                              entry.entry_type === 'challan' ? 'bg-yellow-100 text-yellow-700' :
-                              'bg-slate-100 text-slate-700'
-                            }`}>
-                              {entry.entry_type.replace(/_/g, ' ').toUpperCase()}
-                            </span>
-                            {entry.amount > 0 && (
-                              <span className="font-semibold text-slate-900">₹{(parseFloat(entry.amount.toString()) || 0).toFixed(2)}</span>
-                            )}
-                          </div>
-                          <p className="text-xs text-slate-600 mb-2">{entry.description}</p>
-                          <div className="flex justify-between text-xs text-slate-500">
-                            <span>
-                              {new Date(entry.entry_date).toLocaleDateString('en-GB', {
-                                day: '2-digit',
-                                month: 'short',
-                                year: 'numeric'
-                              })}
-                            </span>
-                            {entry.status && (
-                              <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                                entry.status === 'completed' ? 'bg-green-100 text-green-700' :
-                                entry.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                                'bg-slate-100 text-slate-700'
-                              }`}>
-                                {entry.status.toUpperCase()}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </div>
               )}
             </div>
@@ -651,17 +554,15 @@ export default function PayrollManagement() {
                 onClick={() => setShowPanel(false)}
                 className="flex-1 px-4 py-2.5 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 font-medium transition-all"
               >
-                {panelMode === 'history' ? 'Close' : 'Cancel'}
+                Cancel
               </button>
-              {panelMode !== 'history' && (
-                <button
-                  onClick={saveEntry}
-                  disabled={savingEntry}
-                  className="flex-1 px-4 py-2.5 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium transition-all disabled:opacity-50"
-                >
-                  {savingEntry ? 'Saving...' : 'Save Entry'}
-                </button>
-              )}
+              <button
+                onClick={saveEntry}
+                disabled={savingEntry}
+                className="flex-1 px-4 py-2.5 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium transition-all disabled:opacity-50"
+              >
+                {savingEntry ? 'Saving...' : 'Approve'}
+              </button>
             </div>
           </div>
         </div>

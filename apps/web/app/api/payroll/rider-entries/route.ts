@@ -22,7 +22,7 @@ export async function POST(request: Request) {
             COALESCE(r.referrer_cee_id, 'N/A') as cee_id,
             COALESCE(r.referrer_name, 'Unknown') as full_name,
             'referral' as entry_type,
-            1000 as amount,
+            COALESCE(r.amount, 0) as amount,
             CONCAT(r.referred_name, ' (', r.referred_phone, ')') as description,
             'approved' as status,
             r.created_at as entry_date,
@@ -41,7 +41,7 @@ export async function POST(request: Request) {
             COALESCE(r.referrer_cee_id, 'N/A') as cee_id,
             COALESCE(r.referrer_name, 'Unknown') as full_name,
             'referral' as entry_type,
-            1000 as amount,
+            COALESCE(r.amount, 0) as amount,
             CONCAT(r.referred_name, ' (', r.referred_phone, ')') as description,
             'approved' as status,
             r.created_at as entry_date,
@@ -170,16 +170,22 @@ export async function POST(request: Request) {
             d.rider_id,
             ${cee_id} as cee_id,
             ${full_name} as full_name,
-            d.deduction_type as entry_type,
+            CASE 
+              WHEN d.deduction_type ILIKE 'security%' THEN 'security_deposit'
+              WHEN d.deduction_type ILIKE 'advance%' THEN 'advance'
+              WHEN d.deduction_type ILIKE 'damage%' THEN 'damage'
+              WHEN d.deduction_type ILIKE 'challan%' THEN 'challan'
+              ELSE 'other'
+            END as entry_type,
             COALESCE(d.amount, 0) as amount,
             COALESCE(d.description, '') as description,
             'approved' as status,
-            d.created_at as entry_date,
+            d.deduction_date as entry_date,
             d.created_at
           FROM deductions d
           WHERE (d.rider_id = ${rider_id} OR d.rider_id = ${cee_id})
-          AND DATE(d.created_at) BETWEEN ${start_date} AND ${end_date}
-          ORDER BY d.created_at DESC
+          AND DATE(d.deduction_date) BETWEEN ${start_date} AND ${end_date}
+          ORDER BY d.deduction_date DESC
         `;
       } else {
         deductions = await sql`
@@ -188,15 +194,21 @@ export async function POST(request: Request) {
             d.rider_id,
             ${cee_id} as cee_id,
             ${full_name} as full_name,
-            d.deduction_type as entry_type,
+            CASE 
+              WHEN d.deduction_type ILIKE 'security%' THEN 'security_deposit'
+              WHEN d.deduction_type ILIKE 'advance%' THEN 'advance'
+              WHEN d.deduction_type ILIKE 'damage%' THEN 'damage'
+              WHEN d.deduction_type ILIKE 'challan%' THEN 'challan'
+              ELSE 'other'
+            END as entry_type,
             COALESCE(d.amount, 0) as amount,
             COALESCE(d.description, '') as description,
             'approved' as status,
-            d.created_at as entry_date,
+            d.deduction_date as entry_date,
             d.created_at
           FROM deductions d
           WHERE (d.rider_id = ${rider_id} OR d.rider_id = ${cee_id})
-          ORDER BY d.created_at DESC
+          ORDER BY d.deduction_date DESC
         `;
       }
       entries = [...entries, ...deductions];
