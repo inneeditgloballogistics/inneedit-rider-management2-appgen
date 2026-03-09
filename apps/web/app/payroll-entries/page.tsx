@@ -143,14 +143,23 @@ export default function PayrollEntries() {
   };
 
   const getTypeColor = (type: string) => {
-    switch(type) {
+    switch(type?.toLowerCase()) {
       case 'referral': return 'bg-blue-100 text-blue-700';
       case 'incentive': return 'bg-green-100 text-green-700';
       case 'advance': return 'bg-purple-100 text-purple-700';
       case 'security_deposit': return 'bg-orange-100 text-orange-700';
       case 'damage': return 'bg-red-100 text-red-700';
       case 'challan': return 'bg-yellow-100 text-yellow-700';
+      case 'other': return 'bg-slate-100 text-slate-700';
       default: return 'bg-slate-100 text-slate-700';
+    }
+  };
+
+  const getTypeLabel = (type: string) => {
+    switch(type?.toLowerCase()) {
+      case 'security_deposit': return 'Security Deposit';
+      case 'challan': return 'Challan';
+      default: return type?.replace(/_/g, ' ').toUpperCase() || 'Unknown';
     }
   };
 
@@ -397,7 +406,7 @@ export default function PayrollEntries() {
                                 type === 'damage' ? 'bg-red-600' :
                                 type === 'challan' ? 'bg-yellow-600' : 'bg-slate-600'
                               }`}></span>
-                              {type.replace(/_/g, ' ').toUpperCase()} ({typeEntries.length})
+                              {getTypeLabel(type)} ({typeEntries.length})
                             </h4>
                           </div>
 
@@ -445,19 +454,19 @@ export default function PayrollEntries() {
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                         <div>
                           <p className="text-xs text-slate-600 font-medium mb-1">Total Referrals Amount</p>
-                          <p className="text-lg font-bold text-slate-900">₹{riderDetails.filter(e => e.entry_type === 'referral').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}</p>
+                          <p className="text-lg font-bold text-slate-900">₹{riderDetails.filter(e => e.entry_type?.toLowerCase() === 'referral').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}</p>
                         </div>
                         <div>
                           <p className="text-xs text-slate-600 font-medium mb-1">Total Incentives</p>
-                          <p className="text-lg font-bold text-slate-900">₹{riderDetails.filter(e => e.entry_type === 'incentive').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}</p>
+                          <p className="text-lg font-bold text-slate-900">₹{riderDetails.filter(e => e.entry_type?.toLowerCase() === 'incentive').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}</p>
                         </div>
                         <div>
                           <p className="text-xs text-slate-600 font-medium mb-1">Total Advances</p>
-                          <p className="text-lg font-bold text-slate-900">₹{riderDetails.filter(e => e.entry_type === 'advance').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}</p>
+                          <p className="text-lg font-bold text-slate-900">₹{riderDetails.filter(e => e.entry_type?.toLowerCase() === 'advance').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}</p>
                         </div>
                         <div>
-                          <p className="text-xs text-slate-600 font-medium mb-1">Total Deductions</p>
-                          <p className="text-lg font-bold text-slate-900">₹{riderDetails.filter(e => ['security_deposit', 'damage', 'challan'].includes(e.entry_type)).reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}</p>
+                          <p className="text-xs text-slate-600 font-medium mb-1">Total Deductions (Others)</p>
+                          <p className="text-lg font-bold text-slate-900">₹{riderDetails.filter(e => ['security_deposit', 'damage', 'challan', 'other'].includes(e.entry_type?.toLowerCase())).reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}</p>
                         </div>
                       </div>
 
@@ -465,18 +474,18 @@ export default function PayrollEntries() {
                       <div className="border-t border-brand-300 pt-4">
                         <div className="space-y-2 text-sm text-slate-700">
                           <p className="font-semibold text-slate-900 mb-3">Note: Advances are loans deducted from payouts after calculation. They are tracked separately and not included in adjustments.</p>
-                          {riderDetails.filter(e => e.entry_type === 'referral').length > 0 && (
+                          {riderDetails.filter(e => e.entry_type?.toLowerCase() === 'referral').length > 0 && (
                             <div className="flex items-center justify-between">
-                              <span>Referrals: ₹{riderDetails.filter(e => e.entry_type === 'referral').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}</span>
+                              <span>Referrals: ₹{riderDetails.filter(e => e.entry_type?.toLowerCase() === 'referral').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}</span>
                               <span className="text-xs">+</span>
                             </div>
                           )}
                           <div className="flex items-center justify-between">
-                            <span>Incentives: ₹{riderDetails.filter(e => e.entry_type === 'incentive').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}</span>
+                            <span>Incentives: ₹{riderDetails.filter(e => e.entry_type?.toLowerCase() === 'incentive').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}</span>
                             <span className="text-xs">+</span>
                           </div>
                           <div className="flex items-center justify-between">
-                            <span>Deductions (Damage, Challan, etc.): ₹{riderDetails.filter(e => ['security_deposit', 'damage', 'challan'].includes(e.entry_type)).reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}</span>
+                            <span>Deductions (Damage, Challan, etc.): ₹{riderDetails.filter(e => ['security_deposit', 'damage', 'challan', 'other'].includes(e.entry_type?.toLowerCase())).reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}</span>
                             <span className="text-xs">-</span>
                           </div>
                         </div>
@@ -484,9 +493,9 @@ export default function PayrollEntries() {
                           <span className="text-sm font-semibold text-slate-900">ADJUSTMENTS TO BASE PAYOUT</span>
                           <span className="text-2xl font-bold text-brand-600">
                             {(() => {
-                              const incentives = riderDetails.filter(e => e.entry_type === 'incentive').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0);
-                              const deductions = riderDetails.filter(e => ['security_deposit', 'damage', 'challan'].includes(e.entry_type)).reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0);
-                              const referrals = riderDetails.filter(e => e.entry_type === 'referral').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0);
+                              const incentives = riderDetails.filter(e => e.entry_type?.toLowerCase() === 'incentive').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0);
+                              const deductions = riderDetails.filter(e => ['security_deposit', 'damage', 'challan', 'other'].includes(e.entry_type?.toLowerCase())).reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0);
+                              const referrals = riderDetails.filter(e => e.entry_type?.toLowerCase() === 'referral').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0);
                               const adjustment = referrals + incentives - deductions;
                               return (adjustment >= 0 ? '+' : '') + adjustment.toFixed(2);
                             })()}
