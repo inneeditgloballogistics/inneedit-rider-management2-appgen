@@ -167,10 +167,9 @@ export default function PayrollEntries() {
   const calculateFinalAmount = () => {
     const totalReferrals = riderDetails.filter(e => e.entry_type === 'referral').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0);
     const totalIncentives = riderDetails.filter(e => e.entry_type === 'incentive').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0);
-    const totalAdvances = riderDetails.filter(e => e.entry_type === 'advance').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0);
     const totalDeductions = riderDetails.filter(e => ['security_deposit', 'damage', 'challan'].includes(e.entry_type)).reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0);
-    // Formula: Referrals + Incentives - Advances - Deductions = Final Amount
-    return totalReferrals + totalIncentives - totalAdvances - totalDeductions;
+    // Formula: Referrals + Incentives - Deductions = Adjustment
+    return totalReferrals + totalIncentives - totalDeductions;
   };
 
   return (
@@ -488,8 +487,8 @@ export default function PayrollEntries() {
                               const incentives = riderDetails.filter(e => e.entry_type === 'incentive').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0);
                               const deductions = riderDetails.filter(e => ['security_deposit', 'damage', 'challan'].includes(e.entry_type)).reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0);
                               const referrals = riderDetails.filter(e => e.entry_type === 'referral').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0);
-                              const total = referrals + incentives - deductions;
-                              return (total >= 0 ? '+' : '') + total.toFixed(2);
+                              const adjustment = referrals + incentives - deductions;
+                              return (adjustment >= 0 ? '+' : '') + adjustment.toFixed(2);
                             })()}
                           </span>
                         </div>
