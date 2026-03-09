@@ -77,8 +77,53 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json();
-    const { id, status } = body;
+    const { id, status, action, approval_status, referred_rider_id } = body;
 
+    // If action is 'approve', set approval status and calculate month completion date
+    if (action === 'approve') {
+      const approvalDate = new Date();
+      const monthCompletionDate = new Date(approvalDate.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days later
+
+      const result = await sql`
+        UPDATE referrals 
+        SET approval_status = 'approved', 
+            approval_date = ${approvalDate.toISOString()},
+            month_completion_date = ${monthCompletionDate.toISOString()},
+            referred_rider_id = ${referred_rider_id || null},
+            processed_at = CURRENT_TIMESTAMP
+        WHERE id = ${id}
+        RETURNING *
+      `;
+
+      // Create notification for admin
+      await sql`
+        INSERT INTO notifications (type, title, message, related_id)
+        VALUES (
+          'referral_approved',
+          'Referral Approved',
+          ${`Referral ID ${id} has been approved. Rider will receive ₹1000 after 30 days if they remain active.`},
+          ${id}
+        )
+      `;
+
+      return NextResponse.json({ success: true, referral: result[0] });
+    }
+
+    // If action is 'reject', set approval status to rejected
+    if (action === 'reject') {
+      const result = await sql`
+        UPDATE referrals 
+        SET approval_status = 'rejected', 
+            approval_date = CURRENT_TIMESTAMP,
+            processed_at = CURRENT_TIMESTAMP
+        WHERE id = ${id}
+        RETURNING *
+      `;
+
+      return NextResponse.json({ success: true, referral: result[0] });
+    }
+
+    // Standard status update (for other status changes like 'registered', 'called', etc.)
     const result = await sql`
       UPDATE referrals 
       SET status = ${status}, processed_at = CURRENT_TIMESTAMP

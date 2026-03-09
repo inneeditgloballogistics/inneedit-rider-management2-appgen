@@ -14,16 +14,18 @@ export async function POST(request: Request) {
           referrer_id as rider_id,
           referrer_name as rider_name,
           'referral' as entry_type,
-          0 as amount,
+          1000 as amount,
           CONCAT(referred_name, ' (', referred_phone, ')') as description,
-          status,
-          created_at as entry_date,
-          created_at
+          approval_status as status,
+          approval_date as entry_date,
+          approval_date as created_at
         FROM referrals
-        WHERE EXTRACT(YEAR FROM created_at) = ${year}
-        AND EXTRACT(MONTH FROM created_at) = ${month}
+        WHERE EXTRACT(YEAR FROM approval_date) = ${year}
+        AND EXTRACT(MONTH FROM approval_date) = ${month}
+        AND approval_status = 'approved'
+        AND month_completion_date <= CURRENT_TIMESTAMP
         ${search ? sql`AND (referrer_name ILIKE ${'%' + search + '%'} OR referrer_id ILIKE ${'%' + search + '%'})` : sql``}
-        ORDER BY created_at DESC
+        ORDER BY approval_date DESC
       `;
       entries = [...entries, ...referrals];
     }

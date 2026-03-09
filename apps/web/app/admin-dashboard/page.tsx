@@ -253,6 +253,35 @@ function AdminDashboardContent() {
     }
   };
 
+  const handleReferralApproval = async (id: number, referred_rider_id: string, action: 'approve' | 'reject') => {
+    try {
+      const response = await fetch('/api/referrals', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, action, referred_rider_id })
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        alert(data.error || `Failed to ${action} referral`);
+        return;
+      }
+      
+      fetchReferrals();
+      fetchCounts();
+      
+      if (action === 'approve') {
+        alert('Referral approved! Rider will receive ₹1000 after 30 days if they remain active.');
+      } else {
+        alert('Referral rejected!');
+      }
+    } catch (error) {
+      console.error(`Error ${action}ing referral:`, error);
+      alert(`Failed to ${action} referral`);
+    }
+  };
+
   return (
     <>
       <GoogleMapsLoader>
@@ -520,13 +549,23 @@ function AdminDashboardContent() {
                           <td className="px-6 py-4 text-sm text-slate-600">{referral.referred_name}</td>
                           <td className="px-6 py-4 text-sm text-slate-600">{referral.referred_phone}</td>
                           <td className="px-6 py-4 text-sm">
-                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${referral.status === 'pending' ? 'bg-yellow-100 text-yellow-700' : referral.status === 'approved' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                              {referral.status}
+                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                              referral.approval_status === 'pending' ? 'bg-yellow-100 text-yellow-700' : 
+                              referral.approval_status === 'approved' ? 'bg-green-100 text-green-700' : 
+                              'bg-red-100 text-red-700'
+                            }`}>
+                              {referral.approval_status || 'pending'}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-right flex gap-2 justify-end">
+                          <td className="px-6 py-4 text-right space-x-2 flex gap-2 justify-end">
                             <button onClick={() => handleView(referral, 'referral')} className="px-3 py-1 text-blue-600 text-sm font-medium border border-blue-200 rounded hover:bg-blue-50">View</button>
                             <button onClick={() => handleEdit(referral, 'referral')} className="px-3 py-1 text-amber-600 text-sm font-medium border border-amber-200 rounded hover:bg-amber-50">Edit</button>
+                            {referral.approval_status === 'pending' && (
+                              <>
+                                <button onClick={() => handleReferralApproval(referral.id, referral.referrer_id, 'approve')} className="px-3 py-1 text-green-600 text-sm font-medium border border-green-200 rounded hover:bg-green-50">Approve</button>
+                                <button onClick={() => handleReferralApproval(referral.id, referral.referrer_id, 'reject')} className="px-3 py-1 text-red-600 text-sm font-medium border border-red-200 rounded hover:bg-red-50">Reject</button>
+                              </>
+                            )}
                           </td>
                         </tr>
                       ))}
