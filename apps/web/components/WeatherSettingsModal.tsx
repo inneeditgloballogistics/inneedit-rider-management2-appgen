@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, MapPin, Zap } from 'lucide-react';
+import { X, MapPin, Zap, RotateCcw } from 'lucide-react';
 
 interface WeatherSettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   onLocationSelect: (latitude: number, longitude: number, locationName: string) => void;
   currentLocation?: { latitude: number; longitude: number; name: string };
+  onRefresh?: () => void;
 }
 
 export default function WeatherSettingsModal({
@@ -15,6 +16,7 @@ export default function WeatherSettingsModal({
   onClose,
   onLocationSelect,
   currentLocation,
+  onRefresh,
 }: WeatherSettingsModalProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -197,6 +199,15 @@ export default function WeatherSettingsModal({
 
         {/* Footer */}
         <div className="border-t border-gray-200 p-6 flex gap-3">
+          <button
+            onClick={() => {
+              onRefresh?.();
+            }}
+            className="flex-1 px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
+          >
+            <RotateCcw size={16} />
+            Refresh
+          </button>
           <button
             onClick={onClose}
             className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-colors"

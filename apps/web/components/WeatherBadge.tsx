@@ -186,6 +186,11 @@ export default function WeatherBadge({ latitude: propLat, longitude: propLng, lo
           longitude: longitude || 0,
           name: finalDisplayName,
         }}
+        onRefresh={() => {
+          if (latitude && longitude) {
+            fetchWeather();
+          }
+        }}
       />
     </>
   );
