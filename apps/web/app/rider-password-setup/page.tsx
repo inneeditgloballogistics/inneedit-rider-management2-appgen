@@ -52,6 +52,15 @@ export default function RiderPasswordSetupPage() {
       const data = await response.json();
 
       if (!response.ok) {
+        // If password is already set, redirect to login
+        if (data.error && data.error.includes('Password already set')) {
+          setVerifyError('Password already set for this account. Redirecting to login...');
+          setTimeout(() => {
+            router.push('/rider-login');
+          }, 2000);
+          setVerifyLoading(false);
+          return;
+        }
         setVerifyError(data.error || 'Verification failed. Please check your details.');
         setVerifyLoading(false);
         return;

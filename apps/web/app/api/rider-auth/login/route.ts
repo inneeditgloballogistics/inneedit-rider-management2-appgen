@@ -71,21 +71,30 @@ export async function POST(request: NextRequest) {
     let userId = rider.user_id;
 
     if (!userId) {
-      // Create a new user entry if doesn't exist
-      const newUsers = await sql`
-        INSERT INTO "user" (id, name, email, role, "emailVerified", "createdAt", "updatedAt")
-        VALUES (
-          ${crypto.randomUUID()},
-          ${rider.full_name},
-          ${rider.email},
-          'rider',
-          true,
-          NOW(),
-          NOW()
-        )
-        RETURNING id
+      // Check if user already exists by email
+      const existingUsers = await sql`
+        SELECT id FROM "user" WHERE LOWER(email) = LOWER(${rider.email})
       `;
-      userId = newUsers[0].id;
+
+      if (existingUsers.length > 0) {
+        userId = existingUsers[0].id;
+      } else {
+        // Create a new user entry if doesn't exist
+        const newUsers = await sql`
+          INSERT INTO "user" (id, name, email, role, "emailVerified", "createdAt", "updatedAt")
+          VALUES (
+            ${crypto.randomUUID()},
+            ${rider.full_name},
+            ${rider.email},
+            'rider',
+            true,
+            NOW(),
+            NOW()
+          )
+          RETURNING id
+        `;
+        userId = newUsers[0].id;
+      }
 
       // Link user to rider
       await sql`
