@@ -41,8 +41,19 @@ export default function RiderLoginPage() {
       const data = await response.json();
 
       if (!response.ok) {
+        // Check if error is about no password set
+        if (data.error && data.error.includes('password')) {
+          router.push('/rider-password-setup');
+          return;
+        }
         setError(data.error || 'Login failed. Please try again.');
         setLoading(false);
+        return;
+      }
+
+      // Check if user needs to set password
+      if (data.redirectTo === '/rider-password-setup') {
+        router.push('/rider-password-setup');
         return;
       }
 
