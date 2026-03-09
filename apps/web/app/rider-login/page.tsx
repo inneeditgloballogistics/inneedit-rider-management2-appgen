@@ -43,6 +43,7 @@ export default function RiderLoginPage() {
       if (!response.ok) {
         // Check if error is about no password set
         if (data.error && data.error.includes('password')) {
+          setLoading(false);
           router.push('/rider-password-setup');
           return;
         }
@@ -51,13 +52,8 @@ export default function RiderLoginPage() {
         return;
       }
 
-      // Check if user needs to set password
-      if (data.redirectTo === '/rider-password-setup') {
-        router.push('/rider-password-setup');
-        return;
-      }
-
-      // Redirect to rider dashboard
+      // Login successful - redirect immediately
+      setLoading(false);
       router.push('/rider-dashboard');
     } catch (err: any) {
       console.error('Login error:', err);

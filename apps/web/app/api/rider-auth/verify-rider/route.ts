@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
 
     // Find rider by cee_id and email
     const result = await sql`
-      SELECT id, cee_id, full_name, email, phone, status
+      SELECT id, cee_id, full_name, email, phone, status, password_hash
       FROM riders
       WHERE UPPER(cee_id) = UPPER(${cee_id}) AND LOWER(email) = LOWER(${email})
       LIMIT 1
@@ -28,6 +28,14 @@ export async function POST(request: NextRequest) {
     }
 
     const rider = result[0];
+
+    // Check if password is already set
+    if (rider.password_hash) {
+      return NextResponse.json(
+        { error: 'Password already set for this account. Please use the login page.' },
+        { status: 400 }
+      );
+    }
 
     // Check if rider status is active
     if (rider.status !== 'active' && rider.status !== 'Active') {
