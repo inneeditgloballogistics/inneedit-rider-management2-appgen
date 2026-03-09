@@ -47,8 +47,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check if password is set
+    if (!rider.password_hash) {
+      return NextResponse.json(
+        { 
+          error: 'Password not set. Please set your password first.',
+          redirectTo: '/rider-password-setup',
+          needsPasswordSetup: true
+        },
+        { status: 400 }
+      );
+    }
+
     // Verify password
-    if (!rider.password_hash || !verifyPassword(password, rider.password_hash)) {
+    if (!verifyPassword(password, rider.password_hash)) {
       return NextResponse.json(
         { error: 'Invalid email or password' },
         { status: 401 }
