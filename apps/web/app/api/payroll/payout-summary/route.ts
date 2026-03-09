@@ -35,4 +35,63 @@ export async function POST(request: Request) {
           endDate = new Date(year, month - 1, 21);
         } else if (week === 4) {
           startDate = new Date(year, month - 1, 22);
-          endDate = new Date(year, month + 1, 0); // Last day of month\n        }\n\n        // Fetch all payroll entries (referrals, incentives, advances, deductions)\n        const referralData = await sql`\n          SELECT COALESCE(SUM(amount), 0) as total FROM referrals \n          WHERE referrer_id = ${entry.cee_id} \n          AND created_at >= ${startDate.toISOString().split('T')[0]}\n          AND created_at <= ${endDate.toISOString().split('T')[0]}\n        `;\n\n        const incentiveData = await sql`\n          SELECT COALESCE(SUM(amount), 0) as total FROM incentives \n          WHERE rider_id = ${entry.cee_id} \n          AND incentive_date >= ${startDate.toISOString().split('T')[0]}\n          AND incentive_date <= ${endDate.toISOString().split('T')[0]}\n        `;\n\n        const advanceData = await sql`\n          SELECT COALESCE(SUM(amount), 0) as total FROM advances \n          WHERE rider_id = ${entry.cee_id} \n          AND requested_at >= ${startDate.toISOString().split('T')[0]}\n          AND requested_at <= ${endDate.toISOString().split('T')[0]}\n        `;\n\n        const deductionData = await sql`\n          SELECT COALESCE(SUM(amount), 0) as total FROM deductions \n          WHERE rider_id = ${entry.cee_id} \n          AND deduction_date >= ${startDate.toISOString().split('T')[0]}\n          AND deduction_date <= ${endDate.toISOString().split('T')[0]}\n        `;\n\n        const totalReferrals = parseFloat(referralData[0]?.total || 0);\n        const totalIncentives = parseFloat(incentiveData[0]?.total || 0);\n        const totalAdvances = parseFloat(advanceData[0]?.total || 0);\n        const totalDeductions = parseFloat(deductionData[0]?.total || 0);\n\n        // Final Amount = Referrals + Incentives - Advances - Deductions\n        const finalAmount = totalReferrals + totalIncentives - totalAdvances - totalDeductions;\n        \n        // Final Payout = Base Payout - Final Amount\n        const finalPayout = entry.base_payout - finalAmount;\n\n        return {\n          cee_id: entry.cee_id,\n          rider_name: entry.rider_name,\n          week: entry.week,\n          base_payout: parseFloat(entry.base_payout),\n          final_amount: finalAmount,\n          final_payout: finalPayout\n        };\n      })\n    );\n\n    return NextResponse.json({ payouts }, { status: 200 });\n  } catch (error) {\n    console.error(\"Error fetching payout summary:\", error);\n    return NextResponse.json({ message: \"Error fetching payout summary\", payouts: [] }, { status: 500 });\n  }\n}
+          endDate = new Date(year, month + 1, 0); // Last day of month
+        }
+
+        // Fetch all payroll entries (referrals, incentives, advances, deductions)
+        const referralData = await sql`
+          SELECT COALESCE(SUM(amount), 0) as total FROM referrals 
+          WHERE referrer_id = ${entry.cee_id} 
+          AND created_at >= ${startDate?.toISOString().split('T')[0]}
+          AND created_at <= ${endDate?.toISOString().split('T')[0]}
+        `;
+
+        const incentiveData = await sql`
+          SELECT COALESCE(SUM(amount), 0) as total FROM incentives 
+          WHERE rider_id = ${entry.cee_id} 
+          AND incentive_date >= ${startDate?.toISOString().split('T')[0]}
+          AND incentive_date <= ${endDate?.toISOString().split('T')[0]}
+        `;
+
+        const advanceData = await sql`
+          SELECT COALESCE(SUM(amount), 0) as total FROM advances 
+          WHERE rider_id = ${entry.cee_id} 
+          AND requested_at >= ${startDate?.toISOString().split('T')[0]}
+          AND requested_at <= ${endDate?.toISOString().split('T')[0]}
+        `;
+
+        const deductionData = await sql`
+          SELECT COALESCE(SUM(amount), 0) as total FROM deductions 
+          WHERE rider_id = ${entry.cee_id} 
+          AND deduction_date >= ${startDate?.toISOString().split('T')[0]}
+          AND deduction_date <= ${endDate?.toISOString().split('T')[0]}
+        `;
+
+        const totalReferrals = parseFloat(referralData[0]?.total || 0);
+        const totalIncentives = parseFloat(incentiveData[0]?.total || 0);
+        const totalAdvances = parseFloat(advanceData[0]?.total || 0);
+        const totalDeductions = parseFloat(deductionData[0]?.total || 0);
+
+        // Final Amount = Referrals + Incentives - Advances - Deductions
+        const finalAmount = totalReferrals + totalIncentives - totalAdvances - totalDeductions;
+        
+        // Final Payout = Base Payout - Final Amount
+        const finalPayout = entry.base_payout - finalAmount;
+
+        return {
+          cee_id: entry.cee_id,
+          rider_name: entry.rider_name,
+          week: entry.week,
+          base_payout: parseFloat(entry.base_payout),
+          final_amount: finalAmount,
+          final_payout: finalPayout
+        };
+      })
+    );
+
+    return NextResponse.json({ payouts }, { status: 200 });
+  } catch (error) {
+    console.error("Error fetching payout summary:", error);
+    return NextResponse.json({ message: "Error fetching payout summary", payouts: [] }, { status: 500 });
+  }
+}
