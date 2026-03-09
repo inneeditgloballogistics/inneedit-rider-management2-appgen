@@ -11,7 +11,7 @@ export async function POST(request: Request) {
 
     let entries: any[] = [];
 
-    // Fetch referrals - only include approved ones where rider is eligible
+    // Fetch referrals - only include approved ones (filter by created_at for week determination)
     try {
       let referrals: any[] = [];
       if (start_date && end_date) {
@@ -24,15 +24,14 @@ export async function POST(request: Request) {
             'referral' as entry_type,
             1000 as amount,
             CONCAT(r.referred_name, ' (', r.referred_phone, ')') as description,
-            COALESCE(r.approval_status, 'pending') as status,
-            r.approval_date as entry_date,
-            r.approval_date as created_at
+            'approved' as status,
+            r.created_at as entry_date,
+            r.created_at as created_at
           FROM referrals r
           WHERE (r.referrer_id = ${rider_id} OR r.referrer_cee_id = ${rider_id})
           AND r.approval_status = 'approved'
-          AND r.month_completion_date <= CURRENT_TIMESTAMP
-          AND DATE(r.approval_date) BETWEEN ${start_date} AND ${end_date}
-          ORDER BY r.approval_date DESC
+          AND DATE(r.created_at) BETWEEN ${start_date} AND ${end_date}
+          ORDER BY r.created_at DESC
         `;
       } else {
         referrals = await sql`
@@ -44,14 +43,13 @@ export async function POST(request: Request) {
             'referral' as entry_type,
             1000 as amount,
             CONCAT(r.referred_name, ' (', r.referred_phone, ')') as description,
-            COALESCE(r.approval_status, 'pending') as status,
-            r.approval_date as entry_date,
-            r.approval_date as created_at
+            'approved' as status,
+            r.created_at as entry_date,
+            r.created_at as created_at
           FROM referrals r
           WHERE (r.referrer_id = ${rider_id} OR r.referrer_cee_id = ${rider_id})
           AND r.approval_status = 'approved'
-          AND r.month_completion_date <= CURRENT_TIMESTAMP
-          ORDER BY r.approval_date DESC
+          ORDER BY r.created_at DESC
         `;
       }
       entries = [...entries, ...referrals];
@@ -59,7 +57,7 @@ export async function POST(request: Request) {
       console.log('Referrals query error (non-critical):', e);
     }
 
-    // Fetch incentives
+    // Fetch incentives (filter by created_at for week determination)
     try {
       let incentives: any[] = [];
       if (start_date && end_date) {
@@ -72,14 +70,14 @@ export async function POST(request: Request) {
             'incentive' as entry_type,
             COALESCE(i.amount, 0) as amount,
             CONCAT(COALESCE(i.incentive_type, 'Incentive'), ': ', COALESCE(i.description, '')) as description,
-            'completed' as status,
-            i.incentive_date as entry_date,
+            'approved' as status,
+            i.created_at as entry_date,
             i.created_at
           FROM incentives i
           LEFT JOIN riders r ON i.rider_id = r.user_id OR i.rider_id = r.cee_id
           WHERE (i.rider_id = ${rider_id})
-          AND DATE(i.incentive_date) BETWEEN ${start_date} AND ${end_date}
-          ORDER BY i.incentive_date DESC
+          AND DATE(i.created_at) BETWEEN ${start_date} AND ${end_date}
+          ORDER BY i.created_at DESC
         `;
       } else {
         incentives = await sql`
@@ -91,13 +89,13 @@ export async function POST(request: Request) {
             'incentive' as entry_type,
             COALESCE(i.amount, 0) as amount,
             CONCAT(COALESCE(i.incentive_type, 'Incentive'), ': ', COALESCE(i.description, '')) as description,
-            'completed' as status,
-            i.incentive_date as entry_date,
+            'approved' as status,
+            i.created_at as entry_date,
             i.created_at
           FROM incentives i
           LEFT JOIN riders r ON i.rider_id = r.user_id OR i.rider_id = r.cee_id
           WHERE (i.rider_id = ${rider_id})
-          ORDER BY i.incentive_date DESC
+          ORDER BY i.created_at DESC
         `;
       }
       entries = [...entries, ...incentives];
@@ -105,7 +103,7 @@ export async function POST(request: Request) {
       console.log('Incentives query error (non-critical):', e);
     }
 
-    // Fetch advances
+    // Fetch advances (filter by created_at/requested_at for week determination, only approved ones)
     try {
       let advances: any[] = [];
       if (start_date && end_date) {
@@ -118,11 +116,12 @@ export async function POST(request: Request) {
             'advance' as entry_type,
             COALESCE(a.amount, 0) as amount,
             CONCAT('Reason: ', COALESCE(a.reason, '')) as description,
-            COALESCE(a.status, 'pending') as status,
+            'approved' as status,
             a.requested_at as entry_date,
             a.requested_at as created_at
           FROM advances a
           WHERE (a.rider_id = ${rider_id} OR a.cee_id = ${rider_id})
+          AND a.status = 'approved'
           AND DATE(a.requested_at) BETWEEN ${start_date} AND ${end_date}
           ORDER BY a.requested_at DESC
         `;
@@ -136,11 +135,12 @@ export async function POST(request: Request) {
             'advance' as entry_type,
             COALESCE(a.amount, 0) as amount,
             CONCAT('Reason: ', COALESCE(a.reason, '')) as description,
-            COALESCE(a.status, 'pending') as status,
+            'approved' as status,
             a.requested_at as entry_date,
             a.requested_at as created_at
           FROM advances a
           WHERE (a.rider_id = ${rider_id} OR a.cee_id = ${rider_id})
+          AND a.status = 'approved'
           ORDER BY a.requested_at DESC
         `;
       }
@@ -149,7 +149,7 @@ export async function POST(request: Request) {
       console.log('Advances query error (non-critical):', e);
     }
 
-    // Fetch deductions - get rider's cee_id first
+    // Fetch deductions - get rider's cee_id first (filter by created_at for week determination)
     try {
       let deductions: any[] = [];
       
@@ -173,13 +173,13 @@ export async function POST(request: Request) {
             d.deduction_type as entry_type,
             COALESCE(d.amount, 0) as amount,
             COALESCE(d.description, '') as description,
-            'completed' as status,
-            d.deduction_date as entry_date,
+            'approved' as status,
+            d.created_at as entry_date,
             d.created_at
           FROM deductions d
           WHERE (d.rider_id = ${rider_id} OR d.rider_id = ${cee_id})
-          AND DATE(d.deduction_date) BETWEEN ${start_date} AND ${end_date}
-          ORDER BY d.deduction_date DESC
+          AND DATE(d.created_at) BETWEEN ${start_date} AND ${end_date}
+          ORDER BY d.created_at DESC
         `;
       } else {
         deductions = await sql`
@@ -191,12 +191,12 @@ export async function POST(request: Request) {
             d.deduction_type as entry_type,
             COALESCE(d.amount, 0) as amount,
             COALESCE(d.description, '') as description,
-            'completed' as status,
-            d.deduction_date as entry_date,
+            'approved' as status,
+            d.created_at as entry_date,
             d.created_at
           FROM deductions d
           WHERE (d.rider_id = ${rider_id} OR d.rider_id = ${cee_id})
-          ORDER BY d.deduction_date DESC
+          ORDER BY d.created_at DESC
         `;
       }
       entries = [...entries, ...deductions];

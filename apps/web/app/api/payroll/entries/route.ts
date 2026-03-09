@@ -16,16 +16,15 @@ export async function POST(request: Request) {
           'referral' as entry_type,
           1000 as amount,
           CONCAT(referred_name, ' (', referred_phone, ')') as description,
-          approval_status as status,
-          approval_date as entry_date,
-          approval_date as created_at
+          'approved' as status,
+          created_at as entry_date,
+          created_at
         FROM referrals
-        WHERE EXTRACT(YEAR FROM approval_date) = ${year}
-        AND EXTRACT(MONTH FROM approval_date) = ${month}
+        WHERE EXTRACT(YEAR FROM created_at) = ${year}
+        AND EXTRACT(MONTH FROM created_at) = ${month}
         AND approval_status = 'approved'
-        AND month_completion_date <= CURRENT_TIMESTAMP
         ${search ? sql`AND (referrer_name ILIKE ${'%' + search + '%'} OR referrer_id ILIKE ${'%' + search + '%'})` : sql``}
-        ORDER BY approval_date DESC
+        ORDER BY created_at DESC
       `;
       entries = [...entries, ...referrals];
     }
@@ -39,14 +38,14 @@ export async function POST(request: Request) {
           'incentive' as entry_type,
           amount,
           CONCAT(incentive_type, ': ', description) as description,
-          'completed' as status,
-          incentive_date as entry_date,
+          'approved' as status,
+          created_at as entry_date,
           created_at
         FROM incentives
-        WHERE EXTRACT(YEAR FROM incentive_date) = ${year}
-        AND EXTRACT(MONTH FROM incentive_date) = ${month}
+        WHERE EXTRACT(YEAR FROM created_at) = ${year}
+        AND EXTRACT(MONTH FROM created_at) = ${month}
         ${search ? sql`AND (rider_id ILIKE ${'%' + search + '%'})` : sql``}
-        ORDER BY incentive_date DESC
+        ORDER BY created_at DESC
       `;
       entries = [...entries, ...incentives];
     }
@@ -60,12 +59,13 @@ export async function POST(request: Request) {
           'advance' as entry_type,
           amount,
           CONCAT('Reason: ', reason) as description,
-          status,
+          'approved' as status,
           requested_at as entry_date,
           requested_at as created_at
         FROM advances
         WHERE EXTRACT(YEAR FROM requested_at) = ${year}
         AND EXTRACT(MONTH FROM requested_at) = ${month}
+        AND status = 'approved'
         ${search ? sql`AND (rider_name ILIKE ${'%' + search + '%'} OR rider_id ILIKE ${'%' + search + '%'})` : sql``}
         ORDER BY requested_at DESC
       `;
@@ -81,15 +81,15 @@ export async function POST(request: Request) {
           deduction_type as entry_type,
           amount,
           description,
-          'completed' as status,
-          deduction_date as entry_date,
+          'approved' as status,
+          created_at as entry_date,
           created_at
         FROM deductions
-        WHERE EXTRACT(YEAR FROM deduction_date) = ${year}
-        AND EXTRACT(MONTH FROM deduction_date) = ${month}
+        WHERE EXTRACT(YEAR FROM created_at) = ${year}
+        AND EXTRACT(MONTH FROM created_at) = ${month}
         ${type !== 'all' ? sql`AND deduction_type = ${type}` : sql``}
         ${search ? sql`AND (rider_id ILIKE ${'%' + search + '%'})` : sql``}
-        ORDER BY deduction_date DESC
+        ORDER BY created_at DESC
       `;
       
       // Fetch rider names for deductions

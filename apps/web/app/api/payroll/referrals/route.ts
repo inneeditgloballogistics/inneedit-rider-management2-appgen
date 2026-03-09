@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
         referred_phone,
         preferred_location,
         notes,
-        status,
+        approval_status,
         created_at
       ) VALUES (
         ${rider_id},
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
         ${referred_phone},
         ${preferred_location},
         ${notes},
-        'pending',
+        'approved',
         NOW()
       )
       RETURNING *

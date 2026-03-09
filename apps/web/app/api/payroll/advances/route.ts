@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
         ${parseFloat(amount)},
         ${reason},
         ${admin_notes},
-        'pending',
+        'approved',
         NOW()
       )
       RETURNING *
