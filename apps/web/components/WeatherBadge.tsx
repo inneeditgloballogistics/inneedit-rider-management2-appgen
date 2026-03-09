@@ -244,10 +244,11 @@ export default function WeatherBadge({ latitude: propLat, longitude: propLng, lo
     <>
       <div
         onClick={() => setIsSettingsOpen(true)}
-        className={`bg-gradient-to-r ${gradientClass} rounded-full px-4 py-2 text-white shadow-lg hover:shadow-xl hover:cursor-pointer transition-all flex items-center gap-2 whitespace-nowrap relative overflow-hidden ${animationClass}`}>
+        className={`bg-gradient-to-r ${gradientClass} rounded-full px-4 py-2 text-white shadow-lg hover:shadow-xl hover:cursor-pointer transition-all flex items-center gap-2 whitespace-nowrap relative overflow-hidden`}
+        style={{ animation: animationClass ? `var(--weather-animation)` : 'none' }}>
       
         {/* Animation overlay for rain, snow, etc. */}
-        <div className="absolute inset-0 opacity-20 pointer-events-none">
+        <div className="absolute inset-0 opacity-30 pointer-events-none">
           {animationClass === 'weather-rain-animation' && (
             <div className="absolute inset-0">
               {[...Array(8)].map((_, i) => (

@@ -70,25 +70,26 @@
   }
 }
 
-/* Apply animations to badge */
+/* Apply animations to badge - More visible */
 .weather-rain-animation {
-  animation: rainIntensity 3s ease-in-out infinite;
+  animation: rainIntensity 3s ease-in-out infinite !important;
+  background: linear-gradient(-90deg, rgba(255,255,255,.1) 0%, rgba(255,255,255,.1) 100%) !important;
 }
 
 .weather-snow-animation {
-  animation: snowIntensity 3s ease-in-out infinite;
+  animation: snowIntensity 3s ease-in-out infinite !important;
 }
 
 .weather-cloud-animation {
-  animation: cloudDrift 4s ease-in-out infinite;
+  animation: cloudDrift 4s ease-in-out infinite !important;
 }
 
 .weather-fog-animation {
-  animation: fogFade 3s ease-in-out infinite;
+  animation: fogFade 3s ease-in-out infinite !important;
 }
 
 .weather-storm-animation {
-  animation: stormFlash 1.5s ease-in-out infinite;
+  animation: stormFlash 1.5s ease-in-out infinite !important;
 }
 
 /* Intensity animations for badge background */
