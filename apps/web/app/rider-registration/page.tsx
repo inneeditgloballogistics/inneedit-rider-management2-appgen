@@ -239,7 +239,7 @@ function RiderRegistrationContent() {
                         <p className="text-xs text-slate-500">{user?.email || 'Bangalore HQ'}</p>
                     </div>
                     <button
-                      onClick={() => signOut()}
+                      onClick={() => router.back()}
                       className="w-10 h-10 rounded-full bg-gradient-to-tr from-slate-700 to-slate-900 border-2 border-white shadow-md hover:from-red-600 hover:to-red-700 transition-all flex items-center justify-center text-white"
                       title="Sign Out"
                     >
@@ -261,7 +261,7 @@ function RiderRegistrationContent() {
                     <p className="text-slate-500 mt-2">Onboard a new rider to the fleet. Create login credentials and assign assets.</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <button onClick={() => router.push('/')} className="text-sm font-medium text-slate-500 hover:text-slate-900">Cancel</button>
+                    <button onClick={() => router.back()} className="text-sm font-medium text-slate-500 hover:text-slate-900">Cancel</button>
                 </div>
             </div>
 
@@ -757,7 +757,7 @@ function RiderRegistrationContent() {
 
                     {/* Form Actions */}
                     <div className="flex items-center justify-end gap-4 pt-4">
-                        <button onClick={() => router.push('/')} className="px-6 py-3 text-slate-600 font-medium hover:text-slate-900 transition-colors">Cancel</button>
+                        <button onClick={() => router.back()} className="px-6 py-3 text-slate-600 font-medium hover:text-slate-900 transition-colors">Cancel</button>
                         <button 
                           onClick={handleSubmit}
                           disabled={isSubmitting}
