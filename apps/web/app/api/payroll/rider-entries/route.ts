@@ -306,7 +306,8 @@ export async function POST(request: Request) {
           while (currentDate <= endDateObj) {
             // Skip if rider hasn't joined yet
             if (riderJoinDate && currentDate < riderJoinDate) {
-              console.log(`⏭️  Skipping ${currentDate.toISOString().split('T')[0]} - rider hasn't joined yet (join_date: ${riderJoinDate.toISOString().split('T')[0]})`);\n              currentDate.setUTCDate(currentDate.getUTCDate() + 1);
+              console.log(`⏭️  Skipping ${currentDate.toISOString().split('T')[0]} - rider hasn't joined yet (join_date: ${riderJoinDate.toISOString().split('T')[0]})`);
+              currentDate.setUTCDate(currentDate.getUTCDate() + 1);
               continue;
             }
 
@@ -314,7 +315,8 @@ export async function POST(request: Request) {
             const dateStr = currentDate.toISOString().split('T')[0];
             const vehicleRentEntry = {
               id: `vehicle-rent-${rider_id}-${dateStr}`,
-              rider_id: rider_id,\n              cee_id: cee_id,
+              rider_id: rider_id,
+              cee_id: cee_id,
               full_name: full_name,
               entry_type: 'vehicle_rent',
               amount: dailyRent,
@@ -327,12 +329,14 @@ export async function POST(request: Request) {
             
             entries.push(vehicleRentEntry);
             daysAdded++;
-            console.log(`✅ Added vehicle rent for ${dateStr}: ₹${dailyRent}`);\n            
+            console.log(`✅ Added vehicle rent for ${dateStr}: ₹${dailyRent}`);
+            
             // Move to next day
             currentDate.setUTCDate(currentDate.getUTCDate() + 1);
           }
           
-          console.log(`📊 Total vehicle rent days added for ${cee_id}: ${daysAdded} days`);\n        }
+          console.log(`📊 Total vehicle rent days added for ${cee_id}: ${daysAdded} days`);
+        }
       }
     } catch (e) {
       console.log('Deductions query error (non-critical):', e);
