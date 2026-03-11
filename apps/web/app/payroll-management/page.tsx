@@ -20,15 +20,6 @@ interface Rider {
   vehicle_status?: string;
 }
 
-interface DeductionEntry {
-  id?: number;
-  rider_id: string;
-  deduction_type: string;
-  amount: number;
-  description: string;
-  deduction_date: string;
-}
-
 export default function PayrollManagement() {
   const router = useRouter();
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -40,21 +31,20 @@ export default function PayrollManagement() {
   const [loading, setLoading] = useState(false);
   const [selectedRider, setSelectedRider] = useState<Rider | null>(null);
   const [showPanel, setShowPanel] = useState(false);
-  const [panelMode, setPanelMode] = useState<'additions' | 'deductions' | 'history'>('additions');
-  const [additionsType, setAdditionsType] = useState<'referral' | 'incentive' | 'others'>('referral');
-  const [deductionsType, setDeductionsType] = useState<'advance' | 'security' | 'damage' | 'challan' | 'others'>('advance');
+  const [panelMode, setPanelMode] = useState<'view' | 'add'>('view');
   const [riderEntries, setRiderEntries] = useState<any[]>([]);
   const [loadingEntries, setLoadingEntries] = useState(false);
   const [historyDate, setHistoryDate] = useState(new Date().toISOString().split('T')[0]);
   const [historyEntries, setHistoryEntries] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
-  // Form states for entries
-  const [additionsForm, setAdditionsForm] = useState({ amount: '', description: '', notes: '' });
-  const [deductionsForm, setDeductionsForm] = useState({ amount: '', description: '', notes: '' });
+  // Form states
+  const [entryType, setEntryType] = useState<'addition' | 'deduction'>('addition');
+  const [additionType, setAdditionType] = useState('referral');
+  const [deductionType, setDeductionType] = useState('advance');
+  const [formData, setFormData] = useState({ amount: '', description: '', notes: '' });
   const [savingEntry, setSavingEntry] = useState(false);
 
-  // Fetch riders based on filters
   useEffect(() => {
     fetchRiders();
   }, [selectedYear, selectedMonth, selectedDate, selectedFilter, searchQuery]);
@@ -73,7 +63,6 @@ export default function PayrollManagement() {
           search: searchQuery
         })
       });
-
       const data = await response.json();
       setRiders(data.riders || []);
     } catch (error) {
@@ -83,28 +72,52 @@ export default function PayrollManagement() {
     setLoading(false);
   };
 
-  const openPanel = (rider: Rider, mode: 'additions' | 'deductions' | 'history') => {
+  const openPanel = (rider: Rider) => {
     setSelectedRider(rider);
-    setPanelMode(mode);
+    setPanelMode('view');
     setShowPanel(true);
-    // Reset forms
-    setAdditionsForm({ amount: '', description: '', notes: '' });
-    setDeductionsForm({ amount: '', description: '', notes: '' });
-    // Reset type dropdowns
-    setAdditionsType('referral');
-    setDeductionsType('advance');
-    // Reset history date to today
+    setFormData({ amount: '', description: '', notes: '' });
     setHistoryDate(new Date().toISOString().split('T')[0]);
     setHistoryEntries([]);
+    fetchRiderEntriesForWeek(rider.cee_id);
   };
 
-  const fetchRiderEntries = async (riderId: string) => {
+  const fetchRiderEntriesForWeek = async (riderId: string) => {
+    const getWeekDateRange = () => {
+      const weekNum = selectedMonth;
+      let startDate, endDate;
+      
+      if (weekNum === 1) {
+        startDate = new Date(selectedYear, new Date().getMonth(), 1);
+        endDate = new Date(selectedYear, new Date().getMonth(), 7);
+      } else if (weekNum === 2) {
+        startDate = new Date(selectedYear, new Date().getMonth(), 8);
+        endDate = new Date(selectedYear, new Date().getMonth(), 14);
+      } else if (weekNum === 3) {
+        startDate = new Date(selectedYear, new Date().getMonth(), 15);
+        endDate = new Date(selectedYear, new Date().getMonth(), 21);
+      } else {
+        startDate = new Date(selectedYear, new Date().getMonth(), 22);
+        endDate = new Date(selectedYear, new Date().getMonth() + 1, 0);
+      }
+      
+      return {
+        start_date: startDate.toISOString().split('T')[0],
+        end_date: endDate.toISOString().split('T')[0]
+      };
+    };
+
     setLoadingEntries(true);
     try {
+      const dateRange = getWeekDateRange();
       const response = await fetch('/api/payroll/rider-entries', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rider_id: riderId })
+        body: JSON.stringify({ 
+          rider_id: riderId,
+          start_date: dateRange.start_date,
+          end_date: dateRange.end_date
+        })
       });
       const data = await response.json();
       setRiderEntries(data.entries || []);
@@ -133,7 +146,10 @@ export default function PayrollManagement() {
   };
 
   const saveEntry = async () => {
-    if (!selectedRider) return;
+    if (!selectedRider || !formData.amount) {
+      alert('Please fill in all required fields');
+      return;
+    }
     setSavingEntry(true);
 
     try {
@@ -142,40 +158,23 @@ export default function PayrollManagement() {
         rider_name: selectedRider.full_name,
         status: 'approved'
       };
-
       let endpoint = '';
 
-      if (panelMode === 'additions') {
-        if (additionsType === 'referral') {
-          payload = { ...payload, referred_name: additionsForm.description, referred_phone: '', preferred_location: '', notes: additionsForm.notes, type: 'referral' };
+      if (entryType === 'addition') {
+        if (additionType === 'referral') {
+          payload = { ...payload, referred_name: formData.description, referred_phone: '', preferred_location: '', notes: formData.notes };
           endpoint = '/api/payroll/referrals';
-        } else if (additionsType === 'incentive') {
-          payload = { ...payload, incentive_type: additionsType, amount: additionsForm.amount, description: additionsForm.description, incentive_date: selectedDate };
-          endpoint = '/api/payroll/incentives';
         } else {
-          // Others - treat as incentive
-          payload = { ...payload, incentive_type: 'others', amount: additionsForm.amount, description: additionsForm.description, incentive_date: selectedDate };
+          payload = { ...payload, incentive_type: additionType, amount: formData.amount, description: formData.description, incentive_date: selectedDate };
           endpoint = '/api/payroll/incentives';
         }
-      } else if (panelMode === 'deductions') {
-        payload = { ...payload, amount: deductionsForm.amount, description: deductionsForm.description, deduction_date: selectedDate };
-        
-        if (deductionsType === 'advance') {
-          payload.type = 'advance';
-          payload.reason = deductionsForm.description;
+      } else {
+        payload = { ...payload, amount: formData.amount, description: formData.description, deduction_date: selectedDate };
+        if (deductionType === 'advance') {
+          payload.reason = formData.description;
           endpoint = '/api/payroll/advances';
-        } else if (deductionsType === 'security') {
-          payload.type = 'security_deposit';
-          endpoint = '/api/payroll/deductions';
-        } else if (deductionsType === 'damage') {
-          payload.type = 'damage';
-          endpoint = '/api/payroll/deductions';
-        } else if (deductionsType === 'challan') {
-          payload.type = 'challan';
-          endpoint = '/api/payroll/deductions';
         } else {
-          // Others
-          payload.type = 'others';
+          payload.deduction_type = deductionType;
           endpoint = '/api/payroll/deductions';
         }
       }
@@ -187,8 +186,12 @@ export default function PayrollManagement() {
       });
 
       if (response.ok) {
-        alert(`Entry added successfully and marked as Approved!`);
-        setShowPanel(false);
+        alert('Entry added successfully!');
+        setFormData({ amount: '', description: '', notes: '' });
+        if (selectedRider) {
+          fetchRiderEntriesForWeek(selectedRider.cee_id);
+        }
+        setPanelMode('view');
       } else {
         alert('Failed to save entry');
       }
@@ -198,8 +201,6 @@ export default function PayrollManagement() {
     }
     setSavingEntry(false);
   };
-
-
 
   const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
   const months = Array.from({ length: 12 }, (_, i) => ({ num: i + 1, name: new Date(2024, i, 1).toLocaleString('default', { month: 'long' }) }));
@@ -211,7 +212,6 @@ export default function PayrollManagement() {
       rider.phone.includes(searchQuery);
 
     if (!matchesSearch) return false;
-
     if (selectedFilter === 'active') return rider.status === 'active';
     if (selectedFilter === 'inactive') return rider.status !== 'active';
     if (selectedFilter === 'own_vehicle') return rider.vehicle_ownership === 'own';
@@ -219,6 +219,21 @@ export default function PayrollManagement() {
     
     return true;
   });
+
+  // Calculations
+  const additions = riderEntries
+    .filter(e => ['referral', 'incentive'].includes(e.entry_type?.toLowerCase() || ''))
+    .reduce((sum, e) => sum + (parseFloat(e.amount?.toString() || '0') || 0), 0);
+  
+  const deductions = riderEntries
+    .filter(e => !['referral', 'incentive', 'vehicle_rent'].includes(e.entry_type?.toLowerCase() || ''))
+    .reduce((sum, e) => sum + (parseFloat(e.amount?.toString() || '0') || 0), 0);
+  
+  const vehicleRent = riderEntries
+    .filter(e => e.entry_type?.toLowerCase() === 'vehicle_rent')
+    .reduce((sum, e) => sum + (parseFloat(e.amount?.toString() || '0') || 0), 0);
+  
+  const finalAmount = additions - deductions - vehicleRent;
 
   return (
     <div className="mesh-bg text-slate-800 antialiased min-h-screen">
@@ -250,92 +265,41 @@ export default function PayrollManagement() {
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
             <h2 className="font-display text-2xl font-bold text-slate-900 mb-6">Payroll Management</h2>
 
-            {/* Filters Section */}
+            {/* Filters */}
             <div className="space-y-4">
-              {/* Date Selection */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-slate-900 mb-2">Year</label>
-                  <select
-                    value={selectedYear}
-                    onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                  >
-                    {years.map(year => (
-                      <option key={year} value={year}>{year}</option>
-                    ))}
+                  <select value={selectedYear} onChange={(e) => setSelectedYear(parseInt(e.target.value))} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600">
+                    {years.map(year => <option key={year} value={year}>{year}</option>)}
                   </select>
                 </div>
-
                 <div>
                   <label className="block text-sm font-semibold text-slate-900 mb-2">Month</label>
-                  <select
-                    value={selectedMonth}
-                    onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                  >
-                    {months.map(month => (
-                      <option key={month.num} value={month.num}>{month.name}</option>
-                    ))}
+                  <select value={selectedMonth} onChange={(e) => setSelectedMonth(parseInt(e.target.value))} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600">
+                    {months.map(month => <option key={month.num} value={month.num}>{month.name}</option>)}
                   </select>
                 </div>
-
                 <div>
-                  <label className="block text-sm font-semibold text-slate-900 mb-2">Date (DD MMM YYYY)</label>
-                  <input
-                    type="date"
-                    value={selectedDate}
-                    onChange={(e) => setSelectedDate(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                  />
-                  <p className="text-xs text-slate-500 mt-1">
-                    {selectedDate && new Date(selectedDate).toLocaleDateString('en-GB', { 
-                      day: '2-digit', 
-                      month: 'short', 
-                      year: 'numeric' 
-                    })}
-                  </p>
+                  <label className="block text-sm font-semibold text-slate-900 mb-2">Date</label>
+                  <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600" />
                 </div>
               </div>
 
-              {/* Search Bar */}
               <div>
-                <label className="block text-sm font-semibold text-slate-900 mb-2">Search by CEE ID, Name, or Phone</label>
-                <input
-                  type="text"
-                  placeholder="Search riders..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                />
+                <label className="block text-sm font-semibold text-slate-900 mb-2">Search</label>
+                <input type="text" placeholder="Search riders..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600" />
               </div>
 
-              {/* Filter Buttons */}
-              <div className="flex flex-wrap gap-2 pt-2">
-                {[
-                  { value: 'all', label: 'All Riders' },
-                  { value: 'active', label: 'Active Riders' },
-                  { value: 'inactive', label: 'Inactive Riders' },
-                  { value: 'own_vehicle', label: 'Own Vehicle' },
-                  { value: 'company_ev', label: 'Company EV' }
-                ].map(filter => (
-                  <button
-                    key={filter.value}
-                    onClick={() => setSelectedFilter(filter.value)}
-                    className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
-                      selectedFilter === filter.value
-                        ? 'bg-brand-600 text-white'
-                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                    }`}
-                  >
+              <div className="flex flex-wrap gap-2">
+                {[{ value: 'all', label: 'All Riders' }, { value: 'active', label: 'Active' }, { value: 'inactive', label: 'Inactive' }, { value: 'own_vehicle', label: 'Own Vehicle' }, { value: 'company_ev', label: 'Company EV' }].map(filter => (
+                  <button key={filter.value} onClick={() => setSelectedFilter(filter.value)} className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${selectedFilter === filter.value ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>
                     {filter.label}
                   </button>
                 ))}
               </div>
             </div>
           </div>
-
-
 
           {/* Riders Table */}
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
@@ -353,325 +317,163 @@ export default function PayrollManagement() {
                 </thead>
                 <tbody>
                   {loading ? (
-                    <tr>
-                      <td colSpan={6} className="px-6 py-8 text-center text-slate-500">
-                        <div className="inline-block">
-                          <div className="w-8 h-8 border-4 border-slate-200 border-t-brand-600 rounded-full animate-spin"></div>
-                        </div>
-                      </td>
-                    </tr>
+                    <tr><td colSpan={6} className="px-6 py-8 text-center"><div className="inline-block w-8 h-8 border-4 border-slate-200 border-t-brand-600 rounded-full animate-spin"></div></td></tr>
                   ) : filteredRiders.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="px-6 py-8 text-center text-slate-500">
-                        No riders found for the selected filters
-                      </td>
-                    </tr>
+                    <tr><td colSpan={6} className="px-6 py-8 text-center text-slate-500">No riders found</td></tr>
                   ) : (
                     filteredRiders.map(rider => (
                       <tr key={rider.id} className="border-b border-slate-200 hover:bg-slate-50">
                         <td className="px-6 py-4 text-sm font-semibold text-slate-900">{rider.cee_id}</td>
                         <td className="px-6 py-4 text-sm text-slate-900">{rider.full_name}</td>
                         <td className="px-6 py-4 text-sm text-slate-600">{rider.phone}</td>
-                        <td className="px-6 py-4 text-sm text-slate-600">
-                          {rider.vehicle_ownership === 'own' ? 'Own Vehicle' : rider.vehicle_ownership === 'company_ev' ? 'Company Vehicle' : 'Not Assigned'}
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            rider.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-700'
-                          }`}>
-                            {rider.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <button
-                            onClick={() => openPanel(rider, 'additions')}
-                            className="text-brand-600 hover:text-brand-700 text-sm font-medium"
-                          >
-                            View Details
-                          </button>
-                        </td>
+                        <td className="px-6 py-4 text-sm text-slate-600">{rider.vehicle_ownership === 'own' ? 'Own' : rider.vehicle_ownership === 'company_ev' ? 'Company EV' : 'N/A'}</td>
+                        <td className="px-6 py-4"><span className={`px-3 py-1 rounded-full text-xs font-medium ${rider.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-700'}`}>{rider.status}</span></td>
+                        <td className="px-6 py-4 text-right"><button onClick={() => openPanel(rider)} className="text-brand-600 hover:text-brand-700 text-sm font-medium">View Details</button></td>
                       </tr>
                     ))
                   )}
                 </tbody>
               </table>
             </div>
-            {filteredRiders.length > 0 && (
-              <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 text-sm text-slate-600">
-                Showing {filteredRiders.length} rider{filteredRiders.length !== 1 ? 's' : ''}
-              </div>
-            )}
           </div>
         </div>
       </main>
 
-      {/* Big Popup Modal */}
+      {/* Modal */}
       {showPanel && selectedRider && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Overlay */}
-          <div 
-            className="absolute inset-0 bg-black/50 cursor-pointer"
-            onClick={() => setShowPanel(false)}
-          />
-
-          {/* Modal */}
-          <div className="relative bg-white shadow-2xl flex flex-col max-w-2xl w-full max-h-[90vh] rounded-2xl overflow-hidden">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowPanel(false)} />
+          <div className="relative bg-white shadow-2xl flex flex-col max-w-3xl w-full max-h-[90vh] rounded-2xl overflow-hidden">
             {/* Header */}
             <div className="px-8 py-6 border-b border-slate-200 flex items-center justify-between bg-gradient-to-r from-slate-50 to-white">
               <div>
                 <h2 className="font-display font-bold text-2xl text-slate-900">{selectedRider.full_name}</h2>
                 <p className="text-sm text-slate-500 mt-1">CEE ID: {selectedRider.cee_id}</p>
               </div>
-              <button 
-                onClick={() => setShowPanel(false)}
-                className="p-2 hover:bg-slate-200 rounded-lg transition-all"
-              >
-                <i className="ph-bold ph-x text-2xl"></i>
-              </button>
+              <button onClick={() => setShowPanel(false)} className="p-2 hover:bg-slate-200 rounded-lg"><i className="ph-bold ph-x text-2xl"></i></button>
             </div>
 
             {/* Rider Info */}
-              <div className="px-8 py-5 bg-slate-50 border-b border-slate-200 space-y-2 text-sm grid grid-cols-2 gap-4">
+            <div className="px-8 py-5 bg-slate-50 border-b border-slate-200 grid grid-cols-2 gap-4 text-sm">
               <div><strong>CEE ID:</strong> {selectedRider.cee_id}</div>
               <div><strong>Phone:</strong> {selectedRider.phone}</div>
               <div><strong>Email:</strong> {selectedRider.email}</div>
-              <div>
-                <strong>Vehicle Type:</strong> {' '}
-                {selectedRider.vehicle_ownership === 'own' ? 'Own Vehicle' : selectedRider.vehicle_ownership === 'company_ev' ? 'Company Vehicle' : 'Not Assigned'}
-              </div>
-              {selectedRider.vehicle_number && (
-                <>
-                  <div><strong>Vehicle Number:</strong> {selectedRider.vehicle_number}</div>
-                  <div><strong>Vehicle Model:</strong> {selectedRider.model || 'N/A'}</div>
-                  <div>
-                    <strong>Vehicle Status:</strong>{' '}
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      selectedRider.vehicle_status === 'active' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-                    }`}>
-                      {selectedRider.vehicle_status || 'Not Assigned'}
-                    </span>
-                  </div>
-                </>
-              )}
+              <div><strong>Vehicle:</strong> {selectedRider.vehicle_ownership === 'own' ? 'Own' : 'Company EV'}</div>
             </div>
 
-            {/* Tabs */}
-            <div className="flex border-b border-slate-200 bg-white overflow-x-auto px-8">
-              {['additions', 'deductions', 'history'].map(tab => (
-                <button
-                  key={tab}
-                  onClick={() => {
-                    setPanelMode(tab as 'additions' | 'deductions' | 'history');
-                    if (tab === 'history' && selectedRider) {
-                      fetchHistoryEntries(selectedRider.cee_id, historyDate);
-                    }
-                  }}
-                  className={`px-4 py-3 text-sm font-medium transition-all whitespace-nowrap ${
-                    panelMode === tab
-                      ? 'border-b-2 border-brand-600 text-brand-600'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  {tab === 'history' ? 'History' : tab.charAt(0).toUpperCase() + tab.slice(1)}
-                </button>
-              ))}
-            </div>
-
-            {/* Forms */}
+            {/* Content */}
             <div className="flex-1 overflow-y-auto px-8 py-6">
-              {panelMode === 'additions' && (
-                <div className="space-y-4">
+              {panelMode === 'view' ? (
+                <>
+                  {loadingEntries ? (
+                    <div className="flex justify-center py-12"><div className="w-8 h-8 border-4 border-slate-200 border-t-brand-600 rounded-full animate-spin"></div></div>
+                  ) : (
+                    <div className="space-y-6">
+                      {/* Summary Cards */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="border border-green-200 rounded-lg p-4 bg-green-50">
+                          <h4 className="font-semibold text-slate-900 text-sm mb-3 flex items-center gap-2">
+                            <span className="w-3 h-3 rounded-full bg-green-600"></span>
+                            Total Additions
+                          </h4>
+                          <div className="border-t border-green-300 pt-3 flex justify-between">
+                            <span className="font-semibold text-slate-900">Total</span>
+                            <span className="text-xl font-bold text-green-700">₹{additions.toFixed(2)}</span>
+                          </div>
+                        </div>
+
+                        <div className="border border-orange-200 rounded-lg p-4 bg-orange-50">
+                          <h4 className="font-semibold text-slate-900 text-sm mb-3 flex items-center gap-2">
+                            <span className="w-3 h-3 rounded-full bg-orange-600"></span>
+                            Total Deductions
+                          </h4>
+                          <div className="border-t border-orange-300 pt-3 flex justify-between">
+                            <span className="font-semibold text-slate-900">Total</span>
+                            <span className="text-xl font-bold text-orange-700">₹{(deductions + vehicleRent).toFixed(2)}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Final Amount */}
+                      <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                        <h4 className="font-semibold text-slate-900 text-sm mb-4 flex items-center gap-2">
+                          <span className="w-3 h-3 rounded-full bg-purple-600"></span>
+                          Adjustments Summary
+                        </h4>
+                        <div className="space-y-2 text-sm mb-4">
+                          <div className="flex justify-between pb-2 border-b border-purple-300"><span>Additions:</span><span className="text-green-700 font-semibold">+₹{additions.toFixed(2)}</span></div>
+                          <div className="flex justify-between pb-2 border-b border-purple-300"><span>Deductions (excl. rent):</span><span className="text-orange-700 font-semibold">-₹{deductions.toFixed(2)}</span></div>
+                          <div className="flex justify-between pb-2 border-b border-purple-300"><span>Vehicle Rent (Prorated):</span><span className="text-orange-700 font-semibold">-₹{vehicleRent.toFixed(2)}</span></div>
+                          <div className="flex justify-between pt-2">
+                            <span className="font-bold">FINAL AMOUNT:</span>
+                            <span className={`text-2xl font-bold ${finalAmount >= 0 ? 'text-green-700' : 'text-red-700'}`}>{finalAmount >= 0 ? '+' : ''}₹{finalAmount.toFixed(2)}</span>
+                          </div>
+                        </div>
+                        <p className="text-xs text-slate-600"><strong>Formula:</strong> Final Amount = Additions - Deductions - Vehicle Rent</p>
+                      </div>
+
+                      {/* Add Button */}
+                      <div className="pt-6 border-t border-slate-200">
+                        <button onClick={() => setPanelMode('add')} className="px-6 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium">
+                          Add Entry
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="space-y-4 max-w-md">
                   <div>
-                    <label className="block text-sm font-semibold text-slate-900 mb-2">Addition Type</label>
-                    <select
-                      value={additionsType}
-                      onChange={(e) => setAdditionsType(e.target.value as 'referral' | 'incentive' | 'others')}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                    >
-                      <option value="referral">Referrals</option>
-                      <option value="incentive">Incentives</option>
-                      <option value="others">Others</option>
+                    <label className="block text-sm font-semibold text-slate-900 mb-2">Entry Type</label>
+                    <select value={entryType} onChange={(e) => setEntryType(e.target.value as 'addition' | 'deduction')} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600">
+                      <option value="addition">Addition</option>
+                      <option value="deduction">Deduction</option>
                     </select>
                   </div>
-                  
-                  {additionsType === 'referral' && (
+
+                  {entryType === 'addition' ? (
                     <>
-                      <input
-                        type="text"
-                        placeholder="Referred Person Name"
-                        value={additionsForm.description}
-                        onChange={(e) => setAdditionsForm({...additionsForm, description: e.target.value})}
-                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                      />
-                      <textarea
-                        placeholder="Notes"
-                        value={additionsForm.notes}
-                        onChange={(e) => setAdditionsForm({...additionsForm, notes: e.target.value})}
-                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 resize-none"
-                        rows={4}
-                      />
+                      <div>
+                        <label className="block text-sm font-semibold text-slate-900 mb-2">Type</label>
+                        <select value={additionType} onChange={(e) => setAdditionType(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600">
+                          <option value="referral">Referral</option>
+                          <option value="incentive">Incentive</option>
+                          <option value="others">Others</option>
+                        </select>
+                      </div>
+                      {additionType !== 'referral' && (
+                        <input type="number" placeholder="Amount (₹)" value={formData.amount} onChange={(e) => setFormData({...formData, amount: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600" />
+                      )}
+                      <textarea placeholder="Description" value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 resize-none" rows={3} />
+                    </>
+                  ) : (
+                    <>
+                      <div>
+                        <label className="block text-sm font-semibold text-slate-900 mb-2">Type</label>
+                        <select value={deductionType} onChange={(e) => setDeductionType(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600">
+                          <option value="advance">Advance</option>
+                          <option value="damage">Damage</option>
+                          <option value="challan">Challan</option>
+                          <option value="security_deposit">Security Deposit</option>
+                          <option value="others">Others</option>
+                        </select>
+                      </div>
+                      <input type="number" placeholder="Amount (₹)" value={formData.amount} onChange={(e) => setFormData({...formData, amount: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600" />
+                      <textarea placeholder="Description" value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 resize-none" rows={3} />
                     </>
                   )}
-                  
-                  {(additionsType === 'incentive' || additionsType === 'others') && (
-                    <>
-                      <input
-                        type="number"
-                        placeholder="Amount (₹)"
-                        value={additionsForm.amount}
-                        onChange={(e) => setAdditionsForm({...additionsForm, amount: e.target.value})}
-                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                      />
-                      <textarea
-                        placeholder="Description"
-                        value={additionsForm.description}
-                        onChange={(e) => setAdditionsForm({...additionsForm, description: e.target.value})}
-                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 resize-none"
-                        rows={4}
-                      />
-                    </>
-                  )}
-                </div>
-              )}
-
-              {panelMode === 'deductions' && (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-900 mb-2">Deduction Type</label>
-                    <select
-                      value={deductionsType}
-                      onChange={(e) => setDeductionsType(e.target.value as 'advance' | 'security' | 'damage' | 'challan' | 'others')}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                    >
-                      <option value="security">Security Deposit</option>
-                      <option value="advance">Advance</option>
-                      <option value="damage">Damage</option>
-                      <option value="challan">Challans</option>
-                      <option value="others">Others</option>
-                    </select>
-                  </div>
-                  
-                  <input
-                    type="number"
-                    placeholder="Amount (₹)"
-                    value={deductionsForm.amount}
-                    onChange={(e) => setDeductionsForm({...deductionsForm, amount: e.target.value})}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                  />
-                  <textarea
-                    placeholder="Description"
-                    value={deductionsForm.description}
-                    onChange={(e) => setDeductionsForm({...deductionsForm, description: e.target.value})}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 resize-none"
-                    rows={4}
-                  />
-                  <textarea
-                    placeholder="Notes (optional)"
-                    value={deductionsForm.notes}
-                    onChange={(e) => setDeductionsForm({...deductionsForm, notes: e.target.value})}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 resize-none"
-                    rows={3}
-                  />
-                </div>
-              )}
-
-              {panelMode === 'history' && (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-900 mb-2">Select Date</label>
-                    <input
-                      type="date"
-                      value={historyDate}
-                      onChange={(e) => {
-                        setHistoryDate(e.target.value);
-                        if (selectedRider) {
-                          fetchHistoryEntries(selectedRider.cee_id, e.target.value);
-                        }
-                      }}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <h3 className="font-semibold text-slate-900">
-                      Entries on {new Date(historyDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-                    </h3>
-                    
-                    {loadingHistory ? (
-                      <div className="text-center py-8">
-                        <div className="inline-block w-8 h-8 border-4 border-slate-200 border-t-brand-600 rounded-full animate-spin"></div>
-                      </div>
-                    ) : historyEntries.length === 0 ? (
-                      <div className="text-center py-8 text-slate-500">
-                        No entries found for this date
-                      </div>
-                    ) : (
-                      <div className="overflow-x-auto border border-slate-200 rounded-lg">
-                        <table className="w-full text-sm">
-                          <thead className="bg-slate-50 border-b border-slate-200">
-                            <tr>
-                              <th className="px-4 py-3 text-left font-semibold text-slate-900">Type</th>
-                              <th className="px-4 py-3 text-left font-semibold text-slate-900">Description</th>
-                              <th className="px-4 py-3 text-right font-semibold text-slate-900">Amount</th>
-                              <th className="px-4 py-3 text-left font-semibold text-slate-900">Status</th>
-                              <th className="px-4 py-3 text-left font-semibold text-slate-900">Time</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {historyEntries.map((entry, index) => (
-                              <tr key={index} className="border-b border-slate-200 hover:bg-slate-50">
-                                <td className="px-4 py-3">
-                                  <span className={`px-2 py-1 rounded text-xs font-medium whitespace-nowrap ${
-                                    entry.type === 'Referral' ? 'bg-blue-100 text-blue-700' :
-                                    entry.type === 'Incentive' ? 'bg-green-100 text-green-700' :
-                                    entry.type === 'Deduction' ? 'bg-orange-100 text-orange-700' :
-                                    'bg-purple-100 text-purple-700'
-                                  }`}>
-                                    {entry.type}
-                                  </span>
-                                </td>
-                                <td className="px-4 py-3 text-slate-700 max-w-xs truncate">{entry.description || 'N/A'}</td>
-                                <td className="px-4 py-3 text-right font-medium text-slate-900">
-                                  {entry.amount ? `₹${parseFloat(entry.amount).toFixed(2)}` : '—'}
-                                </td>
-                                <td className="px-4 py-3">
-                                  <span className={`px-2 py-1 rounded text-xs font-medium ${
-                                    entry.status === 'approved' ? 'bg-green-100 text-green-700' :
-                                    entry.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                                    'bg-slate-100 text-slate-700'
-                                  }`}>
-                                    {entry.status || 'completed'}
-                                  </span>
-                                </td>
-                                <td className="px-4 py-3 text-slate-600 text-xs">
-                                  {new Date(entry.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                  </div>
                 </div>
               )}
             </div>
 
             {/* Footer */}
             <div className="px-8 py-5 border-t border-slate-200 flex gap-4 bg-slate-50">
-              <button
-                onClick={() => setShowPanel(false)}
-                className="flex-1 px-4 py-2.5 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 font-medium transition-all"
-              >
-                Close
+              <button onClick={() => panelMode === 'add' ? setPanelMode('view') : setShowPanel(false)} className="flex-1 px-4 py-2.5 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 font-medium">
+                {panelMode === 'add' ? 'Back' : 'Close'}
               </button>
-              {(panelMode === 'additions' || panelMode === 'deductions') && (
-                <button
-                  onClick={saveEntry}
-                  disabled={savingEntry}
-                  className="flex-1 px-4 py-2.5 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium transition-all disabled:opacity-50"
-                >
-                  {savingEntry ? 'Saving...' : 'Approve'}
+              {panelMode === 'add' && (
+                <button onClick={saveEntry} disabled={savingEntry} className="flex-1 px-4 py-2.5 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium disabled:opacity-50">
+                  {savingEntry ? 'Saving...' : 'Save Entry'}
                 </button>
               )}
             </div>
