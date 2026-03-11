@@ -237,18 +237,37 @@ export async function POST(request: Request) {
         const startDateObj = new Date(start_date);
         const endDateObj = new Date(end_date);
 
-        // Helper function to get which week a date falls into (based on day of month)
-        const getWeekOfDate = (date: Date): number => {
+        // Helper function to calculate week boundaries for a given date
+        const getWeekBoundaries = (date: Date): { week: number; start: Date; end: Date } => {
           const dayOfMonth = date.getDate();
+          let weekNum: number;
+          let startDay: number;
+          let endDay: number;
           
-          // Week 1: 1-7
-          if (dayOfMonth >= 1 && dayOfMonth <= 7) return 1;
-          // Week 2: 8-14
-          if (dayOfMonth >= 8 && dayOfMonth <= 14) return 2;
-          // Week 3: 15-21
-          if (dayOfMonth >= 15 && dayOfMonth <= 21) return 3;
-          // Week 4: 22-31 (fixed at 7 days as per user request)
-          return 4;
+          if (dayOfMonth >= 1 && dayOfMonth <= 7) {
+            weekNum = 1;
+            startDay = 1;
+            endDay = 7;
+          } else if (dayOfMonth >= 8 && dayOfMonth <= 14) {
+            weekNum = 2;
+            startDay = 8;
+            endDay = 14;
+          } else if (dayOfMonth >= 15 && dayOfMonth <= 21) {
+            weekNum = 3;
+            startDay = 15;
+            endDay = 21;
+          } else {
+            weekNum = 4;
+            startDay = 22;
+            // Get last day of month
+            const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+            endDay = lastDay;
+          }
+          
+          const start = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), startDay));
+          const end = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), endDay));
+          
+          return { week: weekNum, start, end };
         };
 
         // Daily rate = weekly rent / 7
@@ -259,10 +278,8 @@ export async function POST(request: Request) {
         const processedWeeks = new Set<string>();
         
         while (currentDate <= endDateObj) {
-          const currentMonth = currentDate.getMonth();
-          const currentYear = currentDate.getFullYear();
-          const weekOfMonth = getWeekOfDate(currentDate);
-          const weekKey = `${currentYear}-${currentMonth}-week${weekOfMonth}`;
+          const { week: weekOfMonth, start: weekStart, end: weekEnd } = getWeekBoundaries(currentDate);
+          const weekKey = `${currentDate.getUTCFullYear()}-${currentDate.getUTCMonth()}-week${weekOfMonth}`;
           
           // Skip if we've already processed this week
           if (processedWeeks.has(weekKey)) {
@@ -271,36 +288,20 @@ export async function POST(request: Request) {
           }
           processedWeeks.add(weekKey);
           
-          // Determine week start and end dates based on month week definition
-          let weekStart: Date, weekEnd: Date;
-          
-          if (weekOfMonth === 4) {
-            // Week 4: Always starts from 22nd and goes to 28th (fixed 7 days)
-            weekStart = new Date(currentYear, currentMonth, 22);
-            weekEnd = new Date(currentYear, currentMonth, 28);
-          } else {
-            // Weeks 1-3: 7-day periods
-            const startDay = (weekOfMonth - 1) * 7 + 1;
-            weekStart = new Date(currentYear, currentMonth, startDay);
-            weekEnd = new Date(currentYear, currentMonth, startDay + 6);
-          }
-          
-          // Normalize dates to UTC for proper comparison (remove time component)
-          const weekStartUTC = new Date(Date.UTC(weekStart.getUTCFullYear(), weekStart.getUTCMonth(), weekStart.getUTCDate()));
-          const weekEndUTC = new Date(Date.UTC(weekEnd.getUTCFullYear(), weekEnd.getUTCMonth(), weekEnd.getUTCDate()));
           const startDateUTC = new Date(Date.UTC(startDateObj.getUTCFullYear(), startDateObj.getUTCMonth(), startDateObj.getUTCDate()));
           const endDateUTC = new Date(Date.UTC(endDateObj.getUTCFullYear(), endDateObj.getUTCMonth(), endDateObj.getUTCDate()));
           
           // Check if this week overlaps with the provided date range
-          if (weekEndUTC >= startDateUTC && weekStartUTC <= endDateUTC) {
-            console.log(`📅 Week ${weekOfMonth} (${weekStartUTC.toISOString().split('T')[0]} to ${weekEndUTC.toISOString().split('T')[0]}):`, {
-              joinDate: riderJoinDate?.toISOString().split('T')[0],
-              joinIsAfterWeekEnd: riderJoinDate ? riderJoinDate > weekEndUTC : 'no join date'
+          if (weekEnd >= startDateUTC && weekStart <= endDateUTC) {
+            console.log(`📅 Week ${weekOfMonth}:`, {
+              weekStart: weekStart.toISOString().split('T')[0],
+              weekEnd: weekEnd.toISOString().split('T')[0],
+              riderJoinDate: riderJoinDate?.toISOString().split('T')[0]
             });
             
             // Skip if rider hasn't joined yet (joined AFTER this week ends)
-            if (riderJoinDate && riderJoinDate > weekEndUTC) {
-              console.log(`⏭️  Skipping - rider hasn't joined yet`);
+            if (riderJoinDate && riderJoinDate > weekEnd) {
+              console.log(`⏭️  Rider hasn't joined yet`);
               currentDate.setDate(currentDate.getDate() + 7);
               continue;
             }
@@ -309,20 +310,20 @@ export async function POST(request: Request) {
             let description = 'Weekly vehicle rent - Company EV';
             
             // Apply prorate logic if rider joined during this week
-            if (riderJoinDate && riderJoinDate >= weekStartUTC && riderJoinDate <= weekEndUTC) {
-              // Rider joined THIS week - calculate days from join date to week end (inclusive)
-              const daysRemaining = Math.floor((weekEndUTC.getTime() - riderJoinDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-              rentAmount = Math.round((dailyRate * daysRemaining) * 100) / 100;
-              description = `Prorated vehicle rent (${daysRemaining} days)`;
-              console.log(`💰 Prorated for Week ${weekOfMonth}: ${daysRemaining} days × ₹${dailyRate.toFixed(2)} = ₹${rentAmount}`);
+            if (riderJoinDate && riderJoinDate >= weekStart && riderJoinDate <= weekEnd) {
+              // Rider joined THIS week - count days from join date through week end (inclusive)
+              const daysWorked = Math.floor((weekEnd.getTime() - riderJoinDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+              rentAmount = Math.round((dailyRate * daysWorked) * 100) / 100;
+              description = `Prorated vehicle rent (${daysWorked} days - from ${riderJoinDate.toISOString().split('T')[0]})`;
+              console.log(`💰 Prorated Week ${weekOfMonth}: ${daysWorked} days × ₹${dailyRate.toFixed(2)} = ₹${rentAmount}`);
             } else {
-              console.log(`💰 Full rent for Week ${weekOfMonth}: ₹${rentAmount}`);
+              console.log(`💰 Full rent Week ${weekOfMonth}: ₹${rentAmount}`);
             }
             // else: rider joined before this week, charge full amount
             
             // Create vehicle rent entry
             const vehicleRentEntry = {
-              id: `vehicle-rent-${currentYear}-${currentMonth + 1}-week${weekOfMonth}-${Date.now()}`,
+              id: `vehicle-rent-${weekStart.getUTCFullYear()}-${weekStart.getUTCMonth() + 1}-week${weekOfMonth}-${Date.now()}`,
               rider_id: rider_id,
               cee_id: cee_id,
               full_name: full_name,
@@ -337,6 +338,7 @@ export async function POST(request: Request) {
             };
             
             entries.push(vehicleRentEntry);
+            console.log(`✅ Added vehicle rent entry for week ${weekOfMonth}`);
           }
           
           // Move to next day to check next week
