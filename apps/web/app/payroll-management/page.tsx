@@ -75,10 +75,11 @@ export default function PayrollManagement() {
     setPanelMode('view');
     setShowPanel(true);
     setFormData({ amount: '', description: '', notes: '' });
-    // Use the selected date from the filter, not today's date
-    setHistoryDate(selectedDate);
+    // Always default to today's date in the modal, not the selected filter date
+    const today = new Date().toISOString().split('T')[0];
+    setHistoryDate(today);
     setHistoryEntries([]);
-    fetchHistoryEntries(rider.cee_id, selectedDate);
+    fetchHistoryEntries(rider.cee_id, today);
   };
 
   const fetchHistoryEntries = async (riderId: string, date: string) => {

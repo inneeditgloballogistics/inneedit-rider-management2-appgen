@@ -9,7 +9,8 @@ export async function POST(request: NextRequest) {
       rider_name,
       amount,
       reason,
-      admin_notes
+      admin_notes,
+      deduction_date
     } = body;
 
     const result = await sql`
@@ -30,7 +31,7 @@ export async function POST(request: NextRequest) {
         ${reason},
         ${admin_notes},
         'approved',
-        NOW()
+        ${deduction_date || new Date().toISOString().split('T')[0]}
       )
       RETURNING *
     `;
