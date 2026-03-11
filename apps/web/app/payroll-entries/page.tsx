@@ -100,10 +100,18 @@ export default function PayrollEntries() {
     try {
       const { startDate, endDate } = getWeekDateRange(selectedWeek, selectedMonth, selectedYear);
       
+      // Format dates as YYYY-MM-DD (UTC dates)
+      const formatDate = (date: Date) => {
+        const year = date.getUTCFullYear();
+        const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(date.getUTCDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+      
       const requestPayload = {
         rider_id: riderId,
-        start_date: startDate.toISOString().split('T')[0],
-        end_date: endDate.toISOString().split('T')[0]
+        start_date: formatDate(startDate),
+        end_date: formatDate(endDate)
       };
 
       console.log("=== FETCHING RIDER DETAILS ===");
