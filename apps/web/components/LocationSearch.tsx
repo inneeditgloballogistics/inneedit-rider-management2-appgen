@@ -50,4 +50,239 @@ const TELANGANA_LOCATIONS = [
   { name: 'Tandur', lat: 17.1989, lng: 78.1417 },
   { name: 'Ranga Reddy', lat: 17.1833, lng: 78.4167 },
   { name: 'Vikarabad', lat: 17.3314, lng: 78.1397 },
-  { name: 'Tandoor', lat: 17.1989, lng: 78.1417 },\n  { name: 'Medchal', lat: 17.2808, lng: 78.3614 },\n  { name: 'Malkajgiri', lat: 17.3925, lng: 78.5328 },\n  { name: 'Cantonment', lat: 17.3636, lng: 78.4708 },\n  { name: 'Parigi', lat: 17.2625, lng: 78.5381 },\n  { name: 'Mahbubnagar', lat: 16.7283, lng: 77.9811 },\n  { name: 'Kodada', lat: 16.8339, lng: 78.3019 },\n  { name: 'Wanaparthy', lat: 16.6019, lng: 77.8558 },\n  { name: 'Jagitial', lat: 18.2467, lng: 78.7286 },\n  { name: 'Peddapalli', lat: 18.5164, lng: 78.9939 },\n  { name: 'Karimnagar', lat: 18.4279, lng: 78.8353 },\n  { name: 'Sircilla', lat: 18.5256, lng: 78.8444 },\n  { name: 'Parkal', lat: 17.9928, lng: 78.5619 },\n  { name: 'Warangal', lat: 17.9689, lng: 78.6294 },\n  { name: 'Hanamkonda', lat: 17.9497, lng: 78.6158 },\n  { name: 'Jangaon', lat: 17.6681, lng: 78.4944 },\n  { name: 'Hanwada', lat: 17.6964, lng: 78.6142 },\n  { name: 'Khammam', lat: 17.2687, lng: 78.9844 },\n  { name: 'Kothagudem', lat: 17.5644, lng: 80.1981 },\n  { name: 'Karepalli', lat: 17.7858, lng: 80.0325 },\n  { name: 'Manuguru', lat: 17.5806, lng: 80.1267 },\n  { name: 'Sattupalli', lat: 17.1961, lng: 80.0269 },\n  { name: 'Asifnagar', lat: 17.2342, lng: 78.4756 },\n  { name: 'Vanasthalipuram', lat: 17.2656, lng: 78.5031 },\n  { name: 'Tolichowki', lat: 17.2817, lng: 78.4747 },\n  { name: 'Alaknanda', lat: 17.2908, lng: 78.4542 },\n  { name: 'Bandlaguda', lat: 17.2933, lng: 78.4958 },\n];\n\nexport default function LocationSearch({ value, onChange, placeholder = 'Search location' }: LocationSearchProps) {\n  const inputRef = useRef<HTMLInputElement>(null);\n  const autocompleteRef = useRef<any>(null);\n  const sessionTokenRef = useRef<any>(null);\n  const [isInitialized, setIsInitialized] = useState(false);\n  const [isValidating, setIsValidating] = useState(false);\n  const [showSuggestions, setShowSuggestions] = useState(false);\n  const [filteredLocations, setFilteredLocations] = useState<typeof TELANGANA_LOCATIONS>([]);\n  const { reverseGeocode } = useGeocoding();\n\n  // Filter Telangana locations based on input\n  useEffect(() => {\n    if (value && value.length > 0) {\n      const filtered = TELANGANA_LOCATIONS.filter(loc =>\n        loc.name.toLowerCase().includes(value.toLowerCase())\n      );\n      setFilteredLocations(filtered.slice(0, 8));\n      setShowSuggestions(filtered.length > 0);\n    } else {\n      setFilteredLocations([]);\n      setShowSuggestions(false);\n    }\n  }, [value]);\n\n  useEffect(() => {\n    const initAutocomplete = () => {\n      if (!inputRef.current) return;\n      if (!window.google || !window.google.maps || !window.google.maps.places) {\n        console.warn('Google Maps API not yet loaded');\n        setTimeout(initAutocomplete, 500);\n        return;\n      }\n\n      try {\n        // Create a fresh session token for this search session\n        sessionTokenRef.current = new window.google.maps.places.AutocompleteSessionToken();\n\n        // ✅ PLACES API - Autocomplete with Telangana bounds (strict)\n        const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {\n          types: ['geocode'],\n          sessionToken: sessionTokenRef.current,\n          fields: ['place_id', 'formatted_address', 'name'],\n          componentRestrictions: { country: 'in' },\n          bounds: new window.google.maps.LatLngBounds(\n            new window.google.maps.LatLng(15.4, 77.8),   // Southwest corner of Telangana (expanded)\n            new window.google.maps.LatLng(18.6, 80.2)    // Northeast corner of Telangana (expanded)\n          ),\n          strictBounds: true // Only show results within bounds\n        });\n\n        autocompleteRef.current = autocomplete;\n\n        autocomplete.addListener('place_changed', async () => {\n          const place = autocomplete.getPlace();\n          \n          if (!place.place_id) {\n            console.warn('No place selected');\n            return;\n          }\n\n          setIsValidating(true);\n          setShowSuggestions(false);\n\n          try {\n            // ✅ MAPS JAVASCRIPT API & PLACES API - Get place details with geometry\n            const service = new window.google.maps.places.PlacesService(document.createElement('div'));\n            \n            service.getDetails({\n              placeId: place.place_id,\n              fields: ['geometry', 'formatted_address', 'address_components', 'name']\n            }, async (result: any, status: string) => {\n              console.log('PlacesService response:', { status, hasGeometry: !!result?.geometry, geometry: result?.geometry });\n              \n              if (status === window.google.maps.places.PlacesServiceStatus.OK && result?.geometry?.location) {\n                let lat, lng;\n                \n                // Handle both function and property access\n                if (typeof result.geometry.location.lat === 'function') {\n                  lat = result.geometry.location.lat();\n                  lng = result.geometry.location.lng();\n                } else {\n                  lat = result.geometry.location.lat;\n                  lng = result.geometry.location.lng;\n                }\n                \n                console.log('Extracted coordinates:', { lat, lng, type_lat: typeof lat, type_lng: typeof lng });\n                \n                // ✅ GEOCODING API - Validate & enhance address with reverse geocoding\n                try {\n                  const geocodedAddress = await reverseGeocode(lat, lng);\n                  const validatedAddress = geocodedAddress?.formatted_address || result.formatted_address;\n                  \n                  // Pass all details back\n                  onChange(validatedAddress, lat, lng, validatedAddress);\n                  \n                  console.log('📍 Location confirmed:', { \n                    address: validatedAddress,\n                    latitude: lat, \n                    longitude: lng,\n                    city: geocodedAddress?.city,\n                    state: geocodedAddress?.state,\n                    pincode: geocodedAddress?.pincode\n                  });\n                } catch (geocodingError) {\n                  // Fallback if Geocoding API fails\n                  console.warn('Geocoding API validation skipped, using Places data:', geocodingError);\n                  onChange(result.formatted_address, lat, lng, result.formatted_address);\n                }\n                \n                // Reset session token after selection for next search\n                sessionTokenRef.current = new window.google.maps.places.AutocompleteSessionToken();\n              } else {\n                console.error('PlacesService error:', status);\n              }\n              setIsValidating(false);\n            });\n          } catch (error) {\n            console.error('Error processing location:', error);\n            setIsValidating(false);\n          }\n        });\n\n        setIsInitialized(true);\n      } catch (error) {\n        console.error('Error initializing autocomplete:', error);\n      }\n    };\n\n    initAutocomplete();\n\n    return () => {\n      if (autocompleteRef.current) {\n        window.google?.maps?.event?.clearInstanceListeners(autocompleteRef.current);\n      }\n    };\n  }, [onChange, reverseGeocode]);\n\n  const handleLocationSelect = async (location: typeof TELANGANA_LOCATIONS[0]) => {\n    setIsValidating(true);\n    setShowSuggestions(false);\n    \n    try {\n      const geocodedAddress = await reverseGeocode(location.lat, location.lng);\n      const address = geocodedAddress?.formatted_address || `${location.name}, Telangana`;\n      \n      onChange(address, location.lat, location.lng, address);\n      \n      if (inputRef.current) {\n        inputRef.current.value = address;\n      }\n      \n      console.log('📍 Location selected from suggestions:', {\n        name: location.name,\n        lat: location.lat,\n        lng: location.lng,\n        address\n      });\n    } catch (error) {\n      console.error('Error selecting location:', error);\n      onChange(`${location.name}, Telangana`, location.lat, location.lng, `${location.name}, Telangana`);\n      if (inputRef.current) {\n        inputRef.current.value = `${location.name}, Telangana`;\n      }\n    } finally {\n      setIsValidating(false);\n    }\n  };\n\n  return (\n    <div className=\"relative\">\n      <input\n        ref={inputRef}\n        type=\"text\"\n        placeholder={placeholder}\n        onChange={(e) => onChange(e.target.value)}\n        onFocus={() => value && value.length > 0 && setShowSuggestions(true)}\n        className=\"w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent\"\n        disabled={isValidating}\n      />\n      {(!isInitialized || isValidating) && (\n        <div className=\"absolute right-3 top-2.5\">\n          <div className=\"w-4 h-4 border-2 border-brand-600 border-t-transparent rounded-full animate-spin\"></div>\n        </div>\n      )}\n      \n      {/* Telangana Location Suggestions */}\n      {showSuggestions && filteredLocations.length > 0 && (\n        <div className=\"absolute top-full left-0 right-0 mt-1 bg-white border border-slate-300 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto\">\n          {filteredLocations.map((location) => (\n            <button\n              key={location.name}\n              type=\"button\"\n              onClick={() => handleLocationSelect(location)}\n              className=\"w-full text-left px-3 py-2 hover:bg-brand-50 transition-colors flex items-center gap-2 border-b border-slate-100 last:border-b-0\"\n            >\n              <svg className=\"w-4 h-4 text-slate-400 flex-shrink-0\" fill=\"currentColor\" viewBox=\"0 0 20 20\">\n                <path fillRule=\"evenodd\" d=\"M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z\" clipRule=\"evenodd\" />\n              </svg>\n              <span className=\"text-sm text-slate-900 font-medium\">{location.name}</span>\n              <span className=\"text-xs text-slate-500 ml-auto\">Telangana</span>\n            </button>\n          ))}\n        </div>\n      )}\n    </div>\n  );\n}
+  { name: 'Tandoor', lat: 17.1989, lng: 78.1417 },
+  { name: 'Medchal', lat: 17.2808, lng: 78.3614 },
+  { name: 'Malkajgiri', lat: 17.3925, lng: 78.5328 },
+  { name: 'Cantonment', lat: 17.3636, lng: 78.4708 },
+  { name: 'Parigi', lat: 17.2625, lng: 78.5381 },
+  { name: 'Mahbubnagar', lat: 16.7283, lng: 77.9811 },
+  { name: 'Kodada', lat: 16.8339, lng: 78.3019 },
+  { name: 'Wanaparthy', lat: 16.6019, lng: 77.8558 },
+  { name: 'Jagitial', lat: 18.2467, lng: 78.7286 },
+  { name: 'Peddapalli', lat: 18.5164, lng: 78.9939 },
+  { name: 'Karimnagar', lat: 18.4279, lng: 78.8353 },
+  { name: 'Sircilla', lat: 18.5256, lng: 78.8444 },
+  { name: 'Parkal', lat: 17.9928, lng: 78.5619 },
+  { name: 'Warangal', lat: 17.9689, lng: 78.6294 },
+  { name: 'Hanamkonda', lat: 17.9497, lng: 78.6158 },
+  { name: 'Jangaon', lat: 17.6681, lng: 78.4944 },
+  { name: 'Hanwada', lat: 17.6964, lng: 78.6142 },
+  { name: 'Khammam', lat: 17.2687, lng: 78.9844 },
+  { name: 'Kothagudem', lat: 17.5644, lng: 80.1981 },
+  { name: 'Karepalli', lat: 17.7858, lng: 80.0325 },
+  { name: 'Manuguru', lat: 17.5806, lng: 80.1267 },
+  { name: 'Sattupalli', lat: 17.1961, lng: 80.0269 },
+  { name: 'Asifnagar', lat: 17.2342, lng: 78.4756 },
+  { name: 'Vanasthalipuram', lat: 17.2656, lng: 78.5031 },
+  { name: 'Tolichowki', lat: 17.2817, lng: 78.4747 },
+  { name: 'Alaknanda', lat: 17.2908, lng: 78.4542 },
+  { name: 'Bandlaguda', lat: 17.2933, lng: 78.4958 },
+];
+
+export default function LocationSearch({ value, onChange, placeholder = 'Search location' }: LocationSearchProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const autocompleteRef = useRef<any>(null);
+  const sessionTokenRef = useRef<any>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [filteredLocations, setFilteredLocations] = useState<typeof TELANGANA_LOCATIONS>([]);
+  const { reverseGeocode } = useGeocoding();
+
+  // Filter Telangana locations based on input
+  useEffect(() => {
+    if (value && value.length > 0) {
+      const filtered = TELANGANA_LOCATIONS.filter(loc =>
+        loc.name.toLowerCase().includes(value.toLowerCase())
+      );
+      setFilteredLocations(filtered.slice(0, 8));
+      setShowSuggestions(filtered.length > 0);
+    } else {
+      setFilteredLocations([]);
+      setShowSuggestions(false);
+    }
+  }, [value]);
+
+  useEffect(() => {
+    const initAutocomplete = () => {
+      if (!inputRef.current) return;
+      if (!window.google || !window.google.maps || !window.google.maps.places) {
+        console.warn('Google Maps API not yet loaded');
+        setTimeout(initAutocomplete, 500);
+        return;
+      }
+
+      try {
+        // Create a fresh session token for this search session
+        sessionTokenRef.current = new window.google.maps.places.AutocompleteSessionToken();
+
+        // ✅ PLACES API - Autocomplete with Telangana bounds (strict)
+        const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
+          types: ['geocode'],
+          sessionToken: sessionTokenRef.current,
+          fields: ['place_id', 'formatted_address', 'name'],
+          componentRestrictions: { country: 'in' },
+          bounds: new window.google.maps.LatLngBounds(
+            new window.google.maps.LatLng(15.4, 77.8),   // Southwest corner of Telangana (expanded)
+            new window.google.maps.LatLng(18.6, 80.2)    // Northeast corner of Telangana (expanded)
+          ),
+          strictBounds: true // Only show results within bounds
+        });
+
+        autocompleteRef.current = autocomplete;
+
+        autocomplete.addListener('place_changed', async () => {
+          const place = autocomplete.getPlace();
+          
+          if (!place.place_id) {
+            console.warn('No place selected');
+            return;
+          }
+
+          setIsValidating(true);
+          setShowSuggestions(false);
+
+          try {
+            // ✅ MAPS JAVASCRIPT API & PLACES API - Get place details with geometry
+            const service = new window.google.maps.places.PlacesService(document.createElement('div'));
+            
+            service.getDetails({
+              placeId: place.place_id,
+              fields: ['geometry', 'formatted_address', 'address_components', 'name']
+            }, async (result: any, status: string) => {
+              console.log('PlacesService response:', { status, hasGeometry: !!result?.geometry, geometry: result?.geometry });
+              
+              if (status === window.google.maps.places.PlacesServiceStatus.OK && result?.geometry?.location) {
+                let lat, lng;
+                
+                // Handle both function and property access
+                if (typeof result.geometry.location.lat === 'function') {
+                  lat = result.geometry.location.lat();
+                  lng = result.geometry.location.lng();
+                } else {
+                  lat = result.geometry.location.lat;
+                  lng = result.geometry.location.lng;
+                }
+                
+                console.log('Extracted coordinates:', { lat, lng, type_lat: typeof lat, type_lng: typeof lng });
+                
+                // ✅ GEOCODING API - Validate & enhance address with reverse geocoding
+                try {
+                  const geocodedAddress = await reverseGeocode(lat, lng);
+                  const validatedAddress = geocodedAddress?.formatted_address || result.formatted_address;
+                  
+                  // Pass all details back
+                  onChange(validatedAddress, lat, lng, validatedAddress);
+                  
+                  console.log('📍 Location confirmed:', { 
+                    address: validatedAddress,
+                    latitude: lat, 
+                    longitude: lng,
+                    city: geocodedAddress?.city,
+                    state: geocodedAddress?.state,
+                    pincode: geocodedAddress?.pincode
+                  });
+                } catch (geocodingError) {
+                  // Fallback if Geocoding API fails
+                  console.warn('Geocoding API validation skipped, using Places data:', geocodingError);
+                  onChange(result.formatted_address, lat, lng, result.formatted_address);
+                }
+                
+                // Reset session token after selection for next search
+                sessionTokenRef.current = new window.google.maps.places.AutocompleteSessionToken();
+              } else {
+                console.error('PlacesService error:', status);
+              }
+              setIsValidating(false);
+            });
+          } catch (error) {
+            console.error('Error processing location:', error);
+            setIsValidating(false);
+          }
+        });
+
+        setIsInitialized(true);
+      } catch (error) {
+        console.error('Error initializing autocomplete:', error);
+      }
+    };
+
+    initAutocomplete();
+
+    return () => {
+      if (autocompleteRef.current) {
+        window.google?.maps?.event?.clearInstanceListeners(autocompleteRef.current);
+      }
+    };
+  }, [onChange, reverseGeocode]);
+
+  const handleLocationSelect = async (location: typeof TELANGANA_LOCATIONS[0]) => {
+    setIsValidating(true);
+    setShowSuggestions(false);
+    
+    try {
+      const geocodedAddress = await reverseGeocode(location.lat, location.lng);
+      const address = geocodedAddress?.formatted_address || `${location.name}, Telangana`;
+      
+      onChange(address, location.lat, location.lng, address);
+      
+      if (inputRef.current) {
+        inputRef.current.value = address;
+      }
+      
+      console.log('📍 Location selected from suggestions:', {
+        name: location.name,
+        lat: location.lat,
+        lng: location.lng,
+        address
+      });
+    } catch (error) {
+      console.error('Error selecting location:', error);
+      onChange(`${location.name}, Telangana`, location.lat, location.lng, `${location.name}, Telangana`);
+      if (inputRef.current) {
+        inputRef.current.value = `${location.name}, Telangana`;
+      }
+    } finally {
+      setIsValidating(false);
+    }
+  };
+
+  return (
+    <div className="relative">
+      <input
+        ref={inputRef}
+        type="text"
+        placeholder={placeholder}
+        onChange={(e) => onChange(e.target.value)}
+        onFocus={() => value && value.length > 0 && setShowSuggestions(true)}
+        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent"
+        disabled={isValidating}
+      />
+      {(!isInitialized || isValidating) && (
+        <div className="absolute right-3 top-2.5">
+          <div className="w-4 h-4 border-2 border-brand-600 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      )}
+      
+      {/* Telangana Location Suggestions */}
+      {showSuggestions && filteredLocations.length > 0 && (
+        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-300 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
+          {filteredLocations.map((location) => (
+            <button
+              key={location.name}
+              type="button"
+              onClick={() => handleLocationSelect(location)}
+              className="w-full text-left px-3 py-2 hover:bg-brand-50 transition-colors flex items-center gap-2 border-b border-slate-100 last:border-b-0"
+            >
+              <svg className="w-4 h-4 text-slate-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+              </svg>
+              <span className="text-sm text-slate-900 font-medium">{location.name}</span>
+              <span className="text-xs text-slate-500 ml-auto">Telangana</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
