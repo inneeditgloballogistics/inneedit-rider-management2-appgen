@@ -336,42 +336,15 @@ export default function PayrollManagement() {
                         ) : (
                           <div className="space-y-2">
                             {historyEntries.map((entry: any, idx: number) => {
-                              let isAddition = true;
-                              let entryLabel = 'Entry';
-                              
-                              // Check for DEDUCTIONS first
-                              if (entry.reason !== undefined && entry.reason !== null) {
-                                // Has 'reason' field = it's an advance (deduction)
-                                isAddition = false;
-                                entryLabel = 'Advance';
-                              } else if (entry.deduction_type !== undefined && entry.deduction_type !== null) {
-                                // Has 'deduction_type' = it's a deduction
-                                isAddition = false;
-                                entryLabel = entry.deduction_type || 'Deduction';
-                              } else if (entry.deduction_date !== undefined && entry.deduction_date !== null) {
-                                // Has 'deduction_date' = it's a deduction
-                                isAddition = false;
-                                entryLabel = 'Deduction';
-                              } else if (entry.referrer_cee_id !== undefined && entry.referrer_cee_id !== null) {
-                                // Has referral fields = it's an addition
-                                isAddition = true;
-                                entryLabel = 'Referral';
-                              } else if (entry.incentive_type !== undefined && entry.incentive_type !== null) {
-                                // Has 'incentive_type' = it's an addition
-                                isAddition = true;
-                                entryLabel = entry.incentive_type || 'Incentive';
-                              } else if (entry.incentive_date !== undefined && entry.incentive_date !== null) {
-                                // Has 'incentive_date' = it's an addition
-                                isAddition = true;
-                                entryLabel = 'Incentive';
-                              }
+                              // Use the 'type' field returned from API
+                              const type = entry.type; // 'Referral', 'Incentive', 'Deduction', or 'Advance'
+                              const isAddition = type === 'Referral' || type === 'Incentive';
                               
                               return (
                                 <div key={idx} className="bg-white border border-slate-200 rounded-lg p-3 flex justify-between items-center">
                                   <div>
-                                    <div className="text-sm font-semibold text-slate-900">{entryLabel}</div>
+                                    <div className="text-sm font-semibold text-slate-900">{type}</div>
                                     {entry.description && <div className="text-xs text-slate-600 mt-1">{entry.description}</div>}
-                                    {entry.reason && <div className="text-xs text-slate-600 mt-1">{entry.reason}</div>}
                                   </div>
                                   <div className="text-right">
                                     <div className={`text-sm font-bold ${isAddition ? 'text-green-700' : 'text-red-700'}`}>
