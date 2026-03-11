@@ -155,7 +155,7 @@ export async function POST(request: Request) {
       
       // First get the rider info to find cee_id and vehicle rent
       const riderInfo = await sql`
-        SELECT cee_id, full_name, vehicle_ownership, ev_weekly_rent, join_date FROM riders 
+        SELECT cee_id, full_name, vehicle_ownership, ev_weekly_rent, ev_type, join_date FROM riders 
         WHERE user_id = ${rider_id} OR cee_id = ${rider_id}
         LIMIT 1
       `;
@@ -164,6 +164,7 @@ export async function POST(request: Request) {
       const full_name = riderInfo?.[0]?.full_name || 'Unknown';
       const vehicleOwnership = riderInfo?.[0]?.vehicle_ownership;
       const evWeeklyRent = riderInfo?.[0]?.ev_weekly_rent || 0;
+      const evType = riderInfo?.[0]?.ev_type; // Get the EV type (sunmobility_swap or fixed_battery)
       
       // Parse and normalize join_date to midnight UTC for proper date comparison
       let riderJoinDate: Date | null = null;
@@ -225,8 +226,8 @@ export async function POST(request: Request) {
       }
       entries = [...entries, ...deductions];
       
-      // Add vehicle rent deduction with prorate logic if it's a company vehicle
-      if (vehicleOwnership === 'company_ev' && evWeeklyRent > 0 && start_date && end_date) {
+      // Add daily vehicle rent deduction if it's a company vehicle
+      if (vehicleOwnership === 'company_ev' && start_date && end_date) {
         // Parse dates properly - handle both ISO and YYYY-MM-DD formats
         let startDateObj: Date;
         let endDateObj: Date;
@@ -245,117 +246,62 @@ export async function POST(request: Request) {
           endDateObj = end_date instanceof Date ? end_date : new Date(end_date);
         }
 
-        console.log('🚗 Vehicle Rent Debug:', {
+        // Determine daily rent based on EV type
+        let dailyRent = 0;
+        let evTypeLabel = '';
+        
+        if (evType === 'sunmobility_swap') {
+          dailyRent = 243;
+          evTypeLabel = 'Sunmobility Swap';
+        } else if (evType === 'fixed_battery') {
+          dailyRent = 215;
+          evTypeLabel = 'Fixed Battery';
+        } else {
+          dailyRent = 0; // Default if no EV type
+          evTypeLabel = 'Company EV';
+        }
+
+        console.log('🚗 Daily Vehicle Rent Debug:', {
           rider_id,
-          vehicleOwnership,
-          evWeeklyRent,
+          evType,
+          evTypeLabel,
+          dailyRent,
           riderJoinDate: riderJoinDate?.toISOString().split('T')[0],
           startDate: startDateObj.toISOString().split('T')[0],
           endDate: endDateObj.toISOString().split('T')[0]
         });
 
-        // Helper function to calculate week boundaries for a given date
-        const getWeekBoundaries = (date: Date): { week: number; start: Date; end: Date } => {
-          const dayOfMonth = date.getUTCDate();
-          let weekNum: number;
-          let startDay: number;
-          let endDay: number;
-          
-          if (dayOfMonth >= 1 && dayOfMonth <= 7) {
-            weekNum = 1;
-            startDay = 1;
-            endDay = 7;
-          } else if (dayOfMonth >= 8 && dayOfMonth <= 14) {
-            weekNum = 2;
-            startDay = 8;
-            endDay = 14;
-          } else if (dayOfMonth >= 15 && dayOfMonth <= 21) {
-            weekNum = 3;
-            startDay = 15;
-            endDay = 21;
-          } else {
-            weekNum = 4;
-            startDay = 22;
-            // Get last day of month
-            const lastDay = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 0)).getUTCDate();
-            endDay = lastDay;
-          }
-          
-          const start = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), startDay));
-          const end = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), endDay));
-          
-          return { week: weekNum, start, end };
-        };
-
-        // Daily rate = weekly rent / 7
-        const dailyRate = evWeeklyRent / 7;
-        
-        // Generate vehicle rent entries for each week in the date range
+        // Generate daily vehicle rent entries
         let currentDate = new Date(startDateObj);
-        const processedWeeks = new Set<string>();
         
         while (currentDate <= endDateObj) {
-          const { week: weekOfMonth, start: weekStart, end: weekEnd } = getWeekBoundaries(currentDate);
-          const weekKey = `${currentDate.getUTCFullYear()}-${currentDate.getUTCMonth()}-week${weekOfMonth}`;
-          
-          // Skip if we've already processed this week
-          if (processedWeeks.has(weekKey)) {
+          // Skip if rider hasn't joined yet
+          if (riderJoinDate && currentDate < riderJoinDate) {
+            console.log(`⏭️  Skipping ${currentDate.toISOString().split('T')[0]} - rider hasn't joined yet`);
             currentDate.setUTCDate(currentDate.getUTCDate() + 1);
             continue;
           }
-          processedWeeks.add(weekKey);
+
+          // Create daily vehicle rent entry
+          const dateStr = currentDate.toISOString().split('T')[0];
+          const vehicleRentEntry = {
+            id: `vehicle-rent-${rider_id}-${dateStr}-${Date.now()}`,
+            rider_id: rider_id,
+            cee_id: cee_id,
+            full_name: full_name,
+            entry_type: 'vehicle_rent',
+            amount: dailyRent,
+            description: evTypeLabel,
+            status: 'auto-deducted',
+            entry_date: currentDate.toISOString(),
+            created_at: new Date().toISOString(),
+            is_auto_calculated: true
+          };
           
-          // Check if this week overlaps with the provided date range
-          if (weekEnd >= startDateObj && weekStart <= endDateObj) {
-            console.log(`📅 Week ${weekOfMonth}:`, {
-              weekStart: weekStart.toISOString().split('T')[0],
-              weekEnd: weekEnd.toISOString().split('T')[0],
-              riderJoinDate: riderJoinDate?.toISOString().split('T')[0]
-            });
-            
-            // Skip if rider hasn't joined yet (joined AFTER this week ends)
-            if (riderJoinDate && riderJoinDate > weekEnd) {
-              console.log(`⏭️  Rider hasn't joined yet`);
-              currentDate.setUTCDate(currentDate.getUTCDate() + 7);
-              continue;
-            }
-            
-            let rentAmount = evWeeklyRent;
-            let description = 'Weekly vehicle rent - Company EV';
-            
-            // Apply prorate logic if rider joined during this week
-            if (riderJoinDate && riderJoinDate >= weekStart && riderJoinDate <= weekEnd) {
-              // Rider joined THIS week - count days from join date through week end (inclusive)
-              const daysWorked = Math.floor((weekEnd.getTime() - riderJoinDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-              rentAmount = Math.round((dailyRate * daysWorked) * 100) / 100;
-              description = `Prorated vehicle rent (${daysWorked} days - from ${riderJoinDate.toISOString().split('T')[0]})`;
-              console.log(`💰 Prorated Week ${weekOfMonth}: ${daysWorked} days × ₹${dailyRate.toFixed(2)} = ₹${rentAmount}`);
-            } else {
-              console.log(`💰 Full rent Week ${weekOfMonth}: ₹${rentAmount}`);
-            }
-            // else: rider joined before this week, charge full amount
-            
-            // Create vehicle rent entry
-            const vehicleRentEntry = {
-              id: `vehicle-rent-${weekStart.getUTCFullYear()}-${weekStart.getUTCMonth() + 1}-week${weekOfMonth}-${Date.now()}`,
-              rider_id: rider_id,
-              cee_id: cee_id,
-              full_name: full_name,
-              entry_type: 'vehicle_rent',
-              amount: rentAmount,
-              description: description,
-              status: 'auto-deducted',
-              entry_date: weekStart.toISOString(),
-              created_at: new Date().toISOString(),
-              is_auto_calculated: true,
-              week_of_month: weekOfMonth
-            };
-            
-            entries.push(vehicleRentEntry);
-            console.log(`✅ Added vehicle rent entry for week ${weekOfMonth}`);
-          }
+          entries.push(vehicleRentEntry);
+          console.log(`✅ Added daily vehicle rent for ${dateStr}: ₹${dailyRent}`);
           
-          // Move to next day to check next week
+          // Move to next day
           currentDate.setUTCDate(currentDate.getUTCDate() + 1);
         }
       }

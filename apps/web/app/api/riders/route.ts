@@ -70,6 +70,7 @@ export async function POST(request: Request) {
         vehicle_ownership,
         ev_monthly_rent,
         ev_weekly_rent,
+        ev_type,
         is_leader,
         leader_discount_percentage,
         status
@@ -78,7 +79,7 @@ export async function POST(request: Request) {
         ${body.joinDate || null}, ${body.address || null}, ${body.client || ''}, ${hubId}, ${body.assignedVehicleId || null}, 
         ${body.bankAccount || null}, ${body.ifscCode || null}, ${body.dlUrl || null}, ${body.aadharUrl || null},
         ${body.vehicleOwnership || 'company_ev'}, ${body.evMonthlyRent || null}, ${body.evWeeklyRent || null},
-        ${body.isLeader || false}, ${body.leaderDiscountPercentage || 0}, 'active'
+        ${body.evType || null}, ${body.isLeader || false}, ${body.leaderDiscountPercentage || 0}, 'active'
       )
       RETURNING *
     `;
@@ -173,6 +174,7 @@ export async function PUT(request: NextRequest) {
         vehicle_ownership = ${otherFields.vehicle_ownership || null},
         ev_monthly_rent = ${otherFields.ev_monthly_rent || null},
         ev_weekly_rent = ${otherFields.ev_weekly_rent || null},
+        ev_type = ${otherFields.ev_type || null},
         is_leader = ${otherFields.is_leader || false},
         leader_discount_percentage = ${otherFields.leader_discount_percentage || 0},
         status = ${otherFields.status || 'active'}

@@ -171,6 +171,7 @@ export default function PayrollEntries() {
       case 'approved': return 'bg-green-100 text-green-700';
       case 'pending': return 'bg-yellow-100 text-yellow-700';
       case 'rejected': return 'bg-red-100 text-red-700';
+      case 'auto-deducted': return 'bg-blue-100 text-blue-700';
       default: return 'bg-slate-100 text-slate-700';
     }
   };
@@ -519,11 +520,19 @@ export default function PayrollEntries() {
                       <div className="overflow-x-auto">
                         {(() => {
                           const { startDate, endDate } = getWeekDateRange(selectedWeek, selectedMonth, selectedYear);
-                          const vehicleRentEntries = riderDetails.filter(e => {
+                          let vehicleRentEntries = riderDetails.filter(e => {
                             if (e.entry_type?.toLowerCase() !== 'vehicle_rent') return false;
                             const entryDate = new Date(e.entry_date || e.created_at);
                             return entryDate >= startDate && entryDate <= endDate;
                           });
+                          
+                          // Sort by date ascending (earliest first)
+                          vehicleRentEntries.sort((a, b) => {
+                            const dateA = new Date(a.entry_date || a.created_at);
+                            const dateB = new Date(b.entry_date || b.created_at);
+                            return dateA.getTime() - dateB.getTime();
+                          });
+                          
                           if (vehicleRentEntries.length === 0) {
                             return (
                               <div className="px-4 py-6 text-center text-slate-500 text-sm">
@@ -535,36 +544,36 @@ export default function PayrollEntries() {
                             <table className="w-full text-sm">
                               <thead className="bg-white border-b border-slate-100">
                                 <tr>
+                                  <th className="px-4 py-3 text-left font-semibold text-slate-700">Date</th>
                                   <th className="px-4 py-3 text-left font-semibold text-slate-700">Description</th>
                                   <th className="px-4 py-3 text-right font-semibold text-slate-700">Amount (₹)</th>
-                                  <th className="px-4 py-3 text-left font-semibold text-slate-700">Date</th>
                                   <th className="px-4 py-3 text-left font-semibold text-slate-700">Status</th>
                                 </tr>
                               </thead>
                               <tbody>
                                 {vehicleRentEntries.map(entry => (
                                   <tr key={entry.id} className="border-b border-slate-100 hover:bg-slate-50">
-                                    <td className="px-4 py-3 text-slate-700">{entry.description}</td>
-                                    <td className="px-4 py-3 text-right font-semibold text-slate-900">
-                                      ₹{(parseFloat(entry.amount.toString()) || 0).toFixed(2)}
-                                    </td>
-                                    <td className="px-4 py-3 text-slate-600 text-xs">
+                                    <td className="px-4 py-3 text-slate-600 text-xs font-medium">
                                       {new Date(entry.entry_date || entry.created_at).toLocaleDateString('en-GB', { 
                                         day: '2-digit', 
                                         month: 'short', 
                                         year: 'numeric' 
                                       })}
                                     </td>
+                                    <td className="px-4 py-3 text-slate-700">{entry.description}</td>
+                                    <td className="px-4 py-3 text-right font-semibold text-slate-900">
+                                      ₹{(parseFloat(entry.amount.toString()) || 0).toFixed(2)}
+                                    </td>
                                     <td className="px-4 py-3">
                                       <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(entry.status)}`}>
-                                        {entry.status.toUpperCase()}
+                                        {entry.status === 'auto-deducted' ? 'AUTO DEDUCTED' : entry.status.toUpperCase()}
                                       </span>
                                     </td>
                                   </tr>
                                 ))}
                                 {/* Total Row */}
                                 <tr className="bg-indigo-50 border-t border-slate-200 font-semibold">
-                                  <td colSpan={1} className="px-4 py-3 text-slate-900">Total Vehicle Rent</td>
+                                  <td colSpan={2} className="px-4 py-3 text-slate-900">Total Vehicle Rent</td>
                                   <td className="px-4 py-3 text-right text-indigo-700">
                                     ₹{vehicleRentEntries.reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}
                                   </td>
