@@ -38,12 +38,12 @@ export async function POST(request: Request) {
           id,
           CONCAT(incentive_type, ' - ', description) as description,
           amount,
-          created_at,
+          incentive_date as created_at,
           'completed' as status
         FROM incentives
         WHERE rider_id = ${rider_id}
-        AND created_at::date = ${date}::date
-        ORDER BY created_at DESC
+        AND incentive_date::date = ${date}::date
+        ORDER BY incentive_date DESC
       `,
       // Fetch deductions
       sql`
@@ -52,26 +52,26 @@ export async function POST(request: Request) {
           id,
           CONCAT(deduction_type, ' - ', description) as description,
           amount,
-          created_at,
+          deduction_date as created_at,
           'completed' as status
         FROM deductions
         WHERE rider_id = ${rider_id}
-        AND created_at::date = ${date}::date
-        ORDER BY created_at DESC
+        AND deduction_date::date = ${date}::date
+        ORDER BY deduction_date DESC
       `,
       // Fetch advances
       sql`
         SELECT 
           'Advance' as type,
           id,
-          CONCAT(reason, ' - ', admin_notes) as description,
+          CONCAT(reason, ' - ', COALESCE(admin_notes, '')) as description,
           amount,
-          created_at,
+          requested_at as created_at,
           status
         FROM advances
         WHERE cee_id = ${rider_id}
-        AND created_at::date = ${date}::date
-        ORDER BY created_at DESC
+        AND requested_at::date = ${date}::date
+        ORDER BY requested_at DESC
       `
     ]);
 
