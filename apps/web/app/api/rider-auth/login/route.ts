@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
 
     // Create session
     const sessionToken = `rider_${crypto.randomUUID()}`;
-    const expiresAtDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+    const expiresAtDate = new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days from now (IST)
     const sessionId = crypto.randomUUID();
 
     console.log('Creating session:', { sessionId, userId, sessionToken, expiresAt: expiresAtDate });

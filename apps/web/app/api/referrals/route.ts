@@ -81,14 +81,12 @@ export async function PATCH(request: NextRequest) {
 
     // If action is 'approve', set approval status and calculate month completion date
     if (action === 'approve') {
-      const approvalDate = new Date();
-      const monthCompletionDate = new Date(approvalDate.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days later
-
+      // Use CURRENT_TIMESTAMP for IST (database server is in IST)
       const result = await sql`
         UPDATE referrals 
         SET approval_status = 'approved', 
-            approval_date = ${approvalDate.toISOString()},
-            month_completion_date = ${monthCompletionDate.toISOString()},
+            approval_date = CURRENT_TIMESTAMP,
+            month_completion_date = CURRENT_TIMESTAMP + INTERVAL '30 days',
             referred_rider_id = ${referred_rider_id || null},
             processed_at = CURRENT_TIMESTAMP
         WHERE id = ${id}

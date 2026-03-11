@@ -12,6 +12,10 @@ export async function POST(request: NextRequest) {
       incentive_date
     } = body;
 
+    // Ensure incentive_date is stored correctly (as a date, not timestamp with timezone shift)
+    // The incentive_date column is DATE type, so convert YYYY-MM-DD string properly
+    const dateToStore = incentive_date || new Date().toISOString().split('T')[0];
+
     const result = await sql`
       INSERT INTO incentives (
         rider_id,
@@ -25,7 +29,7 @@ export async function POST(request: NextRequest) {
         ${incentive_type},
         ${parseFloat(amount)},
         ${description},
-        ${incentive_date},
+        ${dateToStore}::DATE,
         NOW()
       )
       RETURNING *

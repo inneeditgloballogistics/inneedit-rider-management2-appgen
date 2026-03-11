@@ -13,6 +13,10 @@ export async function POST(request: NextRequest) {
       deduction_date
     } = body;
 
+    // Ensure deduction_date is stored correctly (as a date, not timestamp with timezone shift)
+    // The deduction_date column is DATE type, so convert YYYY-MM-DD string properly
+    const dateToStore = deduction_date || new Date().toISOString().split('T')[0];
+
     const result = await sql`
       INSERT INTO deductions (
         rider_id,
@@ -26,7 +30,7 @@ export async function POST(request: NextRequest) {
         ${deduction_type},
         ${parseFloat(amount)},
         ${description || ''},
-        ${deduction_date},
+        ${dateToStore}::DATE,
         NOW()
       )
       RETURNING *

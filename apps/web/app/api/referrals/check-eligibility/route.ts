@@ -23,6 +23,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if 30 days have passed since approval
+    // Use CURRENT_TIMESTAMP from DB which is IST
     const currentDate = new Date();
     const monthCompletionDate = new Date(ref.month_completion_date);
 

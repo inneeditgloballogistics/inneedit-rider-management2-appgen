@@ -13,6 +13,12 @@ export async function POST(request: NextRequest) {
       deduction_date
     } = body;
 
+    // Ensure we're storing the date as a proper timestamp (at start of day)
+    // deduction_date comes as YYYY-MM-DD string, convert to timestamp
+    const dateToStore = deduction_date 
+      ? new Date(`${deduction_date}T00:00:00`).toISOString()
+      : new Date().toISOString();
+
     const result = await sql`
       INSERT INTO advances (
         rider_id,
@@ -31,7 +37,7 @@ export async function POST(request: NextRequest) {
         ${reason},
         ${admin_notes},
         'approved',
-        ${deduction_date || new Date().toISOString().split('T')[0]}
+        ${dateToStore}
       )
       RETURNING *
     `;
