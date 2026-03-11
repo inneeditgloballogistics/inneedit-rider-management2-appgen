@@ -81,8 +81,6 @@ export default function PayrollManagement() {
     fetchHistoryEntries(rider.cee_id, today);
   };
 
-
-
   const fetchHistoryEntries = async (riderId: string, date: string) => {
     setLoadingHistory(true);
     try {
@@ -174,8 +172,6 @@ export default function PayrollManagement() {
     
     return true;
   });
-
-
 
   return (
     <div className="mesh-bg text-slate-800 antialiased min-h-screen">
@@ -339,7 +335,33 @@ export default function PayrollManagement() {
                           </div>
                         ) : (
                           <div className="space-y-2">
-                            {historyEntries.map((entry: any, idx: number) => (\n                              <div key={idx} className=\"bg-white border border-slate-200 rounded-lg p-3 flex justify-between items-center\">\n                                <div>\n                                  <div className=\"text-sm font-semibold text-slate-900\">{entry.entry_type || entry.type || 'Entry'}</div>\n                                  {entry.description && <div className=\"text-xs text-slate-600 mt-1\">{entry.description}</div>}\n                                </div>\n                                <div className=\"text-right\">\n                                  <div className={`text-sm font-bold ${entry.amount && parseFloat(entry.amount) > 0 ? 'text-green-700' : 'text-orange-700'}`}>\n                                    {entry.amount && parseFloat(entry.amount) > 0 ? '+' : '-'}₹{Math.abs(parseFloat(entry.amount || 0)).toFixed(2)}\n                                  </div>\n                                </div>\n                              </div>\n                            ))}\n                          </div>\n                        )}\n                      </div>\n\n                      {/* Add Button */}\n                      <div className=\"pt-4 border-t border-slate-200\">\n                        <button onClick={() => setPanelMode('add')} className=\"px-6 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium\">\n                          Add Entry\n                        </button>\n                      </div>\n                    </div>\n                  )}\n                </>\n              ) : (
+                            {historyEntries.map((entry: any, idx: number) => (
+                              <div key={idx} className="bg-white border border-slate-200 rounded-lg p-3 flex justify-between items-center">
+                                <div>
+                                  <div className="text-sm font-semibold text-slate-900">{entry.entry_type || entry.type || 'Entry'}</div>
+                                  {entry.description && <div className="text-xs text-slate-600 mt-1">{entry.description}</div>}
+                                </div>
+                                <div className="text-right">
+                                  <div className={`text-sm font-bold ${entry.amount && parseFloat(entry.amount) > 0 ? 'text-green-700' : 'text-orange-700'}`}>
+                                    {entry.amount && parseFloat(entry.amount) > 0 ? '+' : '-'}₹{Math.abs(parseFloat(entry.amount || 0)).toFixed(2)}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Add Button */}
+                      <div className="pt-4 border-t border-slate-200">
+                        <button onClick={() => setPanelMode('add')} className="px-6 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium">
+                          Add Entry
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
                 <div className="space-y-4 max-w-md">
                   <div>
                     <label className="block text-sm font-semibold text-slate-900 mb-2">Entry Type</label>
