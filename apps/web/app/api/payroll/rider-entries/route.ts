@@ -149,19 +149,21 @@ export async function POST(request: Request) {
       console.log('Advances query error (non-critical):', e);
     }
 
-    // Fetch deductions - get rider's cee_id first (filter by created_at for week determination)
+    // Fetch deductions and vehicle rent - get rider's cee_id first (filter by created_at for week determination)
     try {
       let deductions: any[] = [];
       
-      // First get the rider info to find cee_id
+      // First get the rider info to find cee_id and vehicle rent
       const riderInfo = await sql`
-        SELECT cee_id, full_name FROM riders 
+        SELECT cee_id, full_name, vehicle_ownership, ev_weekly_rent FROM riders 
         WHERE user_id = ${rider_id} OR cee_id = ${rider_id}
         LIMIT 1
       `;
       
       const cee_id = riderInfo?.[0]?.cee_id || rider_id;
       const full_name = riderInfo?.[0]?.full_name || 'Unknown';
+      const vehicleOwnership = riderInfo?.[0]?.vehicle_ownership;
+      const evWeeklyRent = riderInfo?.[0]?.ev_weekly_rent || 0;
       
       if (start_date && end_date) {
         deductions = await sql`
@@ -212,6 +214,25 @@ export async function POST(request: Request) {
         `;
       }
       entries = [...entries, ...deductions];
+      
+      // Add vehicle rent deduction if it's a company vehicle
+      if (vehicleOwnership === 'company_ev' && evWeeklyRent > 0) {
+        // Add a vehicle rent entry for each week in the date range
+        const vehicleRentEntry = {
+          id: 'vehicle-rent-' + Date.now(),
+          rider_id: rider_id,
+          cee_id: cee_id,
+          full_name: full_name,
+          entry_type: 'vehicle_rent',
+          amount: evWeeklyRent,
+          description: 'Weekly vehicle rent - Company EV',
+          status: 'auto-deducted',
+          entry_date: start_date || new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          is_auto_calculated: true
+        };
+        entries.push(vehicleRentEntry);
+      }
     } catch (e) {
       console.log('Deductions query error (non-critical):', e);
     }

@@ -134,7 +134,8 @@ export default function PayrollEntries() {
     { value: 'advance', label: 'Advances' },
     { value: 'security_deposit', label: 'Security Deposit' },
     { value: 'damage', label: 'Damage' },
-    { value: 'challan', label: 'Challan' }
+    { value: 'challan', label: 'Challan' },
+    { value: 'vehicle_rent', label: 'Vehicle Rent' }
   ];
 
   const handleRiderClick = (rider: Rider) => {
@@ -150,6 +151,7 @@ export default function PayrollEntries() {
       case 'security_deposit': return 'bg-orange-100 text-orange-700';
       case 'damage': return 'bg-red-100 text-red-700';
       case 'challan': return 'bg-yellow-100 text-yellow-700';
+      case 'vehicle_rent': return 'bg-indigo-100 text-indigo-700';
       case 'other': return 'bg-slate-100 text-slate-700';
       default: return 'bg-slate-100 text-slate-700';
     }
@@ -159,6 +161,7 @@ export default function PayrollEntries() {
     switch(type?.toLowerCase()) {
       case 'security_deposit': return 'Security Deposit';
       case 'challan': return 'Challan';
+      case 'vehicle_rent': return 'Vehicle Rent';
       default: return type?.replace(/_/g, ' ').toUpperCase() || 'Unknown';
     }
   };
@@ -404,7 +407,8 @@ export default function PayrollEntries() {
                                 type === 'advance' ? 'bg-purple-600' :
                                 type === 'security_deposit' ? 'bg-orange-600' :
                                 type === 'damage' ? 'bg-red-600' :
-                                type === 'challan' ? 'bg-yellow-600' : 'bg-slate-600'
+                                type === 'challan' ? 'bg-yellow-600' :
+                                type === 'vehicle_rent' ? 'bg-indigo-600' : 'bg-slate-600'
                               }`}></span>
                               {getTypeLabel(type)} ({typeEntries.length})
                             </h4>
@@ -451,7 +455,7 @@ export default function PayrollEntries() {
 
                     {/* Summary */}
                     <div className="bg-brand-50 border border-brand-200 rounded-lg p-4 mt-4">
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
                         <div>
                           <p className="text-xs text-slate-600 font-medium mb-1">Total Referrals Amount</p>
                           <p className="text-lg font-bold text-slate-900">₹{riderDetails.filter(e => e.entry_type?.toLowerCase() === 'referral').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}</p>
@@ -468,12 +472,16 @@ export default function PayrollEntries() {
                           <p className="text-xs text-slate-600 font-medium mb-1">Total Deductions (Others)</p>
                           <p className="text-lg font-bold text-slate-900">₹{riderDetails.filter(e => ['security_deposit', 'damage', 'challan', 'other'].includes(e.entry_type?.toLowerCase())).reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}</p>
                         </div>
+                        <div>
+                          <p className="text-xs text-slate-600 font-medium mb-1">Vehicle Rent</p>
+                          <p className="text-lg font-bold text-indigo-700">₹{riderDetails.filter(e => e.entry_type?.toLowerCase() === 'vehicle_rent').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}</p>
+                        </div>
                       </div>
 
                       {/* Final Amount Calculation */}
                       <div className="border-t border-brand-300 pt-4">
                         <div className="space-y-2 text-sm text-slate-700">
-                          <p className="font-semibold text-slate-900 mb-3">Note: Advances are loans deducted from payouts after calculation. They are tracked separately and not included in adjustments.</p>
+                          <p className="font-semibold text-slate-900 mb-3">Note: Advances & Vehicle Rent are deducted from payouts after calculation. They are tracked separately and not included in adjustments.</p>
                           {riderDetails.filter(e => e.entry_type?.toLowerCase() === 'referral').length > 0 && (
                             <div className="flex items-center justify-between">
                               <span>Referrals: ₹{riderDetails.filter(e => e.entry_type?.toLowerCase() === 'referral').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}</span>
@@ -501,7 +509,8 @@ export default function PayrollEntries() {
                             })()}
                           </span>
                         </div>
-                        <p className="text-xs text-slate-600 mt-3 pt-3 border-t border-brand-300">For your complete payroll with base payout, visit the Rider Dashboard.</p>
+                        <p className="text-xs text-slate-600 mt-3 pt-3 border-t border-brand-300">Vehicle Rent: ₹{riderDetails.filter(e => e.entry_type?.toLowerCase() === 'vehicle_rent').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)} (deducted separately from payout)</p>
+                        <p className="text-xs text-slate-600 mt-2">For your complete payroll with base payout, visit the Rider Dashboard.</p>
                       </div>
                     </div>
                   </div>
