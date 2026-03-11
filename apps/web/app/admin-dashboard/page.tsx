@@ -490,39 +490,94 @@ function AdminDashboardContent() {
 
             {activeTab === 'advances' && (
               <>
-                <h2 className="font-display text-3xl font-bold text-slate-900">Advance Requests ({pendingAdvancesCount})</h2>
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="font-display text-3xl font-bold text-slate-900">Advance Requests ({advances.length})</h2>
+                  <div className="flex gap-2">
+                    <select
+                      onChange={(e) => {
+                        if (e.target.value === 'all') fetchAdvances();
+                        else {
+                          const filtered = advances.filter(a => a.status === e.target.value);
+                          setAdvances(filtered);
+                        }
+                      }}
+                      className="px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-600"
+                    >
+                      <option value="all">All Status</option>
+                      <option value="pending">Pending</option>
+                      <option value="approved">Approved</option>
+                      <option value="rejected">Rejected</option>
+                    </select>
+                  </div>
+                </div>
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                   <table className="w-full">
                     <thead className="bg-slate-50 border-b border-slate-200">
                       <tr>
-                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Rider</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Rider Name</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">CEE ID</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Store Location</th>
                         <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Amount</th>
                         <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Reason</th>
                         <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Status</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Date Requested</th>
                         <th className="px-6 py-4 text-right text-sm font-semibold text-slate-900">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {advances.map((advance: any) => (
-                        <tr key={advance.id} className="border-b border-slate-200 hover:bg-slate-50">
-                          <td className="px-6 py-4 text-sm text-slate-900">{advance.rider_name}</td>
-                          <td className="px-6 py-4 text-sm text-slate-900 font-semibold">₹{advance.amount}</td>
-                          <td className="px-6 py-4 text-sm text-slate-600">{advance.reason}</td>
-                          <td className="px-6 py-4 text-sm">
-                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${advance.status === 'pending' ? 'bg-yellow-100 text-yellow-700' : advance.status === 'approved' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                              {advance.status}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 text-right space-x-2">
-                            {advance.status === 'pending' && (
-                              <>
-                                <button onClick={() => handleAdvanceAction(advance.id, 'approved')} className="text-green-600 hover:text-green-700 text-sm font-medium">Approve</button>
-                                <button onClick={() => handleAdvanceAction(advance.id, 'rejected')} className="text-red-600 hover:text-red-700 text-sm font-medium">Reject</button>
-                              </>
-                            )}
-                          </td>
+                      {advances.length === 0 ? (
+                        <tr>
+                          <td colSpan={8} className="px-6 py-8 text-center text-slate-500">No advance requests found</td>
                         </tr>
-                      ))}
+                      ) : (
+                        advances.map((advance: any) => (
+                          <tr key={advance.id} className="border-b border-slate-200 hover:bg-slate-50">
+                            <td className="px-6 py-4 text-sm font-medium text-slate-900">{advance.rider_name || 'N/A'}</td>
+                            <td className="px-6 py-4 text-sm text-slate-700 font-semibold">{advance.cee_id || advance.rider_id || 'N/A'}</td>
+                            <td className="px-6 py-4 text-sm text-slate-600">{advance.store_location || 'N/A'}</td>
+                            <td className="px-6 py-4 text-sm font-semibold text-slate-900">₹{parseFloat(advance.amount || 0).toFixed(2)}</td>
+                            <td className="px-6 py-4 text-sm text-slate-600">{advance.reason || 'N/A'}</td>
+                            <td className="px-6 py-4 text-sm">
+                              <span className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
+                                advance.status === 'pending' ? 'bg-yellow-100 text-yellow-700' : 
+                                advance.status === 'approved' ? 'bg-green-100 text-green-700' : 
+                                'bg-red-100 text-red-700'
+                              }`}>
+                                {advance.status?.charAt(0).toUpperCase() + advance.status?.slice(1) || 'Unknown'}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-sm text-slate-600">
+                              {advance.requested_at ? new Date(advance.requested_at).toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: '2-digit' }) : 'N/A'}
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                              <div className="flex gap-2 justify-end flex-wrap">
+                                <button 
+                                  onClick={() => handleView(advance, 'advance')} 
+                                  className="px-3 py-1.5 text-blue-600 text-xs font-medium border border-blue-200 rounded hover:bg-blue-50 transition-all"
+                                >
+                                  View
+                                </button>
+                                {advance.status === 'pending' && (
+                                  <>
+                                    <button 
+                                      onClick={() => handleAdvanceAction(advance.id, 'approved')} 
+                                      className="px-3 py-1.5 text-green-600 text-xs font-medium border border-green-200 rounded hover:bg-green-50 transition-all"
+                                    >
+                                      Approve
+                                    </button>
+                                    <button 
+                                      onClick={() => handleAdvanceAction(advance.id, 'rejected')} 
+                                      className="px-3 py-1.5 text-red-600 text-xs font-medium border border-red-200 rounded hover:bg-red-50 transition-all"
+                                    >
+                                      Reject
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -642,21 +697,85 @@ function AdminDashboardContent() {
 
         {showViewModal && viewItem && (
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-96 overflow-y-auto">
-              <div className="p-6 border-b border-slate-200 flex items-center justify-between">
-                <h3 className="text-xl font-bold text-slate-900">View {viewItem.type}</h3>
+            <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6 border-b border-slate-200 flex items-center justify-between sticky top-0 bg-white">
+                <h3 className="text-xl font-bold text-slate-900">View {viewItem.type === 'advance' ? 'Advance Request' : viewItem.type.charAt(0).toUpperCase() + viewItem.type.slice(1)}</h3>
                 <button onClick={() => setShowViewModal(false)} className="p-1 hover:bg-slate-100 rounded">
                   <i className="ph-bold ph-x text-xl"></i>
                 </button>
               </div>
               <div className="p-6 space-y-4">
-                {Object.entries(viewItem).filter(([k]) => k !== 'type').map(([key, value]: any) => (
-                  <div key={key}>
-                    <strong className="capitalize">{key}:</strong> {String(value)}
-                  </div>
-                ))}
+                {viewItem.type === 'advance' ? (
+                  <>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <strong className="text-slate-500 text-sm">Rider Name:</strong>
+                        <p className="text-slate-900 font-medium mt-1">{viewItem.rider_name || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <strong className="text-slate-500 text-sm">CEE ID:</strong>
+                        <p className="text-slate-900 font-medium mt-1">{viewItem.cee_id || viewItem.rider_id || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <strong className="text-slate-500 text-sm">Amount:</strong>
+                        <p className="text-slate-900 font-bold text-lg mt-1">₹{parseFloat(viewItem.amount || 0).toFixed(2)}</p>
+                      </div>
+                      <div>
+                        <strong className="text-slate-500 text-sm">Store Location:</strong>
+                        <p className="text-slate-900 font-medium mt-1">{viewItem.store_location || 'N/A'}</p>
+                      </div>
+                      <div className="col-span-2">
+                        <strong className="text-slate-500 text-sm">Reason:</strong>
+                        <p className="text-slate-900 font-medium mt-1">{viewItem.reason || 'N/A'}</p>
+                      </div>
+                      <div className="col-span-2">
+                        <strong className="text-slate-500 text-sm">Status:</strong>
+                        <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium mt-1 ${
+                          viewItem.status === 'pending' ? 'bg-yellow-100 text-yellow-700' : 
+                          viewItem.status === 'approved' ? 'bg-green-100 text-green-700' : 
+                          'bg-red-100 text-red-700'
+                        }`}>
+                          {viewItem.status?.charAt(0).toUpperCase() + viewItem.status?.slice(1) || 'Unknown'}
+                        </span>
+                      </div>
+                      <div>
+                        <strong className="text-slate-500 text-sm">Date Requested:</strong>
+                        <p className="text-slate-900 font-medium mt-1">
+                          {viewItem.requested_at ? new Date(viewItem.requested_at).toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+                        </p>
+                      </div>
+                      {viewItem.processed_at && (
+                        <div>
+                          <strong className="text-slate-500 text-sm">Date Processed:</strong>
+                          <p className="text-slate-900 font-medium mt-1">
+                            {new Date(viewItem.processed_at).toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
+                      )}
+                      {viewItem.processed_by && (
+                        <div>
+                          <strong className="text-slate-500 text-sm">Processed By:</strong>
+                          <p className="text-slate-900 font-medium mt-1">{viewItem.processed_by}</p>
+                        </div>
+                      )}
+                      {viewItem.admin_notes && (
+                        <div className="col-span-2">
+                          <strong className="text-slate-500 text-sm">Admin Notes:</strong>
+                          <p className="text-slate-900 font-medium mt-1 p-3 bg-slate-50 rounded border border-slate-200">{viewItem.admin_notes}</p>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  Object.entries(viewItem).filter(([k]) => k !== 'type').map(([key, value]: any) => (
+                    <div key={key}>
+                      <strong className="capitalize text-slate-500 text-sm">{key.replace(/_/g, ' ')}:</strong>
+                      <p className="text-slate-900 mt-1">{String(value) || 'N/A'}</p>
+                    </div>
+                  ))
+                )}
               </div>
-              <div className="p-6 border-t border-slate-200 flex gap-3 justify-end">
+              <div className="p-6 border-t border-slate-200 flex gap-3 justify-end sticky bottom-0 bg-slate-50">
                 <button onClick={() => setShowViewModal(false)} className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 font-medium">Close</button>
               </div>
             </div>
