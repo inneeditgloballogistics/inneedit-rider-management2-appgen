@@ -335,19 +335,21 @@ export default function PayrollManagement() {
                           </div>
                         ) : (
                           <div className="space-y-2">
-                            {historyEntries.map((entry: any, idx: number) => (
-                              <div key={idx} className="bg-white border border-slate-200 rounded-lg p-3 flex justify-between items-center">
-                                <div>
-                                  <div className="text-sm font-semibold text-slate-900">{entry.entry_type || entry.type || 'Entry'}</div>
-                                  {entry.description && <div className="text-xs text-slate-600 mt-1">{entry.description}</div>}
-                                </div>
-                                <div className="text-right">
-                                  <div className={`text-sm font-bold ${entry.amount && parseFloat(entry.amount) > 0 ? 'text-green-700' : 'text-orange-700'}`}>
-                                    {entry.amount && parseFloat(entry.amount) > 0 ? '+' : '-'}₹{Math.abs(parseFloat(entry.amount || 0)).toFixed(2)}
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
+                            {historyEntries.map((entry: any, idx: number) => {
+                              // Determine if this is an addition or deduction
+                              let isAddition = true;
+                              let entryLabel = entry.entry_type || entry.type || 'Entry';
+                              
+                              // Check if it's a deduction based on table source
+                              if (entry.reason !== undefined) {
+                                // Advance entry
+                                isAddition = false;
+                                entryLabel = 'Advance';\n                              } else if (entry.deduction_type !== undefined) {
+                                // Deduction entry
+                                isAddition = false;
+                                entryLabel = entry.deduction_type || 'Deduction';\n                              } else if (entry.incentive_type !== undefined || entry.incentive_date !== undefined) {
+                                // Incentive entry\n                                isAddition = true;
+                                entryLabel = entry.incentive_type || 'Incentive';\n                              }\n                              \n                              return (\n                                <div key={idx} className=\"bg-white border border-slate-200 rounded-lg p-3 flex justify-between items-center\">\n                                  <div>\n                                    <div className=\"text-sm font-semibold text-slate-900\">{entryLabel}</div>\n                                    {entry.description && <div className=\"text-xs text-slate-600 mt-1\">{entry.description}</div>}\n                                    {entry.reason && <div className=\"text-xs text-slate-600 mt-1\">{entry.reason}</div>}\n                                  </div>\n                                  <div className=\"text-right\">\n                                    <div className={`text-sm font-bold ${isAddition ? 'text-green-700' : 'text-red-700'}`}>\n                                      {isAddition ? '+' : '-'}₹{Math.abs(parseFloat(entry.amount || 0)).toFixed(2)}\n                                    </div>\n                                  </div>\n                                </div>\n                              );\n                            })}
                           </div>
                         )}
                       </div>
@@ -381,9 +383,7 @@ export default function PayrollManagement() {
                           <option value="others">Others</option>
                         </select>
                       </div>
-                      {additionType !== 'referral' && (
-                        <input type="number" placeholder="Amount (₹)" value={formData.amount} onChange={(e) => setFormData({...formData, amount: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600" />
-                      )}
+                      <input type="number" placeholder="Amount (₹)" value={formData.amount} onChange={(e) => setFormData({...formData, amount: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600" />
                       <textarea placeholder="Description" value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 resize-none" rows={3} />
                     </>
                   ) : (
