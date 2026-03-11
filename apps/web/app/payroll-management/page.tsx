@@ -337,29 +337,33 @@ export default function PayrollManagement() {
                           <div className="space-y-2">
                             {historyEntries.map((entry: any, idx: number) => {
                               let isAddition = true;
-                              let entryLabel = entry.entry_type || entry.type || 'Entry';
+                              let entryLabel = 'Entry';
                               
-                              // Check if it's an ADDITION first (referral, incentive)
-                              if (entry.referrer_cee_id !== undefined || entry.referred_name !== undefined) {
-                                // Has referral fields = it's an addition
-                                isAddition = true;
-                                entryLabel = 'Referral';
-                              } else if (entry.incentive_type !== undefined || entry.incentive_date !== undefined) {
-                                // Has 'incentive_type' or 'incentive_date' = it's an addition
-                                isAddition = true;
-                                entryLabel = entry.incentive_type || 'Incentive';
-                              } else if (entry.reason !== undefined) {
+                              // Check for DEDUCTIONS first
+                              if (entry.reason !== undefined && entry.reason !== null) {
                                 // Has 'reason' field = it's an advance (deduction)
                                 isAddition = false;
                                 entryLabel = 'Advance';
-                              } else if (entry.deduction_type !== undefined) {
+                              } else if (entry.deduction_type !== undefined && entry.deduction_type !== null) {
                                 // Has 'deduction_type' = it's a deduction
                                 isAddition = false;
                                 entryLabel = entry.deduction_type || 'Deduction';
-                              } else if (entry.deduction_date !== undefined) {
+                              } else if (entry.deduction_date !== undefined && entry.deduction_date !== null) {
                                 // Has 'deduction_date' = it's a deduction
                                 isAddition = false;
                                 entryLabel = 'Deduction';
+                              } else if (entry.referrer_cee_id !== undefined && entry.referrer_cee_id !== null) {
+                                // Has referral fields = it's an addition
+                                isAddition = true;
+                                entryLabel = 'Referral';
+                              } else if (entry.incentive_type !== undefined && entry.incentive_type !== null) {
+                                // Has 'incentive_type' = it's an addition
+                                isAddition = true;
+                                entryLabel = entry.incentive_type || 'Incentive';
+                              } else if (entry.incentive_date !== undefined && entry.incentive_date !== null) {
+                                // Has 'incentive_date' = it's an addition
+                                isAddition = true;
+                                entryLabel = 'Incentive';
                               }
                               
                               return (
