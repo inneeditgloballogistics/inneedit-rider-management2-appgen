@@ -83,7 +83,7 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => setLoginType('admin')}
-              className={`px-3 py-2.5 rounded-lg font-medium text-xs transition-all ${
+              className={`px-3 py-2.5 rounded-lg font-medium text-xs transition-all focus:outline-none ${
                 loginType === 'admin'
                   ? 'bg-white text-slate-900 shadow-sm'
                   : 'text-slate-500 hover:text-slate-700'
@@ -150,7 +150,7 @@ export default function LoginPage() {
                 </p>
                 <Link
                   href="/rider-login"
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-brand-600 text-white rounded-lg font-medium hover:bg-brand-700 transition-all shadow-lg shadow-brand-600/25"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-brand-500 text-white rounded-lg font-medium hover:bg-brand-600 transition-all shadow-lg shadow-brand-500/25"
                 >
                   <i className="ph-bold ph-sign-in"></i>
                   Continue to Rider Login
@@ -180,7 +180,7 @@ export default function LoginPage() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full px-4 py-3 bg-brand-900 text-white rounded-lg font-medium hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="w-full px-4 py-3 bg-brand-500 text-white rounded-lg font-medium hover:bg-brand-600 transition-all shadow-lg shadow-brand-500/25 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {loading ? (
                       <>
@@ -200,7 +200,7 @@ export default function LoginPage() {
           ) : (
             <>
               {/* Hub Manager / Technician Login */}
-              <div className="space-y-5">
+              <form onSubmit={handleRiderLogin} className="space-y-5">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
                     Email Address
@@ -228,11 +228,10 @@ export default function LoginPage() {
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
                   />
                 </div>
-
                 <button
-                  onClick={handleRiderLogin}
+                  type="submit"
                   disabled={loading}
-                  className="w-full px-4 py-3 bg-brand-900 text-white rounded-lg font-medium hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="w-full px-4 py-3 bg-brand-500 text-white rounded-lg font-medium hover:bg-brand-600 transition-all shadow-lg shadow-brand-500/25 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {loading ? (
                     <>
@@ -246,7 +245,7 @@ export default function LoginPage() {
                     </>
                   )}
                 </button>
-              </div>
+              </form>
             </>
           )}
         </div>
