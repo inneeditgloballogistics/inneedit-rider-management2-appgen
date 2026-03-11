@@ -164,7 +164,15 @@ export async function POST(request: Request) {
       const full_name = riderInfo?.[0]?.full_name || 'Unknown';
       const vehicleOwnership = riderInfo?.[0]?.vehicle_ownership;
       const evWeeklyRent = riderInfo?.[0]?.ev_weekly_rent || 0;
-      const riderJoinDate = riderInfo?.[0]?.join_date ? new Date(riderInfo[0].join_date) : null;
+      
+      // Parse and normalize join_date to midnight UTC for proper date comparison
+      let riderJoinDate: Date | null = null;
+      if (riderInfo?.[0]?.join_date) {
+        const joinDateStr = riderInfo[0].join_date;
+        // Parse as UTC date to avoid timezone issues
+        const parsed = new Date(joinDateStr);
+        riderJoinDate = new Date(Date.UTC(parsed.getUTCFullYear(), parsed.getUTCMonth(), parsed.getUTCDate()));
+      }
       
       if (start_date && end_date) {
         deductions = await sql`
@@ -269,19 +277,25 @@ export async function POST(request: Request) {
             weekEnd = new Date(currentYear, currentMonth, startDay + 6);
           }
           
-          // Check if this week overlaps with the provided date range
-          if (weekEnd >= startDateObj && weekStart <= endDateObj) {
+          // Normalize dates to UTC for proper comparison (remove time component)
+          const weekStartUTC = new Date(Date.UTC(weekStart.getUTCFullYear(), weekStart.getUTCMonth(), weekStart.getUTCDate()));
+          const weekEndUTC = new Date(Date.UTC(weekEnd.getUTCFullYear(), weekEnd.getUTCMonth(), weekEnd.getUTCDate()));
+          const startDateUTC = new Date(Date.UTC(startDateObj.getUTCFullYear(), startDateObj.getUTCMonth(), startDateObj.getUTCDate()));
+          const endDateUTC = new Date(Date.UTC(endDateObj.getUTCFullYear(), endDateObj.getUTCMonth(), endDateObj.getUTCDate()));
+          
+          // Check if this week overlaps with the provided date range\n          if (weekEndUTC >= startDateUTC && weekStartUTC <= endDateUTC) {
             let rentAmount = evWeeklyRent;
             let description = 'Weekly vehicle rent - Company EV';
             
             // Apply prorate logic
-            // Check if rider joined in this week
-            if (riderJoinDate && riderJoinDate > weekStart && riderJoinDate <= weekEnd) {
-              // Rider joined mid-week - calculate remaining days
-              const daysRemaining = Math.ceil((weekEnd.getTime() - riderJoinDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+            // Check if rider joined in this week (join_date >= week start AND join_date <= week end)
+            if (riderJoinDate && riderJoinDate >= weekStartUTC && riderJoinDate <= weekEndUTC) {
+              // Rider joined mid-week - calculate remaining days (including join date)
+              const timeDiff = weekEndUTC.getTime() - riderJoinDate.getTime();
+              const daysRemaining = Math.ceil(timeDiff / (1000 * 60 * 60 * 24)) + 1;
               rentAmount = Math.round((dailyRate * daysRemaining) * 100) / 100;
-              description = `Prorated vehicle rent (${daysRemaining} days, rider joined on ${riderJoinDate.toLocaleDateString()})`;
-            } else if (riderJoinDate && riderJoinDate > weekEnd) {
+              description = `Prorated vehicle rent (${daysRemaining} days, joined ${riderJoinDate.toLocaleDateString()})`;
+            } else if (riderJoinDate && riderJoinDate > weekEndUTC) {
               // Rider hasn't joined yet, skip this week
               currentDate.setDate(currentDate.getDate() + 7);
               continue;
