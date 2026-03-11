@@ -174,7 +174,7 @@ export async function POST(request: Request) {
       const storedEvDailyRent = riderInfo?.[0]?.ev_daily_rent || null;
       const evType = riderInfo?.[0]?.ev_type; // Get the EV type (sunmobility_swap or fixed_battery)
       
-      console.log('🔍 Rider Details:', { cee_id, full_name, vehicleOwnership, evType, evWeeklyRent });
+      console.log('🔍 Rider Details:', { cee_id, full_name, vehicleOwnership, evType, storedEvDailyRent });
       
       // Parse and normalize join_date to midnight UTC for proper date comparison
       let riderJoinDate: Date | null = null;
