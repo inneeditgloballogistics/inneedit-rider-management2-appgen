@@ -155,7 +155,7 @@ export async function POST(request: Request) {
       
       // First get the rider info to find cee_id and vehicle rent
       const riderInfo = await sql`
-        SELECT cee_id, full_name, vehicle_ownership, ev_weekly_rent FROM riders 
+        SELECT cee_id, full_name, vehicle_ownership, ev_weekly_rent, created_at FROM riders 
         WHERE user_id = ${rider_id} OR cee_id = ${rider_id}
         LIMIT 1
       `;
@@ -164,6 +164,7 @@ export async function POST(request: Request) {
       const full_name = riderInfo?.[0]?.full_name || 'Unknown';
       const vehicleOwnership = riderInfo?.[0]?.vehicle_ownership;
       const evWeeklyRent = riderInfo?.[0]?.ev_weekly_rent || 0;
+      const riderJoinDate = riderInfo?.[0]?.created_at ? new Date(riderInfo[0].created_at) : null;
       
       if (start_date && end_date) {
         deductions = await sql`
@@ -215,23 +216,102 @@ export async function POST(request: Request) {
       }
       entries = [...entries, ...deductions];
       
-      // Add vehicle rent deduction if it's a company vehicle
-      if (vehicleOwnership === 'company_ev' && evWeeklyRent > 0) {
-        // Add a vehicle rent entry for each week in the date range
-        const vehicleRentEntry = {
-          id: 'vehicle-rent-' + Date.now(),
-          rider_id: rider_id,
-          cee_id: cee_id,
-          full_name: full_name,
-          entry_type: 'vehicle_rent',
-          amount: evWeeklyRent,
-          description: 'Weekly vehicle rent - Company EV',
-          status: 'auto-deducted',
-          entry_date: start_date || new Date().toISOString(),
-          created_at: new Date().toISOString(),
-          is_auto_calculated: true
+      // Add vehicle rent deduction with prorate logic if it's a company vehicle
+      if (vehicleOwnership === 'company_ev' && evWeeklyRent > 0 && start_date && end_date) {
+        // Helper function to get which week a date falls into (based on day of month)
+        const getWeekOfDate = (date: Date): number => {
+          const dayOfMonth = date.getDate();
+          
+          // Week 1: 1-7
+          if (dayOfMonth >= 1 && dayOfMonth <= 7) return 1;
+          // Week 2: 8-14
+          if (dayOfMonth >= 8 && dayOfMonth <= 14) return 2;
+          // Week 3: 15-21
+          if (dayOfMonth >= 15 && dayOfMonth <= 21) return 3;
+          // Week 4: 22-31 (fixed at 7 days as per user request)
+          return 4;
         };
-        entries.push(vehicleRentEntry);
+
+        const startDateObj = new Date(start_date);
+        const endDateObj = new Date(end_date);
+
+        // Daily rate = weekly rent / 7
+        const dailyRate = evWeeklyRent / 7;
+        
+        // Generate vehicle rent entries for each week in the date range
+        let currentDate = new Date(startDateObj);
+        const processedWeeks = new Set<string>();
+        
+        while (currentDate <= endDateObj) {
+          const currentMonth = currentDate.getMonth();
+          const currentYear = currentDate.getFullYear();
+          const weekOfMonth = getWeekOfDate(currentDate);
+          const weekKey = `${currentYear}-${currentMonth}-week${weekOfMonth}`;
+          
+          // Skip if we've already processed this week
+          if (processedWeeks.has(weekKey)) {
+            currentDate.setDate(currentDate.getDate() + 1);
+            continue;
+          }
+          processedWeeks.add(weekKey);
+          
+          // Determine week start and end dates based on month week definition
+          let weekStart: Date, weekEnd: Date;
+          
+          if (weekOfMonth === 4) {
+            // Week 4: Always starts from 22nd and goes to 28th (fixed 7 days)
+            weekStart = new Date(currentYear, currentMonth, 22);
+            weekEnd = new Date(currentYear, currentMonth, 28);
+          } else {
+            // Weeks 1-3: 7-day periods
+            const startDay = (weekOfMonth - 1) * 7 + 1;
+            weekStart = new Date(currentYear, currentMonth, startDay);
+            weekEnd = new Date(currentYear, currentMonth, startDay + 6);
+          }
+          
+          // Check if this week overlaps with the provided date range
+          if (weekEnd >= startDateObj && weekStart <= endDateObj) {
+            let rentAmount = evWeeklyRent;
+            let description = 'Weekly vehicle rent - Company EV';
+            
+            // Apply prorate logic
+            // Check if rider joined in this week
+            if (riderJoinDate && riderJoinDate > weekStart && riderJoinDate <= weekEnd) {
+              // Rider joined mid-week - calculate remaining days
+              const daysRemaining = Math.ceil((weekEnd.getTime() - riderJoinDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+              rentAmount = Math.round((dailyRate * daysRemaining) * 100) / 100;
+              description = `Prorated vehicle rent (${daysRemaining} days, rider joined on ${riderJoinDate.toLocaleDateString()})`;
+            } else if (riderJoinDate && riderJoinDate > weekEnd) {
+              // Rider hasn't joined yet, skip this week
+              currentDate.setDate(currentDate.getDate() + 7);
+              continue;
+            }
+            
+            // For Week 4, always charge full amount (7 days fixed)
+            // No additional prorate needed as it's already defined
+            
+            // Create vehicle rent entry
+            const vehicleRentEntry = {
+              id: `vehicle-rent-${currentYear}-${currentMonth + 1}-week${weekOfMonth}-${Date.now()}`,
+              rider_id: rider_id,
+              cee_id: cee_id,
+              full_name: full_name,
+              entry_type: 'vehicle_rent',
+              amount: rentAmount,
+              description: description,
+              status: 'auto-deducted',
+              entry_date: weekStart.toISOString(),
+              created_at: new Date().toISOString(),
+              is_auto_calculated: true,
+              week_of_month: weekOfMonth
+            };
+            
+            entries.push(vehicleRentEntry);
+          }
+          
+          // Move to next day to check next week
+          currentDate.setDate(currentDate.getDate() + 1);
+        }
       }
     } catch (e) {
       console.log('Deductions query error (non-critical):', e);
