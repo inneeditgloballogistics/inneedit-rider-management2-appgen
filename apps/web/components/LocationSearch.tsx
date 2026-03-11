@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useGeocoding } from '@/hooks/useGeocoding';
+import dynamic from 'next/dynamic';
 
 interface LocationSearchProps {
   value: string;
@@ -14,6 +15,12 @@ declare global {
     google: any;
   }
 }
+
+// Dynamic import for Google Maps component
+const GoogleMapComponent = dynamic(() => import('@/components/MapPreview'), {
+  ssr: false,
+  loading: () => <div className="w-full h-48 bg-slate-100 rounded-lg animate-pulse flex items-center justify-center text-slate-500">Loading map...</div>
+});
 
 // Telangana specific locations for enhanced search
 const TELANGANA_LOCATIONS = [
@@ -87,6 +94,7 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
   const [isValidating, setIsValidating] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [filteredLocations, setFilteredLocations] = useState<typeof TELANGANA_LOCATIONS>([]);
+  const [selectedCoords, setSelectedCoords] = useState<{ lat: number; lng: number; address: string } | null>(null);
   const { reverseGeocode } = useGeocoding();
 
   // Filter Telangana locations based on input
@@ -182,9 +190,16 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
                     state: geocodedAddress?.state,
                     pincode: geocodedAddress?.pincode
                   });
+                
+                // Store coords for map display
+                setSelectedCoords({ lat, lng, address: validatedAddress });
+                
+                // Notify parent
+                onChange(validatedAddress, lat, lng, validatedAddress);
                 } catch (geocodingError) {
                   // Fallback if Geocoding API fails
                   console.warn('Geocoding API validation skipped, using Places data:', geocodingError);
+                  setSelectedCoords({ lat, lng, address: result.formatted_address });
                   onChange(result.formatted_address, lat, lng, result.formatted_address);
                 }
                 
@@ -224,6 +239,7 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
       const geocodedAddress = await reverseGeocode(location.lat, location.lng);
       const address = geocodedAddress?.formatted_address || `${location.name}, Telangana`;
       
+      setSelectedCoords({ lat: location.lat, lng: location.lng, address });
       onChange(address, location.lat, location.lng, address);
       
       if (inputRef.current) {
@@ -238,49 +254,76 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
       });
     } catch (error) {
       console.error('Error selecting location:', error);
-      onChange(`${location.name}, Telangana`, location.lat, location.lng, `${location.name}, Telangana`);
+      const address = `${location.name}, Telangana`;
+      setSelectedCoords({ lat: location.lat, lng: location.lng, address });
+      onChange(address, location.lat, location.lng, address);
       if (inputRef.current) {
-        inputRef.current.value = `${location.name}, Telangana`;
+        inputRef.current.value = address;
       }
     } finally {
       setIsValidating(false);
     }
   };
 
+  const handleMapMarkerMove = (newLat: number, newLng: number, newAddress: string) => {
+    setSelectedCoords({ lat: newLat, lng: newLng, address: newAddress });
+    onChange(newAddress, newLat, newLng, newAddress);
+  };
+
   return (
-    <div className="relative">
-      <input
-        ref={inputRef}
-        type="text"
-        placeholder={placeholder}
-        onChange={(e) => onChange(e.target.value)}
-        onFocus={() => value && value.length > 0 && setShowSuggestions(true)}
-        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent"
-        disabled={isValidating}
-      />
-      {(!isInitialized || isValidating) && (
-        <div className="absolute right-3 top-2.5">
-          <div className="w-4 h-4 border-2 border-brand-600 border-t-transparent rounded-full animate-spin"></div>
-        </div>
-      )}
-      
-      {/* Telangana Location Suggestions */}
-      {showSuggestions && filteredLocations.length > 0 && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-300 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
-          {filteredLocations.map((location) => (
-            <button
-              key={location.name}
-              type="button"
-              onClick={() => handleLocationSelect(location)}
-              className="w-full text-left px-3 py-2 hover:bg-brand-50 transition-colors flex items-center gap-2 border-b border-slate-100 last:border-b-0"
-            >
-              <svg className="w-4 h-4 text-slate-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-              </svg>
-              <span className="text-sm text-slate-900 font-medium">{location.name}</span>
-              <span className="text-xs text-slate-500 ml-auto">Telangana</span>
-            </button>
-          ))}
+    <div className="space-y-3">
+      <div className="relative">
+        <input
+          ref={inputRef}
+          type="text"
+          placeholder={placeholder}
+          onChange={(e) => onChange(e.target.value)}
+          onFocus={() => value && value.length > 0 && setShowSuggestions(true)}
+          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent"
+          disabled={isValidating}
+        />
+        {(!isInitialized || isValidating) && (
+          <div className="absolute right-3 top-2.5">
+            <div className="w-4 h-4 border-2 border-brand-600 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        )}
+        
+        {/* Telangana Location Suggestions */}
+        {showSuggestions && filteredLocations.length > 0 && (
+          <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-300 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
+            {filteredLocations.map((location) => (
+              <button
+                key={location.name}
+                type="button"
+                onClick={() => handleLocationSelect(location)}
+                className="w-full text-left px-3 py-2 hover:bg-brand-50 transition-colors flex items-center gap-2 border-b border-slate-100 last:border-b-0"
+              >
+                <svg className="w-4 h-4 text-slate-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                </svg>
+                <span className="text-sm text-slate-900 font-medium">{location.name}</span>
+                <span className="text-xs text-slate-500 ml-auto">Telangana</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Map Preview with Draggable Marker */}
+      {selectedCoords && (
+        <div className="w-full">
+          <div className="text-xs font-semibold text-slate-600 mb-2 px-1">Location Map (Drag marker to adjust)</div>
+          <GoogleMapComponent
+            lat={selectedCoords.lat}
+            lng={selectedCoords.lng}
+            address={selectedCoords.address}
+            onMarkerMove={handleMapMarkerMove}
+          />
+          <div className="mt-2 p-2.5 bg-green-50 border border-green-200 rounded-lg">
+            <p className="text-xs font-semibold text-green-700">📍 Selected Location:</p>
+            <p className="text-xs text-green-600 mt-1">{selectedCoords.address}</p>
+            <p className="text-xs text-green-600 mt-1">Lat: {selectedCoords.lat.toFixed(4)}, Lng: {selectedCoords.lng.toFixed(4)}</p>
+          </div>
         </div>
       )}
     </div>
