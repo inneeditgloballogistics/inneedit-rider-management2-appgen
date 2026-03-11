@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Bell, LogOut, Package, TrendingUp, Users, Wallet, AlertCircle, Gift, DollarSign, Download, TrendingDown, Target } from 'lucide-react';
 import WeatherBadge from '@/components/WeatherBadge';
+import RequestAdvanceModal from '@/components/RequestAdvanceModal';
+import ReferRiderModal from '@/components/ReferRiderModal';
 import html2canvas from 'html2canvas';
 
 interface RiderData {
@@ -87,6 +89,8 @@ export default function RiderDashboard() {
   const [advances, setAdvances] = useState<Advance[]>([]);
   const [currentPayrollWeek, setCurrentPayrollWeek] = useState<Payout | null>(null);
   const [downloadingPayslip, setDownloadingPayslip] = useState(false);
+  const [showAdvanceModal, setShowAdvanceModal] = useState(false);
+  const [showReferralModal, setShowReferralModal] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -520,14 +524,14 @@ export default function RiderDashboard() {
               <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
               <div className="space-y-3">
                 <button
-                  onClick={() => router.push('/rider-dashboard?tab=advances')}
+                  onClick={() => setShowAdvanceModal(true)}
                   className="w-full bg-white text-indigo-600 px-4 py-3 rounded-lg font-medium hover:bg-gray-100 transition flex items-center justify-center gap-2"
                 >
                   <TrendingUp className="w-4 h-4" />
                   Request Advance
                 </button>
                 <button
-                  onClick={() => router.push('/rider-dashboard?tab=referrals')}
+                  onClick={() => setShowReferralModal(true)}
                   className="w-full bg-white text-indigo-600 px-4 py-3 rounded-lg font-medium hover:bg-gray-100 transition flex items-center justify-center gap-2"
                 >
                   <Users className="w-4 h-4" />
@@ -631,6 +635,24 @@ export default function RiderDashboard() {
           </div>
         )}
       </div>
+
+      {/* Modals */}
+      {rider && (
+        <>
+          <RequestAdvanceModal
+            isOpen={showAdvanceModal}
+            onClose={() => setShowAdvanceModal(false)}
+            rider={rider}
+            onSuccess={() => fetchAllData(rider.user_id)}
+          />
+          <ReferRiderModal
+            isOpen={showReferralModal}
+            onClose={() => setShowReferralModal(false)}
+            rider={rider}
+            onSuccess={() => fetchAllData(rider.user_id)}
+          />
+        </>
+      )}
     </div>
   );
 }
