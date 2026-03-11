@@ -283,7 +283,8 @@ export async function POST(request: Request) {
           const startDateUTC = new Date(Date.UTC(startDateObj.getUTCFullYear(), startDateObj.getUTCMonth(), startDateObj.getUTCDate()));
           const endDateUTC = new Date(Date.UTC(endDateObj.getUTCFullYear(), endDateObj.getUTCMonth(), endDateObj.getUTCDate()));
           
-          // Check if this week overlaps with the provided date range\n          if (weekEndUTC >= startDateUTC && weekStartUTC <= endDateUTC) {
+          // Check if this week overlaps with the provided date range
+          if (weekEndUTC >= startDateUTC && weekStartUTC <= endDateUTC) {
             let rentAmount = evWeeklyRent;
             let description = 'Weekly vehicle rent - Company EV';
             
