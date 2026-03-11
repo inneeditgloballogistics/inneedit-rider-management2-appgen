@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
         ${notes},
         ${amount || 0},
         ${approval_status || 'approved'},
-        ${created_at ? new Date(created_at) : new Date()}
+        ${created_at ? new Date(created_at).toISOString() : new Date().toISOString()} AT TIME ZONE 'Asia/Kolkata'
       )
       RETURNING *
     `;

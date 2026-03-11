@@ -8,8 +8,9 @@ export async function GET(request: Request) {
 
     try {
       // Using Open-Meteo (free, no API key required, real-time weather data)
+      // Request with Asia/Kolkata (IST) timezone
       const response = await fetch(
-        `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code,is_day&timezone=auto`
+        `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code,is_day&timezone=Asia%2FKolkata`
       );
 
       if (!response.ok) {
@@ -98,25 +99,28 @@ export async function GET(request: Request) {
       });
     } catch (error) {
       console.error('Weather API error:', error);
-      // Fallback with reasonable defaults
+      // Fallback with reasonable defaults (using IST time)
+      const istTime = new Date(new Date().getTime() + 5.5 * 60 * 60 * 1000);
       return NextResponse.json({
         current: {
           temp_c: 25,
           condition: { text: 'Unable to fetch', icon: '🌡️', code: -1 },
-          is_day: new Date().getHours() > 6 && new Date().getHours() < 18 ? 1 : 0
+          is_day: istTime.getUTCHours() > 6 && istTime.getUTCHours() < 18 ? 1 : 0
         },
         location: { name: 'Current Location', region: '', country: '', latitude, longitude }
       });
     }
   } catch (error) {
     console.error('GET handler error:', error);
+    // Get current IST time for is_day check
+    const istTime = new Date(new Date().getTime() + 5.5 * 60 * 60 * 1000);
     return NextResponse.json({
       current: {
         temp_c: 25,
         condition: { text: 'Unable to fetch', icon: '🌡️', code: -1 },
-        is_day: new Date().getHours() > 6 && new Date().getHours() < 18 ? 1 : 0
+        is_day: istTime.getUTCHours() > 6 && istTime.getUTCHours() < 18 ? 1 : 0
       },
-      location: { name: 'Current Location', region: '', country: '' }
+      location: { name: 'Current Location', region: '', country: '', latitude: 12.9716, longitude: 77.5946 }
     });
   }
 }
@@ -225,10 +229,12 @@ export async function POST(request: Request) {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              locations: locations.map((loc) => ({
-                latitude: loc.latitude,
-                longitude: loc.longitude,
-              })),
+              locations: locations.map((loc) => (
+                {
+                  latitude: loc.latitude,
+                  longitude: loc.longitude,
+                }
+              )),
               fields: [
                 'currentConditions(temperature,condition,windSpeed,windGust,humidity,precipitationProbability)',
                 'location',
