@@ -76,13 +76,15 @@ export default function WeatherBadge({ latitude: propLat, longitude: propLng, lo
       fetchWeather();
     }
     
-    // Update time every second
+    // Update time every second (IST)
     const updateTime = () => {
       const now = new Date();
-      setTime(now.toLocaleTimeString('en-US', { 
+      const istTime = new Date(now.getTime() + 5.5 * 60 * 60 * 1000);
+      setTime(istTime.toLocaleTimeString('en-IN', { 
         hour: '2-digit', 
         minute: '2-digit',
-        hour12: true 
+        hour12: true,
+        timeZone: 'Asia/Kolkata'
       }));
     };
     
@@ -135,14 +137,15 @@ export default function WeatherBadge({ latitude: propLat, longitude: propLng, lo
     
     return weather.current.is_day ? '☀️' : '🌙';
   };
-
-  // Get dynamic gradient based on weather condition and time
-  const getWeatherGradient = () => {
-    const condition = weather.current.condition.text.toLowerCase();
-    
-    // Determine if it's day or night based on current time (6 AM - 6 PM)
-    const currentHour = new Date().getHours();
-    const isDay = currentHour >= 6 && currentHour < 18;
+    // Get dynamic gradient based on weather condition and time
+    const getWeatherGradient = () => {
+      const condition = weather.current.condition.text.toLowerCase();
+      
+      // Determine if it's day or night based on IST time (6 AM - 6 PM)
+      const now = new Date();
+      const istTime = new Date(now.getTime() + 5.5 * 60 * 60 * 1000);
+      const currentHour = istTime.getUTCHours();
+      const isDay = currentHour >= 6 && currentHour < 18;
 
     // Rainy conditions
     if (condition.includes('rain') || condition.includes('drizzle')) {
@@ -216,9 +219,10 @@ export default function WeatherBadge({ latitude: propLat, longitude: propLng, lo
   };
 
   const finalDisplayName = displayName || (weather ? weather.location.name : 'Current Location');
-  const today = new Date();
-  const dayName = today.toLocaleDateString('en-US', { weekday: 'short' });
-  const monthDay = today.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const now = new Date();
+  const today = new Date(now.getTime() + 5.5 * 60 * 60 * 1000);
+  const dayName = today.toLocaleString('en-IN', { weekday: 'short', timeZone: 'Asia/Kolkata' });
+  const monthDay = today.toLocaleString('en-IN', { month: 'short', day: 'numeric', timeZone: 'Asia/Kolkata' });
 
   const handleLocationSelect = (lat: number, lng: number, name: string) => {
     console.log('Location selected:', { lat, lng, name });

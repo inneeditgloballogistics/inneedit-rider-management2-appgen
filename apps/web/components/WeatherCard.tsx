@@ -91,7 +91,7 @@ export default function WeatherCard({
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-sm font-semibold opacity-90">{locationName}</h3>
         <span className="text-xs opacity-75">
-          {weather.timestamp && new Date(weather.timestamp).toLocaleTimeString()}
+          {weather.timestamp && new Date(new Date(weather.timestamp).getTime()).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata' })}
         </span>
       </div>
 
