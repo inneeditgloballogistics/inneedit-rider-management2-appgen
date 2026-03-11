@@ -7,10 +7,14 @@ export async function POST(request: NextRequest) {
     const {
       rider_id,
       rider_name,
+      referrer_cee_id,
       referred_name,
       referred_phone,
       preferred_location,
-      notes
+      notes,
+      amount,
+      approval_status,
+      created_at
     } = body;
 
     const result = await sql`
@@ -22,18 +26,20 @@ export async function POST(request: NextRequest) {
         referred_phone,
         preferred_location,
         notes,
+        amount,
         approval_status,
         created_at
       ) VALUES (
         ${rider_id},
-        ${rider_id},
+        ${referrer_cee_id || rider_id},
         ${rider_name},
         ${referred_name},
         ${referred_phone},
         ${preferred_location},
         ${notes},
-        'approved',
-        NOW()
+        ${amount || 0},
+        ${approval_status || 'approved'},
+        ${created_at ? new Date(created_at) : new Date()}
       )
       RETURNING *
     `;

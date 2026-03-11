@@ -115,14 +115,14 @@ export default function PayrollManagement() {
 
       if (entryType === 'addition') {
         if (additionType === 'referral') {
-          payload = { ...payload, referred_name: formData.description, referred_phone: '', preferred_location: '', notes: formData.notes };
+          payload = { ...payload, referrer_cee_id: selectedRider.cee_id, referred_name: formData.description, referred_phone: '', preferred_location: '', notes: formData.notes, amount: parseFloat(formData.amount), approval_status: 'approved', created_at: new Date().toISOString() };
           endpoint = '/api/payroll/referrals';
         } else {
-          payload = { ...payload, incentive_type: additionType, amount: formData.amount, description: formData.description, incentive_date: historyDate };
+          payload = { ...payload, incentive_type: additionType, amount: parseFloat(formData.amount), description: formData.description, incentive_date: historyDate };
           endpoint = '/api/payroll/incentives';
         }
       } else {
-        payload = { ...payload, amount: formData.amount, description: formData.description, deduction_date: historyDate };
+        payload = { ...payload, amount: parseFloat(formData.amount), description: formData.description, deduction_date: historyDate };
         if (deductionType === 'advance') {
           payload.reason = formData.description;
           endpoint = '/api/payroll/advances';
