@@ -52,8 +52,7 @@ export async function POST(request: Request) {
     
     // Determine EV type - use provided value or default based on vehicle ownership
     const evType = body.vehicleOwnership === 'company_ev' ? (body.evType || 'fixed_battery') : null;
-    const evMonthlyRent = body.vehicleOwnership === 'company_ev' ? (body.evMonthlyRent || 6000) : null;
-    const evWeeklyRent = body.vehicleOwnership === 'company_ev' ? (body.evWeeklyRent || 1500) : null;
+    const evDailyRent = body.vehicleOwnership === 'company_ev' ? (body.evDailyRent || 215) : null;
     
     // Insert rider into database
     const result = await sql`
@@ -73,8 +72,7 @@ export async function POST(request: Request) {
         driving_license_url,
         aadhar_url,
         vehicle_ownership,
-        ev_monthly_rent,
-        ev_weekly_rent,
+        ev_daily_rent,
         ev_type,
         is_leader,
         leader_discount_percentage,
@@ -83,7 +81,7 @@ export async function POST(request: Request) {
         ${ceeId}, ${body.fullName || ''}, ${body.mobile || ''}, ${body.email || null}, ${body.dob || null}, 
         ${body.joinDate || null}, ${body.address || null}, ${body.client || ''}, ${hubId}, ${body.assignedVehicleId || null}, 
         ${body.bankAccount || null}, ${body.ifscCode || null}, ${body.dlUrl || null}, ${body.aadharUrl || null},
-        ${body.vehicleOwnership || 'company_ev'}, ${evMonthlyRent}, ${evWeeklyRent},
+        ${body.vehicleOwnership || 'company_ev'}, ${evDailyRent},
         ${evType}, ${body.isLeader || false}, ${body.leaderDiscountPercentage || 0}, 'active'
       )
       RETURNING *
@@ -177,8 +175,7 @@ export async function PUT(request: NextRequest) {
         assigned_vehicle_id = ${assigned_vehicle_id || null},
         store_id = ${otherFields.store_id || null},
         vehicle_ownership = ${otherFields.vehicle_ownership || null},
-        ev_monthly_rent = ${otherFields.ev_monthly_rent || null},
-        ev_weekly_rent = ${otherFields.ev_weekly_rent || null},
+        ev_daily_rent = ${otherFields.ev_daily_rent || null},
         ev_type = ${otherFields.ev_type || null},
         is_leader = ${otherFields.is_leader || false},
         leader_discount_percentage = ${otherFields.leader_discount_percentage || 0},

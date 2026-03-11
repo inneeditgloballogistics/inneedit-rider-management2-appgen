@@ -699,7 +699,10 @@ function AdminDashboardContent() {
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
               <div className="p-6 border-b border-slate-200 flex items-center justify-between sticky top-0 bg-white">
-                <h3 className="text-xl font-bold text-slate-900">View {viewItem.type === 'advance' ? 'Advance Request' : viewItem.type.charAt(0).toUpperCase() + viewItem.type.slice(1)}</h3>
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900">View {viewItem.type === 'advance' ? 'Advance Request' : viewItem.type.charAt(0).toUpperCase() + viewItem.type.slice(1)}</h3>
+                  {viewItem.type === 'rider' && <p className="text-xs text-slate-500 mt-1"><span className="text-red-600 font-bold">*</span> = Required fields</p>}
+                </div>
                 <button onClick={() => setShowViewModal(false)} className="p-1 hover:bg-slate-100 rounded">
                   <i className="ph-bold ph-x text-xl"></i>
                 </button>
@@ -764,6 +767,143 @@ function AdminDashboardContent() {
                           <p className="text-slate-900 font-medium mt-1 p-3 bg-slate-50 rounded border border-slate-200">{viewItem.admin_notes}</p>
                         </div>
                       )}
+                    </div>
+                  </>
+                ) : viewItem.type === 'rider' ? (
+                  <>
+                    <div className="space-y-4">
+                      <div>
+                        <div className="flex items-center gap-1">
+                          <strong className="text-slate-900 text-sm">Full Name <span className="text-red-600">*</span></strong>
+                        </div>
+                        <p className="text-slate-900 font-medium mt-1 p-2 bg-slate-50 rounded">{viewItem.full_name || 'Not set'}</p>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <strong className="text-slate-900 text-sm">Email <span className="text-red-600">*</span></strong>
+                          <p className="text-slate-900 font-medium mt-1 p-2 bg-slate-50 rounded">{viewItem.email || 'Not set'}</p>
+                        </div>
+                        <div>
+                          <strong className="text-slate-900 text-sm">Phone <span className="text-red-600">*</span></strong>
+                          <p className="text-slate-900 font-medium mt-1 p-2 bg-slate-50 rounded">{viewItem.phone || 'Not set'}</p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <strong className="text-slate-900 text-sm">Date of Birth</strong>
+                          <p className="text-slate-900 font-medium mt-1 p-2 bg-slate-50 rounded">{viewItem.date_of_birth ? new Date(viewItem.date_of_birth).toLocaleDateString('en-GB') : 'Not set'}</p>
+                        </div>
+                        <div>
+                          <strong className="text-slate-900 text-sm">Gender</strong>
+                          <p className="text-slate-900 font-medium mt-1 p-2 bg-slate-50 rounded">{viewItem.gender || 'Not set'}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="border-t pt-4 mt-4">
+                      <h5 className="font-semibold text-slate-900 text-sm uppercase mb-3">Address</h5>
+                      <div className="space-y-4">
+                        <div>
+                          <strong className="text-slate-900 text-sm">Address <span className="text-red-600">*</span></strong>
+                          <p className="text-slate-900 font-medium mt-1 p-2 bg-slate-50 rounded">{viewItem.address || 'Not set'}</p>
+                        </div>
+                        <div className="grid grid-cols-3 gap-3">
+                          <div>
+                            <strong className="text-slate-900 text-sm">City <span className="text-red-600">*</span></strong>
+                            <p className="text-slate-900 font-medium mt-1 p-2 bg-slate-50 rounded text-sm">{viewItem.city || 'Not set'}</p>
+                          </div>
+                          <div>
+                            <strong className="text-slate-900 text-sm">State <span className="text-red-600">*</span></strong>
+                            <p className="text-slate-900 font-medium mt-1 p-2 bg-slate-50 rounded text-sm">{viewItem.state || 'Not set'}</p>
+                          </div>
+                          <div>
+                            <strong className="text-slate-900 text-sm">Pincode <span className="text-red-600">*</span></strong>
+                            <p className="text-slate-900 font-medium mt-1 p-2 bg-slate-50 rounded text-sm">{viewItem.pincode || 'Not set'}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="border-t pt-4 mt-4">
+                      <h5 className="font-semibold text-slate-900 text-sm uppercase mb-3">Emergency Contact</h5>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <strong className="text-slate-900 text-sm">Name <span className="text-red-600">*</span></strong>
+                          <p className="text-slate-900 font-medium mt-1 p-2 bg-slate-50 rounded">{viewItem.emergency_contact_name || 'Not set'}</p>
+                        </div>
+                        <div>
+                          <strong className="text-slate-900 text-sm">Phone <span className="text-red-600">*</span></strong>
+                          <p className="text-slate-900 font-medium mt-1 p-2 bg-slate-50 rounded">{viewItem.emergency_contact_phone || 'Not set'}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="border-t pt-4 mt-4">
+                      <h5 className="font-semibold text-slate-900 text-sm uppercase mb-3">Documents</h5>
+                      <div className="space-y-3">
+                        <div>
+                          <strong className="text-slate-900 text-sm">Driving License <span className="text-red-600">*</span></strong>
+                          <p className="text-slate-900 font-medium mt-1 p-2 bg-slate-50 rounded">{viewItem.driving_license_number || 'Not set'}</p>
+                        </div>
+                        <div>
+                          <strong className="text-slate-900 text-sm">DL Expiry <span className="text-red-600">*</span></strong>
+                          <p className="text-slate-900 font-medium mt-1 p-2 bg-slate-50 rounded">{viewItem.driving_license_expiry ? new Date(viewItem.driving_license_expiry).toLocaleDateString('en-GB') : 'Not set'}</p>
+                        </div>
+                        <div>
+                          <strong className="text-slate-900 text-sm">Aadhar <span className="text-red-600">*</span></strong>
+                          <p className="text-slate-900 font-medium mt-1 p-2 bg-slate-50 rounded">{viewItem.aadhar_number || 'Not set'}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="border-t pt-4 mt-4">
+                      <h5 className="font-semibold text-slate-900 text-sm uppercase mb-3">Bank Details</h5>
+                      <div className="space-y-3">
+                        <div>
+                          <strong className="text-slate-900 text-sm">Bank <span className="text-red-600">*</span></strong>
+                          <p className="text-slate-900 font-medium mt-1 p-2 bg-slate-50 rounded">{viewItem.bank_name || 'Not set'}</p>
+                        </div>
+                        <div>
+                          <strong className="text-slate-900 text-sm">Account <span className="text-red-600">*</span></strong>
+                          <p className="text-slate-900 font-medium mt-1 p-2 bg-slate-50 rounded">{viewItem.account_number || 'Not set'}</p>
+                        </div>
+                        <div>
+                          <strong className="text-slate-900 text-sm">IFSC <span className="text-red-600">*</span></strong>
+                          <p className="text-slate-900 font-medium mt-1 p-2 bg-slate-50 rounded">{viewItem.ifsc_code || 'Not set'}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="border-t pt-4 mt-4">
+                      <h5 className="font-semibold text-slate-900 text-sm uppercase mb-3">Vehicle & EV Details</h5>
+                      <div className="space-y-3">
+                        <div>
+                          <strong className="text-slate-900 text-sm">Ownership <span className="text-red-600">*</span></strong>
+                          <p className="text-slate-900 font-medium mt-1 p-2 bg-slate-50 rounded capitalize">{viewItem.vehicle_ownership ? viewItem.vehicle_ownership.replace(/_/g, ' ') : 'Not set'}</p>
+                        </div>
+                        <div>
+                          <strong className="text-slate-900 text-sm">EV Type <span className="text-red-600">*</span></strong>
+                          <p className="text-slate-900 font-medium mt-1 p-2 bg-slate-50 rounded capitalize">{viewItem.ev_type ? viewItem.ev_type.replace(/_/g, ' ') : 'Not set'}</p>
+                        </div>
+                        <div>
+                          <strong className="text-slate-900 text-sm">Daily Rent <span className="text-red-600">*</span></strong>
+                          <p className="text-slate-900 font-bold text-lg mt-1 p-2 bg-slate-50 rounded">₹{parseFloat(viewItem.ev_daily_rent || 0).toFixed(2)}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="border-t pt-4 mt-4">
+                      <h5 className="font-semibold text-slate-900 text-sm uppercase mb-3">Other</h5>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <strong className="text-slate-900 text-sm">Client <span className="text-red-600">*</span></strong>
+                          <p className="text-slate-900 font-medium mt-1 p-2 bg-slate-50 rounded">{viewItem.client || 'Not set'}</p>
+                        </div>
+                        <div>
+                          <strong className="text-slate-900 text-sm">Status</strong>
+                          <p className="text-slate-900 font-medium mt-1 p-2 bg-slate-50 rounded capitalize">{viewItem.status || 'active'}</p>
+                        </div>
+                      </div>
                     </div>
                   </>
                 ) : (
@@ -932,7 +1072,10 @@ function AdminDashboardContent() {
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
               <div className="p-6 border-b border-slate-200 flex items-center justify-between sticky top-0 bg-white z-10">
-                <h3 className="text-xl font-bold text-slate-900">Edit {editItem.type}</h3>
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900">Edit {editItem.type}</h3>
+                  <p className="text-xs text-slate-500 mt-1"><span className="text-red-600 font-bold">*</span> = Required fields</p>
+                </div>
                 <button onClick={() => setShowEditModal(false)} className="p-1 hover:bg-slate-100 rounded">
                   <i className="ph-bold ph-x text-xl"></i>
                 </button>
@@ -941,71 +1084,135 @@ function AdminDashboardContent() {
                 {editItem.type === 'rider' && (
                   <>
                     <h4 className="font-semibold text-slate-900 border-b pb-2 text-sm uppercase">Personal Information</h4>
-                    <input value={editItem.full_name || ''} onChange={(e) => setEditItem({...editItem, full_name: e.target.value})} placeholder="Full Name" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
-                    <input value={editItem.email || ''} onChange={(e) => setEditItem({...editItem, email: e.target.value})} placeholder="Email" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
-                    <input value={editItem.phone || ''} onChange={(e) => setEditItem({...editItem, phone: e.target.value})} placeholder="Phone" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
-                    <input type="date" value={editItem.date_of_birth || ''} onChange={(e) => setEditItem({...editItem, date_of_birth: e.target.value})} placeholder="Date of Birth" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
-                    <select value={editItem.gender || ''} onChange={(e) => setEditItem({...editItem, gender: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg">
-                      <option value="">Select Gender</option>
-                      <option value="Male">Male</option>
-                      <option value="Female">Female</option>
-                      <option value="Other">Other</option>
-                    </select>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-900 mb-2">Full Name <span className="text-red-600">*</span></label>
+                      <input value={editItem.full_name || ''} onChange={(e) => setEditItem({...editItem, full_name: e.target.value})} placeholder="Full Name" className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-900 mb-2">Email <span className="text-red-600">*</span></label>
+                      <input type="email" value={editItem.email || ''} onChange={(e) => setEditItem({...editItem, email: e.target.value})} placeholder="Email" className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-900 mb-2">Phone <span className="text-red-600">*</span></label>
+                      <input type="tel" value={editItem.phone || ''} onChange={(e) => setEditItem({...editItem, phone: e.target.value})} placeholder="Phone" className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-900 mb-2">Date of Birth</label>
+                      <input type="date" value={editItem.date_of_birth || ''} onChange={(e) => setEditItem({...editItem, date_of_birth: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-900 mb-2">Gender</label>
+                      <select value={editItem.gender || ''} onChange={(e) => setEditItem({...editItem, gender: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg">
+                        <option value="">Select Gender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
 
                     <h4 className="font-semibold text-slate-900 border-b pb-2 text-sm uppercase pt-2">Address Information</h4>
-                    <input value={editItem.address || ''} onChange={(e) => setEditItem({...editItem, address: e.target.value})} placeholder="Address" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
-                    <div className="grid grid-cols-2 gap-3">
-                      <input value={editItem.city || ''} onChange={(e) => setEditItem({...editItem, city: e.target.value})} placeholder="City" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
-                      <input value={editItem.state || ''} onChange={(e) => setEditItem({...editItem, state: e.target.value})} placeholder="State" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-900 mb-2">Address <span className="text-red-600">*</span></label>
+                      <input value={editItem.address || ''} onChange={(e) => setEditItem({...editItem, address: e.target.value})} placeholder="Address" className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
                     </div>
-                    <input value={editItem.pincode || ''} onChange={(e) => setEditItem({...editItem, pincode: e.target.value})} placeholder="Pincode" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-sm font-semibold text-slate-900 mb-2">City <span className="text-red-600">*</span></label>
+                        <input value={editItem.city || ''} onChange={(e) => setEditItem({...editItem, city: e.target.value})} placeholder="City" className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-slate-900 mb-2">State <span className="text-red-600">*</span></label>
+                        <input value={editItem.state || ''} onChange={(e) => setEditItem({...editItem, state: e.target.value})} placeholder="State" className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-900 mb-2">Pincode <span className="text-red-600">*</span></label>
+                      <input value={editItem.pincode || ''} onChange={(e) => setEditItem({...editItem, pincode: e.target.value})} placeholder="Pincode" className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
+                    </div>
 
                     <h4 className="font-semibold text-slate-900 border-b pb-2 text-sm uppercase pt-2">Emergency Contact</h4>
-                    <input value={editItem.emergency_contact_name || ''} onChange={(e) => setEditItem({...editItem, emergency_contact_name: e.target.value})} placeholder="Emergency Contact Name" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
-                    <input value={editItem.emergency_contact_phone || ''} onChange={(e) => setEditItem({...editItem, emergency_contact_phone: e.target.value})} placeholder="Emergency Contact Phone" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-900 mb-2">Emergency Contact Name <span className="text-red-600">*</span></label>
+                      <input value={editItem.emergency_contact_name || ''} onChange={(e) => setEditItem({...editItem, emergency_contact_name: e.target.value})} placeholder="Emergency Contact Name" className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-900 mb-2">Emergency Contact Phone <span className="text-red-600">*</span></label>
+                      <input type="tel" value={editItem.emergency_contact_phone || ''} onChange={(e) => setEditItem({...editItem, emergency_contact_phone: e.target.value})} placeholder="Emergency Contact Phone" className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
+                    </div>
 
                     <h4 className="font-semibold text-slate-900 border-b pb-2 text-sm uppercase pt-2">Documents</h4>
-                    <input value={editItem.driving_license_number || ''} onChange={(e) => setEditItem({...editItem, driving_license_number: e.target.value})} placeholder="Driving License Number" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
-                    <input type="date" value={editItem.driving_license_expiry || ''} onChange={(e) => setEditItem({...editItem, driving_license_expiry: e.target.value})} placeholder="DL Expiry Date" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
-                    <input value={editItem.aadhar_number || ''} onChange={(e) => setEditItem({...editItem, aadhar_number: e.target.value})} placeholder="Aadhar Number" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-900 mb-2">Driving License Number <span className="text-red-600">*</span></label>
+                      <input value={editItem.driving_license_number || ''} onChange={(e) => setEditItem({...editItem, driving_license_number: e.target.value})} placeholder="Driving License Number" className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-900 mb-2">DL Expiry Date <span className="text-red-600">*</span></label>
+                      <input type="date" value={editItem.driving_license_expiry || ''} onChange={(e) => setEditItem({...editItem, driving_license_expiry: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-900 mb-2">Aadhar Number <span className="text-red-600">*</span></label>
+                      <input value={editItem.aadhar_number || ''} onChange={(e) => setEditItem({...editItem, aadhar_number: e.target.value})} placeholder="Aadhar Number" className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
+                    </div>
 
                     <h4 className="font-semibold text-slate-900 border-b pb-2 text-sm uppercase pt-2">Bank Details</h4>
-                    <input value={editItem.bank_name || ''} onChange={(e) => setEditItem({...editItem, bank_name: e.target.value})} placeholder="Bank Name" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
-                    <input value={editItem.account_number || ''} onChange={(e) => setEditItem({...editItem, account_number: e.target.value})} placeholder="Account Number" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
-                    <input value={editItem.ifsc_code || ''} onChange={(e) => setEditItem({...editItem, ifsc_code: e.target.value})} placeholder="IFSC Code" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-900 mb-2">Bank Name <span className="text-red-600">*</span></label>
+                      <input value={editItem.bank_name || ''} onChange={(e) => setEditItem({...editItem, bank_name: e.target.value})} placeholder="Bank Name" className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-900 mb-2">Account Number <span className="text-red-600">*</span></label>
+                      <input value={editItem.account_number || ''} onChange={(e) => setEditItem({...editItem, account_number: e.target.value})} placeholder="Account Number" className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-900 mb-2">IFSC Code <span className="text-red-600">*</span></label>
+                      <input value={editItem.ifsc_code || ''} onChange={(e) => setEditItem({...editItem, ifsc_code: e.target.value})} placeholder="IFSC Code" className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
+                    </div>
 
                     <h4 className="font-semibold text-slate-900 border-b pb-2 text-sm uppercase pt-2">Assignment & Vehicle</h4>
-                    <input value={editItem.vehicle_type || ''} onChange={(e) => setEditItem({...editItem, vehicle_type: e.target.value})} placeholder="Vehicle Type (e.g., Bike, Scooter)" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
-                    <select value={editItem.assigned_hub_id || ''} onChange={(e) => setEditItem({...editItem, assigned_hub_id: e.target.value ? parseInt(e.target.value) : null})} className="w-full px-3 py-2 border border-slate-300 rounded-lg">
-                      <option value="">Select Hub</option>
-                      {/* Hub options would need to be fetched */}
-                    </select>
-                    <select value={editItem.vehicle_ownership || ''} onChange={(e) => setEditItem({...editItem, vehicle_ownership: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg">
-                      <option value="">Select Vehicle Ownership</option>
-                      <option value="company_ev">Company EV</option>
-                      <option value="personal">Personal</option>
-                    </select>
-
-                    <h4 className="font-semibold text-slate-900 border-b pb-2 text-sm uppercase pt-2">EV Rental & Leadership</h4>
-                    <div className="grid grid-cols-2 gap-3">
-                      <input type="number" value={editItem.ev_monthly_rent || ''} onChange={(e) => setEditItem({...editItem, ev_monthly_rent: e.target.value ? parseFloat(e.target.value) : null})} placeholder="Monthly EV Rent (₹)" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
-                      <input type="number" value={editItem.ev_weekly_rent || ''} onChange={(e) => setEditItem({...editItem, ev_weekly_rent: e.target.value ? parseFloat(e.target.value) : null})} placeholder="Weekly EV Rent (₹)" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-900 mb-2">Vehicle Ownership <span className="text-red-600">*</span></label>
+                      <select value={editItem.vehicle_ownership || ''} onChange={(e) => setEditItem({...editItem, vehicle_ownership: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg" required>
+                        <option value="">Select Vehicle Ownership</option>
+                        <option value="company_ev">Company EV</option>
+                        <option value="personal">Personal</option>
+                      </select>
                     </div>
-                    <label className="flex items-center gap-2 p-2 border border-slate-300 rounded-lg cursor-pointer">
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-900 mb-2">EV Type <span className="text-red-600">*</span></label>
+                      <select value={editItem.ev_type || ''} onChange={(e) => setEditItem({...editItem, ev_type: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg" required>
+                        <option value="">Select EV Type</option>
+                        <option value="sunmobility_swap">Sunmobility Swap (₹243/day)</option>
+                        <option value="fixed_battery">Fixed Battery (₹215/day)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-900 mb-2">Daily EV Rent (₹) <span className="text-red-600">*</span></label>
+                      <input type="number" step="0.01" value={editItem.ev_daily_rent || ''} onChange={(e) => setEditItem({...editItem, ev_daily_rent: e.target.value ? parseFloat(e.target.value) : null})} placeholder="Daily Rent in ₹" className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
+                    </div>
+                    <label className="flex items-center gap-2 p-3 border border-slate-300 rounded-lg cursor-pointer hover:bg-slate-50">
                       <input type="checkbox" checked={editItem.is_leader || false} onChange={(e) => setEditItem({...editItem, is_leader: e.target.checked})} />
                       <span className="text-sm font-medium text-slate-900">Mark as Leader</span>
                     </label>
                     {editItem.is_leader && (
-                      <input type="number" step="0.1" value={editItem.leader_discount_percentage || ''} onChange={(e) => setEditItem({...editItem, leader_discount_percentage: e.target.value ? parseFloat(e.target.value) : 0})} placeholder="Leader Discount %" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
+                      <div>
+                        <label className="block text-sm font-semibold text-slate-900 mb-2">Leader Discount %</label>
+                        <input type="number" step="0.1" value={editItem.leader_discount_percentage || ''} onChange={(e) => setEditItem({...editItem, leader_discount_percentage: e.target.value ? parseFloat(e.target.value) : 0})} placeholder="Leader Discount %" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
+                      </div>
                     )}
 
                     <h4 className="font-semibold text-slate-900 border-b pb-2 text-sm uppercase pt-2">Other</h4>
-                    <input value={editItem.client || ''} onChange={(e) => setEditItem({...editItem, client: e.target.value})} placeholder="Client" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
-                    <select value={editItem.status || 'active'} onChange={(e) => setEditItem({...editItem, status: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg">
-                      <option value="active">Active</option>
-                      <option value="inactive">Inactive</option>
-                      <option value="suspended">Suspended</option>
-                    </select>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-900 mb-2">Client <span className="text-red-600">*</span></label>
+                      <input value={editItem.client || ''} onChange={(e) => setEditItem({...editItem, client: e.target.value})} placeholder="Client" className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-900 mb-2">Status</label>
+                      <select value={editItem.status || 'active'} onChange={(e) => setEditItem({...editItem, status: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg">
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                        <option value="suspended">Suspended</option>
+                      </select>
+                    </div>
                   </>
                 )}
                 {editItem.type === 'vehicle' && (

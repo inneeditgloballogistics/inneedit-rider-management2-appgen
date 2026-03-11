@@ -160,7 +160,7 @@ export async function POST(request: Request) {
       
       // First get the rider info to find cee_id and vehicle rent
       const riderInfo = await sql`
-        SELECT cee_id, full_name, vehicle_ownership, ev_weekly_rent, ev_type, join_date FROM riders 
+        SELECT cee_id, full_name, vehicle_ownership, ev_daily_rent, ev_type, join_date FROM riders 
         WHERE user_id = ${rider_id} OR cee_id = ${rider_id}
         LIMIT 1
       `;
@@ -171,7 +171,7 @@ export async function POST(request: Request) {
       const cee_id = riderInfo?.[0]?.cee_id || rider_id;
       const full_name = riderInfo?.[0]?.full_name || 'Unknown';
       const vehicleOwnership = riderInfo?.[0]?.vehicle_ownership;
-      const evWeeklyRent = riderInfo?.[0]?.ev_weekly_rent || 0;
+      const storedEvDailyRent = riderInfo?.[0]?.ev_daily_rent || null;
       const evType = riderInfo?.[0]?.ev_type; // Get the EV type (sunmobility_swap or fixed_battery)
       
       console.log('🔍 Rider Details:', { cee_id, full_name, vehicleOwnership, evType, evWeeklyRent });
@@ -264,11 +264,14 @@ export async function POST(request: Request) {
           endDateObj = end_date instanceof Date ? end_date : new Date(end_date);
         }
 
-        // Determine daily rent based on EV type
+        // Determine daily rent: use stored value first, then default based on EV type
         let dailyRent = 0;
         let evTypeLabel = '';
         
-        if (evType === 'sunmobility_swap') {
+        if (storedEvDailyRent) {
+          dailyRent = storedEvDailyRent;
+          evTypeLabel = evType === 'sunmobility_swap' ? 'Sunmobility Swap' : 'Fixed Battery';
+        } else if (evType === 'sunmobility_swap') {
           dailyRent = 243;
           evTypeLabel = 'Sunmobility Swap';
         } else if (evType === 'fixed_battery') {
