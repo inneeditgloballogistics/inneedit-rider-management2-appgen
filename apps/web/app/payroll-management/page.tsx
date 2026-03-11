@@ -90,7 +90,13 @@ export default function PayrollManagement() {
         body: JSON.stringify({ rider_id: riderId, date: date })
       });
       const data = await response.json();
-      setHistoryEntries(data.entries || []);
+      console.log('Fetched entries for', riderId, 'on', date, ':', data);
+      if (response.ok) {
+        setHistoryEntries(data.entries || []);
+      } else {
+        console.error('API error:', data);
+        setHistoryEntries([]);
+      }
     } catch (error) {
       console.error('Error fetching history entries:', error);
       setHistoryEntries([]);
@@ -132,11 +138,16 @@ export default function PayrollManagement() {
         }
       }
 
+      console.log('Saving entry to', endpoint, 'with payload:', payload);
+
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
+
+      const data = await response.json();
+      console.log('Save response:', response.status, data);
 
       if (response.ok) {
         alert('Entry added successfully!');
@@ -146,11 +157,11 @@ export default function PayrollManagement() {
         }
         setPanelMode('view');
       } else {
-        alert('Failed to save entry');
+        alert('Failed to save entry: ' + (data.error || 'Unknown error'));
       }
     } catch (error) {
       console.error('Error saving entry:', error);
-      alert('Error saving entry');
+      alert('Error saving entry: ' + String(error));
     }
     setSavingEntry(false);
   };
