@@ -374,9 +374,8 @@ export default function PayrollEntries() {
                 </div>
               </div>
 
-              {/* Entries Tabs */}
+              {/* Entries by Three Categories */}
               <div>
-                <h3 className="font-display text-sm font-bold text-slate-900 mb-4">All Entries & Details</h3>
                 {riderDetailsLoading ? (
                   <div className="flex justify-center py-8">
                     <div className="w-8 h-8 border-4 border-slate-200 border-t-brand-600 rounded-full animate-spin"></div>
@@ -386,36 +385,153 @@ export default function PayrollEntries() {
                     No entries found for this rider
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    {/* Group entries by type */}
-                    {(() => {
-                      const grouped = riderDetails.reduce((acc, entry) => {
-                        const type = entry.entry_type;
-                        if (!acc[type]) acc[type] = [];
-                        acc[type].push(entry);
-                        return acc;
-                      }, {} as Record<string, PayrollEntry[]>);
+                  <div className="space-y-6">
+                    {/* ADDITIONS BOX */}
+                    <div className="border border-slate-200 rounded-lg overflow-hidden">
+                      <div className="bg-green-50 px-4 py-3 border-b border-slate-200">
+                        <h4 className="font-semibold text-sm text-slate-900 flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-green-600"></span>
+                          ADDITIONS
+                        </h4>
+                      </div>
+                      <div className="overflow-x-auto">
+                        {(() => {
+                          const additionEntries = riderDetails.filter(e => 
+                            ['referral', 'incentive'].includes(e.entry_type?.toLowerCase())
+                          );
+                          if (additionEntries.length === 0) {
+                            return (
+                              <div className="px-4 py-6 text-center text-slate-500 text-sm">
+                                No additions for this week
+                              </div>
+                            );
+                          }
+                          return (
+                            <table className="w-full text-sm">
+                              <thead className="bg-white border-b border-slate-100">
+                                <tr>
+                                  <th className="px-4 py-3 text-left font-semibold text-slate-700">Type</th>
+                                  <th className="px-4 py-3 text-left font-semibold text-slate-700">Description</th>
+                                  <th className="px-4 py-3 text-right font-semibold text-slate-700">Amount (₹)</th>
+                                  <th className="px-4 py-3 text-left font-semibold text-slate-700">Date</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {additionEntries.map(entry => (
+                                  <tr key={entry.id} className="border-b border-slate-100 hover:bg-slate-50">
+                                    <td className="px-4 py-3 text-slate-900 font-medium">{getTypeLabel(entry.entry_type)}</td>
+                                    <td className="px-4 py-3 text-slate-700">{entry.description}</td>
+                                    <td className="px-4 py-3 text-right font-semibold text-slate-900">
+                                      ₹{(parseFloat(entry.amount.toString()) || 0).toFixed(2)}
+                                    </td>
+                                    <td className="px-4 py-3 text-slate-600 text-xs">
+                                      {new Date(entry.entry_date || entry.created_at).toLocaleDateString('en-GB', { 
+                                        day: '2-digit', 
+                                        month: 'short', 
+                                        year: 'numeric' 
+                                      })}
+                                    </td>
+                                  </tr>
+                                ))}
+                                {/* Total Row */}
+                                <tr className="bg-green-50 border-t border-slate-200 font-semibold">
+                                  <td colSpan={2} className="px-4 py-3 text-slate-900">Total Additions</td>
+                                  <td className="px-4 py-3 text-right text-green-700">
+                                    ₹{additionEntries.reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          );
+                        })()}
+                      </div>
+                    </div>
 
-                      return Object.entries(grouped).map(([type, typeEntries]) => (
-                        <div key={type} className="border border-slate-200 rounded-lg overflow-hidden">
-                          {/* Section Header */}
-                          <div className="bg-slate-50 px-4 py-3 border-b border-slate-200">
-                            <h4 className="font-semibold text-sm text-slate-900 flex items-center gap-2">
-                              <span className={`w-2 h-2 rounded-full ${
-                                type === 'referral' ? 'bg-blue-600' :
-                                type === 'incentive' ? 'bg-green-600' :
-                                type === 'advance' ? 'bg-purple-600' :
-                                type === 'security_deposit' ? 'bg-orange-600' :
-                                type === 'damage' ? 'bg-red-600' :
-                                type === 'challan' ? 'bg-yellow-600' :
-                                type === 'vehicle_rent' ? 'bg-indigo-600' : 'bg-slate-600'
-                              }`}></span>
-                              {getTypeLabel(type)} ({typeEntries.length})
-                            </h4>
-                          </div>
+                    {/* DEDUCTIONS BOX */}
+                    <div className="border border-slate-200 rounded-lg overflow-hidden">
+                      <div className="bg-red-50 px-4 py-3 border-b border-slate-200">
+                        <h4 className="font-semibold text-sm text-slate-900 flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-red-600"></span>
+                          DEDUCTIONS
+                        </h4>
+                      </div>
+                      <div className="overflow-x-auto">
+                        {(() => {
+                          const deductionEntries = riderDetails.filter(e => 
+                            ['advance', 'security_deposit', 'damage', 'challan', 'other'].includes(e.entry_type?.toLowerCase())
+                          );
+                          if (deductionEntries.length === 0) {
+                            return (
+                              <div className="px-4 py-6 text-center text-slate-500 text-sm">
+                                No deductions for this week
+                              </div>
+                            );
+                          }
+                          return (
+                            <table className="w-full text-sm">
+                              <thead className="bg-white border-b border-slate-100">
+                                <tr>
+                                  <th className="px-4 py-3 text-left font-semibold text-slate-700">Type</th>
+                                  <th className="px-4 py-3 text-left font-semibold text-slate-700">Description</th>
+                                  <th className="px-4 py-3 text-right font-semibold text-slate-700">Amount (₹)</th>
+                                  <th className="px-4 py-3 text-left font-semibold text-slate-700">Date</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {deductionEntries.map(entry => (
+                                  <tr key={entry.id} className="border-b border-slate-100 hover:bg-slate-50">
+                                    <td className="px-4 py-3 text-slate-900 font-medium">{getTypeLabel(entry.entry_type)}</td>
+                                    <td className="px-4 py-3 text-slate-700">{entry.description}</td>
+                                    <td className="px-4 py-3 text-right font-semibold text-slate-900">
+                                      ₹{(parseFloat(entry.amount.toString()) || 0).toFixed(2)}
+                                    </td>
+                                    <td className="px-4 py-3 text-slate-600 text-xs">
+                                      {new Date(entry.entry_date || entry.created_at).toLocaleDateString('en-GB', { 
+                                        day: '2-digit', 
+                                        month: 'short', 
+                                        year: 'numeric' 
+                                      })}
+                                    </td>
+                                  </tr>
+                                ))}
+                                {/* Total Row */}
+                                <tr className="bg-red-50 border-t border-slate-200 font-semibold">
+                                  <td colSpan={2} className="px-4 py-3 text-slate-900">Total Deductions</td>
+                                  <td className="px-4 py-3 text-right text-red-700">
+                                    ₹{deductionEntries.reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          );
+                        })()}
+                      </div>
+                    </div>
 
-                          {/* Section Content */}
-                          <div className="overflow-x-auto">
+                    {/* VEHICLE RENT BOX */}
+                    <div className="border border-slate-200 rounded-lg overflow-hidden">
+                      <div className="bg-indigo-50 px-4 py-3 border-b border-slate-200">
+                        <h4 className="font-semibold text-sm text-slate-900 flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-indigo-600"></span>
+                          VEHICLE RENT
+                        </h4>
+                      </div>
+                      <div className="overflow-x-auto">
+                        {(() => {
+                          const { startDate, endDate } = getWeekDateRange(selectedWeek, selectedMonth, selectedYear);
+                          const vehicleRentEntries = riderDetails.filter(e => {
+                            if (e.entry_type?.toLowerCase() !== 'vehicle_rent') return false;
+                            const entryDate = new Date(e.entry_date || e.created_at);
+                            return entryDate >= startDate && entryDate <= endDate;
+                          });
+                          if (vehicleRentEntries.length === 0) {
+                            return (
+                              <div className="px-4 py-6 text-center text-slate-500 text-sm">
+                                No vehicle rent for this week
+                              </div>
+                            );
+                          }
+                          return (
                             <table className="w-full text-sm">
                               <thead className="bg-white border-b border-slate-100">
                                 <tr>
@@ -426,13 +542,13 @@ export default function PayrollEntries() {
                                 </tr>
                               </thead>
                               <tbody>
-                                {typeEntries.map(entry => (
+                                {vehicleRentEntries.map(entry => (
                                   <tr key={entry.id} className="border-b border-slate-100 hover:bg-slate-50">
-                                    <td className="px-4 py-3 text-slate-900">{entry.description}</td>
+                                    <td className="px-4 py-3 text-slate-700">{entry.description}</td>
                                     <td className="px-4 py-3 text-right font-semibold text-slate-900">
                                       ₹{(parseFloat(entry.amount.toString()) || 0).toFixed(2)}
                                     </td>
-                                    <td className="px-4 py-3 text-slate-600">
+                                    <td className="px-4 py-3 text-slate-600 text-xs">
                                       {new Date(entry.entry_date || entry.created_at).toLocaleDateString('en-GB', { 
                                         day: '2-digit', 
                                         month: 'short', 
@@ -446,71 +562,75 @@ export default function PayrollEntries() {
                                     </td>
                                   </tr>
                                 ))}
+                                {/* Total Row */}
+                                <tr className="bg-indigo-50 border-t border-slate-200 font-semibold">
+                                  <td colSpan={1} className="px-4 py-3 text-slate-900">Total Vehicle Rent</td>
+                                  <td className="px-4 py-3 text-right text-indigo-700">
+                                    ₹{vehicleRentEntries.reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}
+                                  </td>
+                                </tr>
                               </tbody>
                             </table>
-                          </div>
-                        </div>
-                      ));
-                    })()}
-
-                    {/* Summary */}
-                    <div className="bg-brand-50 border border-brand-200 rounded-lg p-4 mt-4">
-                      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-                        <div>
-                          <p className="text-xs text-slate-600 font-medium mb-1">Total Referrals Amount</p>
-                          <p className="text-lg font-bold text-slate-900">₹{riderDetails.filter(e => e.entry_type?.toLowerCase() === 'referral').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-slate-600 font-medium mb-1">Total Incentives</p>
-                          <p className="text-lg font-bold text-slate-900">₹{riderDetails.filter(e => e.entry_type?.toLowerCase() === 'incentive').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-slate-600 font-medium mb-1">Total Advances</p>
-                          <p className="text-lg font-bold text-slate-900">₹{riderDetails.filter(e => e.entry_type?.toLowerCase() === 'advance').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-slate-600 font-medium mb-1">Total Deductions (Others)</p>
-                          <p className="text-lg font-bold text-slate-900">₹{riderDetails.filter(e => ['security_deposit', 'damage', 'challan', 'other'].includes(e.entry_type?.toLowerCase())).reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-slate-600 font-medium mb-1">Vehicle Rent</p>
-                          <p className="text-lg font-bold text-indigo-700">₹{riderDetails.filter(e => e.entry_type?.toLowerCase() === 'vehicle_rent').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}</p>
-                        </div>
+                          );
+                        })()}
                       </div>
+                    </div>
 
-                      {/* Final Amount Calculation */}
-                      <div className="border-t border-brand-300 pt-4">
-                        <div className="space-y-2 text-sm text-slate-700">
-                          <p className="font-semibold text-slate-900 mb-3">Note: Advances & Vehicle Rent are deducted from payouts after calculation. They are tracked separately and not included in adjustments.</p>
-                          {riderDetails.filter(e => e.entry_type?.toLowerCase() === 'referral').length > 0 && (
-                            <div className="flex items-center justify-between">
-                              <span>Referrals: ₹{riderDetails.filter(e => e.entry_type?.toLowerCase() === 'referral').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}</span>
-                              <span className="text-xs">+</span>
-                            </div>
-                          )}
-                          <div className="flex items-center justify-between">
-                            <span>Incentives: ₹{riderDetails.filter(e => e.entry_type?.toLowerCase() === 'incentive').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}</span>
-                            <span className="text-xs">+</span>
+                    {/* SUMMARY BOX */}
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+                      <div className="space-y-4">
+                        {/* Totals Grid */}
+                        <div className="grid grid-cols-3 gap-4">
+                          <div className="bg-white rounded-lg p-4 border border-yellow-100">
+                            <p className="text-xs text-slate-600 font-medium mb-1">Total Additions</p>
+                            <p className="text-2xl font-bold text-green-700">
+                              ₹{riderDetails.filter(e => ['referral', 'incentive'].includes(e.entry_type?.toLowerCase())).reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}
+                            </p>
                           </div>
-                          <div className="flex items-center justify-between">
-                            <span>Deductions (Damage, Challan, etc.): ₹{riderDetails.filter(e => ['security_deposit', 'damage', 'challan', 'other'].includes(e.entry_type?.toLowerCase())).reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}</span>
-                            <span className="text-xs">-</span>
+                          <div className="bg-white rounded-lg p-4 border border-yellow-100">
+                            <p className="text-xs text-slate-600 font-medium mb-1">Total Deductions</p>
+                            <p className="text-2xl font-bold text-red-700">
+                              ₹{riderDetails.filter(e => ['advance', 'security_deposit', 'damage', 'challan', 'other'].includes(e.entry_type?.toLowerCase())).reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}
+                            </p>
+                          </div>
+                          <div className="bg-white rounded-lg p-4 border border-yellow-100">
+                            <p className="text-xs text-slate-600 font-medium mb-1">Total Vehicle Rent</p>
+                            <p className="text-2xl font-bold text-indigo-700">
+                              ₹{riderDetails.filter(e => e.entry_type?.toLowerCase() === 'vehicle_rent').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}
+                            </p>
                           </div>
                         </div>
-                          <div className="flex items-center justify-between border-t border-brand-300 mt-4 pt-4">
-                          <span className="text-sm font-semibold text-slate-900">ADJUSTMENTS TO BASE PAYOUT</span>
-                          <span className="text-2xl font-bold text-brand-600">
-                            {(() => {
-                              const incentives = riderDetails.filter(e => e.entry_type?.toLowerCase() === 'incentive').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0);
-                              const deductions = riderDetails.filter(e => ['security_deposit', 'damage', 'challan', 'other'].includes(e.entry_type?.toLowerCase())).reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0);
-                              const referrals = riderDetails.filter(e => e.entry_type?.toLowerCase() === 'referral').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0);
-                              const adjustment = referrals + incentives - deductions;
-                              return (adjustment >= 0 ? '+' : '') + adjustment.toFixed(2);
-                            })()}
-                          </span>
+
+                        {/* Note */}
+                        <div className="border-t border-yellow-200 pt-4 text-sm">
+                          <p className="font-semibold text-slate-900 mb-3">Payroll Calculation:</p>
+                          {(() => {
+                            const totalAdditions = riderDetails.filter(e => ['referral', 'incentive'].includes(e.entry_type?.toLowerCase())).reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0);
+                            const totalDeductions = riderDetails.filter(e => ['advance', 'security_deposit', 'damage', 'challan', 'other'].includes(e.entry_type?.toLowerCase())).reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0);
+                            const { startDate, endDate } = getWeekDateRange(selectedWeek, selectedMonth, selectedYear);
+                            const totalVehicleRent = riderDetails.filter(e => {
+                              if (e.entry_type?.toLowerCase() !== 'vehicle_rent') return false;
+                              const entryDate = new Date(e.entry_date || e.created_at);
+                              return entryDate >= startDate && entryDate <= endDate;
+                            }).reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0);
+                            const finalAmount = totalAdditions - totalDeductions - totalVehicleRent;
+                            
+                            return (
+                              <>
+                                <p className="text-slate-700 text-center text-lg font-semibold">
+                                  <span className="text-green-700">Additions (₹{totalAdditions.toFixed(2)})</span>
+                                  {' '}-{' '}
+                                  <span className="text-red-700">Deductions (₹{totalDeductions.toFixed(2)})</span>
+                                  {' '}-{' '}
+                                  <span className="text-indigo-700">Vehicle Rent (₹{totalVehicleRent.toFixed(2)})</span>
+                                  {' '}={' '}
+                                  <span className="text-slate-900 font-bold">Final Amount (₹{finalAmount.toFixed(2)})</span>
+                                </p>
+                              </>
+                            );
+                          })()}
+                          <p className="text-center text-xs text-slate-600 mt-2">Final Amount will be deducted from Base Payout in the Payout view details page</p>
                         </div>
-                        <p className="text-xs text-slate-600 mt-3 pt-3 border-t border-brand-300">Vehicle Rent: ₹{riderDetails.filter(e => e.entry_type?.toLowerCase() === 'vehicle_rent').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)} (deducted separately from payout)</p>
-                        <p className="text-xs text-slate-600 mt-2">For your complete payroll with base payout, visit the Rider Dashboard.</p>
                       </div>
                     </div>
                   </div>
