@@ -160,11 +160,16 @@ export async function POST(request: Request) {
         LIMIT 1
       `;
       
+      console.log('🔍 Rider Info Query - Searching for rider_id:', rider_id);
+      console.log('🔍 Rider Info Found:', riderInfo);
+      
       const cee_id = riderInfo?.[0]?.cee_id || rider_id;
       const full_name = riderInfo?.[0]?.full_name || 'Unknown';
       const vehicleOwnership = riderInfo?.[0]?.vehicle_ownership;
       const evWeeklyRent = riderInfo?.[0]?.ev_weekly_rent || 0;
       const evType = riderInfo?.[0]?.ev_type; // Get the EV type (sunmobility_swap or fixed_battery)
+      
+      console.log('🔍 Rider Details:', { cee_id, full_name, vehicleOwnership, evType, evWeeklyRent });
       
       // Parse and normalize join_date to midnight UTC for proper date comparison
       let riderJoinDate: Date | null = null;

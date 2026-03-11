@@ -54,18 +54,20 @@ export default function PayrollEntries() {
   const getWeekDateRange = (week: number, month: number, year: number) => {
     let startDate, endDate;
     
+    // Create UTC dates to avoid timezone issues
     if (week === 1) {
-      startDate = new Date(year, month - 1, 1);
-      endDate = new Date(year, month - 1, 7);
+      startDate = new Date(Date.UTC(year, month - 1, 1));
+      endDate = new Date(Date.UTC(year, month - 1, 7));
     } else if (week === 2) {
-      startDate = new Date(year, month - 1, 8);
-      endDate = new Date(year, month - 1, 14);
+      startDate = new Date(Date.UTC(year, month - 1, 8));
+      endDate = new Date(Date.UTC(year, month - 1, 14));
     } else if (week === 3) {
-      startDate = new Date(year, month - 1, 15);
-      endDate = new Date(year, month - 1, 21);
+      startDate = new Date(Date.UTC(year, month - 1, 15));
+      endDate = new Date(Date.UTC(year, month - 1, 21));
     } else if (week === 4) {
-      startDate = new Date(year, month - 1, 22);
-      endDate = new Date(year, month, 0); // Last day of month - month parameter is 0-indexed
+      startDate = new Date(Date.UTC(year, month - 1, 22));
+      // Get last day of month in UTC
+      endDate = new Date(Date.UTC(year, month, 0));
     }
     
     return { startDate, endDate };
