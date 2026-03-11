@@ -32,8 +32,6 @@ export default function PayrollManagement() {
   const [selectedRider, setSelectedRider] = useState<Rider | null>(null);
   const [showPanel, setShowPanel] = useState(false);
   const [panelMode, setPanelMode] = useState<'view' | 'add'>('view');
-  const [riderEntries, setRiderEntries] = useState<any[]>([]);
-  const [loadingEntries, setLoadingEntries] = useState(false);
   const [historyDate, setHistoryDate] = useState(new Date().toISOString().split('T')[0]);
   const [historyEntries, setHistoryEntries] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -77,56 +75,13 @@ export default function PayrollManagement() {
     setPanelMode('view');
     setShowPanel(true);
     setFormData({ amount: '', description: '', notes: '' });
-    setHistoryDate(new Date().toISOString().split('T')[0]);
+    const today = new Date().toISOString().split('T')[0];
+    setHistoryDate(today);
     setHistoryEntries([]);
-    fetchRiderEntriesForWeek(rider.cee_id);
+    fetchHistoryEntries(rider.cee_id, today);
   };
 
-  const fetchRiderEntriesForWeek = async (riderId: string) => {
-    const getWeekDateRange = () => {
-      const weekNum = selectedMonth;
-      let startDate, endDate;
-      
-      if (weekNum === 1) {
-        startDate = new Date(selectedYear, new Date().getMonth(), 1);
-        endDate = new Date(selectedYear, new Date().getMonth(), 7);
-      } else if (weekNum === 2) {
-        startDate = new Date(selectedYear, new Date().getMonth(), 8);
-        endDate = new Date(selectedYear, new Date().getMonth(), 14);
-      } else if (weekNum === 3) {
-        startDate = new Date(selectedYear, new Date().getMonth(), 15);
-        endDate = new Date(selectedYear, new Date().getMonth(), 21);
-      } else {
-        startDate = new Date(selectedYear, new Date().getMonth(), 22);
-        endDate = new Date(selectedYear, new Date().getMonth() + 1, 0);
-      }
-      
-      return {
-        start_date: startDate.toISOString().split('T')[0],
-        end_date: endDate.toISOString().split('T')[0]
-      };
-    };
 
-    setLoadingEntries(true);
-    try {
-      const dateRange = getWeekDateRange();
-      const response = await fetch('/api/payroll/rider-entries', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          rider_id: riderId,
-          start_date: dateRange.start_date,
-          end_date: dateRange.end_date
-        })
-      });
-      const data = await response.json();
-      setRiderEntries(data.entries || []);
-    } catch (error) {
-      console.error('Error fetching rider entries:', error);
-      setRiderEntries([]);
-    }
-    setLoadingEntries(false);
-  };
 
   const fetchHistoryEntries = async (riderId: string, date: string) => {
     setLoadingHistory(true);
@@ -165,11 +120,11 @@ export default function PayrollManagement() {
           payload = { ...payload, referred_name: formData.description, referred_phone: '', preferred_location: '', notes: formData.notes };
           endpoint = '/api/payroll/referrals';
         } else {
-          payload = { ...payload, incentive_type: additionType, amount: formData.amount, description: formData.description, incentive_date: selectedDate };
+          payload = { ...payload, incentive_type: additionType, amount: formData.amount, description: formData.description, incentive_date: historyDate };
           endpoint = '/api/payroll/incentives';
         }
       } else {
-        payload = { ...payload, amount: formData.amount, description: formData.description, deduction_date: selectedDate };
+        payload = { ...payload, amount: formData.amount, description: formData.description, deduction_date: historyDate };
         if (deductionType === 'advance') {
           payload.reason = formData.description;
           endpoint = '/api/payroll/advances';
@@ -189,7 +144,7 @@ export default function PayrollManagement() {
         alert('Entry added successfully!');
         setFormData({ amount: '', description: '', notes: '' });
         if (selectedRider) {
-          fetchRiderEntriesForWeek(selectedRider.cee_id);
+          fetchHistoryEntries(selectedRider.cee_id, historyDate);
         }
         setPanelMode('view');
       } else {
@@ -220,20 +175,7 @@ export default function PayrollManagement() {
     return true;
   });
 
-  // Calculations
-  const additions = riderEntries
-    .filter(e => ['referral', 'incentive'].includes(e.entry_type?.toLowerCase() || ''))
-    .reduce((sum, e) => sum + (parseFloat(e.amount?.toString() || '0') || 0), 0);
-  
-  const deductions = riderEntries
-    .filter(e => !['referral', 'incentive', 'vehicle_rent'].includes(e.entry_type?.toLowerCase() || ''))
-    .reduce((sum, e) => sum + (parseFloat(e.amount?.toString() || '0') || 0), 0);
-  
-  const vehicleRent = riderEntries
-    .filter(e => e.entry_type?.toLowerCase() === 'vehicle_rent')
-    .reduce((sum, e) => sum + (parseFloat(e.amount?.toString() || '0') || 0), 0);
-  
-  const finalAmount = additions - deductions - vehicleRent;
+
 
   return (
     <div className="mesh-bg text-slate-800 antialiased min-h-screen">
@@ -365,63 +307,39 @@ export default function PayrollManagement() {
             <div className="flex-1 overflow-y-auto px-8 py-6">
               {panelMode === 'view' ? (
                 <>
-                  {loadingEntries ? (
+                  {loadingHistory ? (
                     <div className="flex justify-center py-12"><div className="w-8 h-8 border-4 border-slate-200 border-t-brand-600 rounded-full animate-spin"></div></div>
                   ) : (
                     <div className="space-y-6">
-                      {/* Summary Cards */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="border border-green-200 rounded-lg p-4 bg-green-50">
-                          <h4 className="font-semibold text-slate-900 text-sm mb-3 flex items-center gap-2">
-                            <span className="w-3 h-3 rounded-full bg-green-600"></span>
-                            Total Additions
-                          </h4>
-                          <div className="border-t border-green-300 pt-3 flex justify-between">
-                            <span className="font-semibold text-slate-900">Total</span>
-                            <span className="text-xl font-bold text-green-700">₹{additions.toFixed(2)}</span>
-                          </div>
-                        </div>
-
-                        <div className="border border-orange-200 rounded-lg p-4 bg-orange-50">
-                          <h4 className="font-semibold text-slate-900 text-sm mb-3 flex items-center gap-2">
-                            <span className="w-3 h-3 rounded-full bg-orange-600"></span>
-                            Total Deductions
-                          </h4>
-                          <div className="border-t border-orange-300 pt-3 flex justify-between">
-                            <span className="font-semibold text-slate-900">Total</span>
-                            <span className="text-xl font-bold text-orange-700">₹{(deductions + vehicleRent).toFixed(2)}</span>
-                          </div>
+                      {/* Date Selector */}
+                      <div className="flex items-end gap-4">
+                        <div>
+                          <label className="block text-sm font-semibold text-slate-900 mb-2">Select Date</label>
+                          <input 
+                            type="date" 
+                            value={historyDate} 
+                            onChange={(e) => {
+                              setHistoryDate(e.target.value);
+                              if (selectedRider) {
+                                fetchHistoryEntries(selectedRider.cee_id, e.target.value);
+                              }
+                            }}
+                            className="px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
+                          />
                         </div>
                       </div>
 
-                      {/* Final Amount */}
-                      <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                        <h4 className="font-semibold text-slate-900 text-sm mb-4 flex items-center gap-2">
-                          <span className="w-3 h-3 rounded-full bg-purple-600"></span>
-                          Adjustments Summary
-                        </h4>
-                        <div className="space-y-2 text-sm mb-4">
-                          <div className="flex justify-between pb-2 border-b border-purple-300"><span>Additions:</span><span className="text-green-700 font-semibold">+₹{additions.toFixed(2)}</span></div>
-                          <div className="flex justify-between pb-2 border-b border-purple-300"><span>Deductions (excl. rent):</span><span className="text-orange-700 font-semibold">-₹{deductions.toFixed(2)}</span></div>
-                          <div className="flex justify-between pb-2 border-b border-purple-300"><span>Vehicle Rent (Prorated):</span><span className="text-orange-700 font-semibold">-₹{vehicleRent.toFixed(2)}</span></div>
-                          <div className="flex justify-between pt-2">
-                            <span className="font-bold">FINAL AMOUNT:</span>
-                            <span className={`text-2xl font-bold ${finalAmount >= 0 ? 'text-green-700' : 'text-red-700'}`}>{finalAmount >= 0 ? '+' : ''}₹{finalAmount.toFixed(2)}</span>
+                      {/* History Entries */}
+                      <div className="bg-slate-50 rounded-lg border border-slate-200 p-4">
+                        <h4 className="font-semibold text-slate-900 mb-4">Entries for {new Date(historyDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</h4>
+                        
+                        {historyEntries.length === 0 ? (
+                          <div className="text-center py-8 text-slate-500">
+                            <p>No entries found for this date</p>
                           </div>
-                        </div>
-                        <p className="text-xs text-slate-600"><strong>Formula:</strong> Final Amount = Additions - Deductions - Vehicle Rent</p>
-                      </div>
-
-                      {/* Add Button */}
-                      <div className="pt-6 border-t border-slate-200">
-                        <button onClick={() => setPanelMode('add')} className="px-6 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium">
-                          Add Entry
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </>
-              ) : (
+                        ) : (
+                          <div className="space-y-2">
+                            {historyEntries.map((entry: any, idx: number) => (\n                              <div key={idx} className=\"bg-white border border-slate-200 rounded-lg p-3 flex justify-between items-center\">\n                                <div>\n                                  <div className=\"text-sm font-semibold text-slate-900\">{entry.entry_type || entry.type || 'Entry'}</div>\n                                  {entry.description && <div className=\"text-xs text-slate-600 mt-1\">{entry.description}</div>}\n                                </div>\n                                <div className=\"text-right\">\n                                  <div className={`text-sm font-bold ${entry.amount && parseFloat(entry.amount) > 0 ? 'text-green-700' : 'text-orange-700'}`}>\n                                    {entry.amount && parseFloat(entry.amount) > 0 ? '+' : '-'}₹{Math.abs(parseFloat(entry.amount || 0)).toFixed(2)}\n                                  </div>\n                                </div>\n                              </div>\n                            ))}\n                          </div>\n                        )}\n                      </div>\n\n                      {/* Add Button */}\n                      <div className=\"pt-4 border-t border-slate-200\">\n                        <button onClick={() => setPanelMode('add')} className=\"px-6 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium\">\n                          Add Entry\n                        </button>\n                      </div>\n                    </div>\n                  )}\n                </>\n              ) : (
                 <div className="space-y-4 max-w-md">
                   <div>
                     <label className="block text-sm font-semibold text-slate-900 mb-2">Entry Type</label>
