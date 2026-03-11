@@ -596,7 +596,14 @@ export default function PayrollEntries() {
                           <div className="bg-white rounded-lg p-4 border border-yellow-100">
                             <p className="text-xs text-slate-600 font-medium mb-1">Total Vehicle Rent</p>
                             <p className="text-2xl font-bold text-indigo-700">
-                              ₹{riderDetails.filter(e => e.entry_type?.toLowerCase() === 'vehicle_rent').reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}
+                              ₹{(() => {
+                                const { startDate, endDate } = getWeekDateRange(selectedWeek, selectedMonth, selectedYear);
+                                return riderDetails.filter(e => {
+                                  if (e.entry_type?.toLowerCase() !== 'vehicle_rent') return false;
+                                  const entryDate = new Date(e.entry_date || e.created_at);
+                                  return entryDate >= startDate && entryDate <= endDate;
+                                }).reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2);
+                              })()}
                             </p>
                           </div>
                         </div>
