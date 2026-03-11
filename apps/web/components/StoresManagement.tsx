@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import LocationSearch from './LocationSearch';
 import WeatherCard from './WeatherCard';
+import BulkUploadModal from './BulkUploadModal';
 
 const StoreMapView = dynamic(() => import('./StoreMapView'), {
   ssr: false,
@@ -22,6 +23,7 @@ export default function StoresManagement() {
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showBulkUploadModal, setShowBulkUploadModal] = useState(false);
   const [viewItem, setViewItem] = useState<any>(null);
   const [editItem, setEditItem] = useState<any>(null);
   const [newStore, setNewStore] = useState<any>({
@@ -197,12 +199,20 @@ export default function StoresManagement() {
         {/* Header */}
         <div className="flex justify-between items-center">
           <h2 className="font-display text-3xl font-bold text-slate-900">Store Management ({stores.length})</h2>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium flex items-center gap-2"
-          >
-            <i className="ph-bold ph-plus text-lg"></i>Add Store
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowBulkUploadModal(true)}
+              className="px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 font-medium flex items-center gap-2"
+            >
+              <i className="ph-bold ph-upload text-lg"></i>Bulk Upload
+            </button>
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium flex items-center gap-2"
+            >
+              <i className="ph-bold ph-plus text-lg"></i>Add Store
+            </button>
+          </div>
         </div>
 
         {/* View Toggle */}
@@ -710,6 +720,14 @@ export default function StoresManagement() {
           </div>
         </div>
       )}
+
+      {/* Bulk Upload Modal */}
+      <BulkUploadModal
+        isOpen={showBulkUploadModal}
+        onClose={() => setShowBulkUploadModal(false)}
+        type="stores"
+        onSuccess={fetchStores}
+      />
     </>
   );
 }

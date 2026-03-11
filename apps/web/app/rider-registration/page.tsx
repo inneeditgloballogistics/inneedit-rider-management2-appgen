@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import BulkUploadModal from '@/components/BulkUploadModal';
 
 function RiderRegistrationContent() {
   const router = useRouter();
@@ -37,6 +38,7 @@ function RiderRegistrationContent() {
   const [availableVehicles, setAvailableVehicles] = useState<any[]>([]);
   const [hubs, setHubs] = useState<any[]>([]);
   const [stores, setStores] = useState<any[]>([]);
+  const [showBulkUploadModal, setShowBulkUploadModal] = useState(false);
   
   const dlInputRef = useRef<HTMLInputElement>(null);
   const aadharInputRef = useRef<HTMLInputElement>(null);
@@ -272,6 +274,12 @@ function RiderRegistrationContent() {
                     <p className="text-slate-500 mt-2">Onboard a new rider to the fleet. Create login credentials and assign assets.</p>
                 </div>
                 <div className="flex items-center gap-3">
+                    <button 
+                        onClick={() => setShowBulkUploadModal(true)}
+                        className="px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 font-medium flex items-center gap-2"
+                    >
+                        <i className="ph-bold ph-upload text-lg"></i>Bulk Upload
+                    </button>
                     <button onClick={() => router.back()} className="text-sm font-medium text-slate-500 hover:text-slate-900">Cancel</button>
                 </div>
             </div>
@@ -857,6 +865,18 @@ function RiderRegistrationContent() {
             </div>
         </div>
     </footer>
+
+    {/* Bulk Upload Modal */}
+    <BulkUploadModal
+        isOpen={showBulkUploadModal}
+        onClose={() => setShowBulkUploadModal(false)}
+        type="riders"
+        onSuccess={() => {
+            setShowBulkUploadModal(false);
+            fetchAvailableVehicles();
+            router.push('/admin-dashboard');
+        }}
+    />
         </div>
       </>
     );
