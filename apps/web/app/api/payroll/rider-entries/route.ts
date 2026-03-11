@@ -289,18 +289,18 @@ export async function POST(request: Request) {
             let description = 'Weekly vehicle rent - Company EV';
             
             // Apply prorate logic
-            // Check if rider joined in this week (join_date >= week start AND join_date <= week end)
-            if (riderJoinDate && riderJoinDate >= weekStartUTC && riderJoinDate <= weekEndUTC) {
-              // Rider joined mid-week - calculate remaining days (including join date)
-              const timeDiff = weekEndUTC.getTime() - riderJoinDate.getTime();
-              const daysRemaining = Math.ceil(timeDiff / (1000 * 60 * 60 * 24)) + 1;
-              rentAmount = Math.round((dailyRate * daysRemaining) * 100) / 100;
-              description = `Prorated vehicle rent (${daysRemaining} days, joined ${riderJoinDate.toLocaleDateString()})`;
-            } else if (riderJoinDate && riderJoinDate > weekEndUTC) {
-              // Rider hasn't joined yet, skip this week
+            if (riderJoinDate && riderJoinDate > weekEndUTC) {
+              // Rider hasn't joined yet in this week, skip
               currentDate.setDate(currentDate.getDate() + 7);
               continue;
+            } else if (riderJoinDate && riderJoinDate >= weekStartUTC && riderJoinDate <= weekEndUTC) {
+              // Rider joined mid-week - calculate remaining days (including join date)
+              const timeDiff = weekEndUTC.getTime() - riderJoinDate.getTime();
+              const daysRemaining = Math.floor(timeDiff / (1000 * 60 * 60 * 24)) + 1;
+              rentAmount = Math.round((dailyRate * daysRemaining) * 100) / 100;
+              description = `Prorated vehicle rent (${daysRemaining} days, joined ${riderJoinDate.toLocaleDateString()})`;
             }
+            // else: rider joined before this week, charge full amount
             
             // For Week 4, always charge full amount (7 days fixed)
             // No additional prorate needed as it's already defined
