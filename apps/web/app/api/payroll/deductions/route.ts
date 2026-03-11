@@ -6,15 +6,12 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       rider_id,
-      type,
+      cee_id,
+      deduction_type,
       amount,
       description,
-      reason,
       deduction_date
     } = body;
-
-    // Map type to deduction_type based on the type
-    const deductionType = type === 'security' ? 'security_deposit' : type;
 
     const result = await sql`
       INSERT INTO deductions (
@@ -25,10 +22,10 @@ export async function POST(request: NextRequest) {
         deduction_date,
         created_at
       ) VALUES (
-        ${rider_id},
-        ${deductionType},
+        ${rider_id || cee_id},
+        ${deduction_type},
         ${parseFloat(amount)},
-        ${description || reason || ''},
+        ${description || ''},
         ${deduction_date},
         NOW()
       )
