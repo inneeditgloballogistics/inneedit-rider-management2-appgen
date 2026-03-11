@@ -24,6 +24,7 @@ function RiderRegistrationContent() {
     ifscCode: '',
     beneficiaryName: '',
     vehicleOwnership: 'company_ev',
+    evType: 'fixed_battery',
     evMonthlyRent: '6000',
     evWeeklyRent: '1500',
     isLeader: false,
@@ -518,6 +519,57 @@ function RiderRegistrationContent() {
                             {/* EV Rental Details - Show only if Company EV selected */}
                             {formData.vehicleOwnership === 'company_ev' && (
                               <>
+                                {/* EV Type Selection */}
+                                <div>
+                                  <label className="block text-xs font-medium text-slate-500 mb-3 uppercase tracking-wide">EV Type</label>
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div 
+                                      onClick={() => setFormData({ ...formData, evType: 'sunmobility_swap', evWeeklyRent: '1700' })}
+                                      className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                                        formData.evType === 'sunmobility_swap' 
+                                          ? 'border-brand-600 bg-brand-50' 
+                                          : 'border-slate-200 bg-slate-50/50 hover:border-slate-300'
+                                      }`}
+                                    >
+                                      <div className="flex items-center gap-3">
+                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                                          formData.evType === 'sunmobility_swap' ? 'border-brand-600' : 'border-slate-300'
+                                        }`}>
+                                          {formData.evType === 'sunmobility_swap' && (
+                                            <div className="w-3 h-3 rounded-full bg-brand-600"></div>
+                                          )}
+                                        </div>
+                                        <div>
+                                          <p className="font-medium text-slate-900">Sunmobility Swap</p>
+                                          <p className="text-xs text-slate-500">₹1700/week</p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div 
+                                      onClick={() => setFormData({ ...formData, evType: 'fixed_battery', evWeeklyRent: '1500' })}
+                                      className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                                        formData.evType === 'fixed_battery' 
+                                          ? 'border-brand-600 bg-brand-50' 
+                                          : 'border-slate-200 bg-slate-50/50 hover:border-slate-300'
+                                      }`}
+                                    >
+                                      <div className="flex items-center gap-3">
+                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                                          formData.evType === 'fixed_battery' ? 'border-brand-600' : 'border-slate-300'
+                                        }`}>
+                                          {formData.evType === 'fixed_battery' && (
+                                            <div className="w-3 h-3 rounded-full bg-brand-600"></div>
+                                          )}
+                                        </div>
+                                        <div>
+                                          <p className="font-medium text-slate-900">Fixed Battery</p>
+                                          <p className="text-xs text-slate-500">₹1500/week</p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                   <div className="input-group">
                                     <label className="block text-xs font-medium text-slate-500 mb-1.5 uppercase tracking-wide">Monthly Rent (₹)</label>
