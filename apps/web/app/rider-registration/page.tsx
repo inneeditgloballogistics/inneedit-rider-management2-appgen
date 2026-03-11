@@ -154,15 +154,28 @@ function RiderRegistrationContent() {
 
       // Save rider data to database
       const riderData = {
-        ...formData,
+        fullName: formData.fullName,
+        dob: formData.dob || null,
+        joinDate: formData.joinDate || null,
+        mobile: formData.mobile,
+        email: formData.email || null,
+        address: formData.address || null,
+        client: formData.client,
+        ceeId: formData.ceeId,
+        assignedHub: formData.assignedHub || null,
+        storeLocation: formData.storeLocation || null,
+        bankAccount: formData.bankAccount || null,
+        ifscCode: formData.ifscCode || null,
+        beneficiaryName: formData.beneficiaryName || null,
         dlUrl,
         aadharUrl,
         assignedVehicleId: formData.vehicle && formData.vehicle !== 'later' ? parseInt(formData.vehicle) : null,
-        vehicleOwnership: formData.vehicleOwnership,
-        evMonthlyRent: formData.vehicleOwnership === 'company_ev' ? parseFloat(formData.evMonthlyRent) : null,
-        evWeeklyRent: formData.vehicleOwnership === 'company_ev' ? parseFloat(formData.evWeeklyRent) : null,
-        isLeader: formData.isLeader,
-        leaderDiscountPercentage: formData.isLeader ? parseFloat(formData.leaderDiscount) : 0
+        vehicleOwnership: formData.vehicleOwnership || 'company_ev',
+        evType: formData.evType || 'fixed_battery',
+        evMonthlyRent: formData.vehicleOwnership === 'company_ev' ? parseFloat(formData.evMonthlyRent) || 6000 : null,
+        evWeeklyRent: formData.vehicleOwnership === 'company_ev' ? parseFloat(formData.evWeeklyRent) || 1500 : null,
+        isLeader: formData.isLeader || false,
+        leaderDiscountPercentage: formData.isLeader ? parseFloat(formData.leaderDiscount) || 0 : 0
       };
 
       const response = await fetch('/api/riders', {
