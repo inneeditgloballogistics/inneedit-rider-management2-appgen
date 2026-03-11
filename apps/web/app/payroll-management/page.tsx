@@ -22,9 +22,18 @@ interface Rider {
 
 export default function PayrollManagement() {
   const router = useRouter();
+  // Get today's date in local timezone (not UTC)
+  const getTodayString = () => {
+    const date = new Date();
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState(getTodayString());
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [riders, setRiders] = useState<Rider[]>([]);
@@ -76,10 +85,10 @@ export default function PayrollManagement() {
     setShowPanel(true);
     setFormData({ amount: '', description: '', notes: '' });
     // Always default to today's date in the modal, not the selected filter date
-    const today = new Date().toISOString().split('T')[0];
-    setHistoryDate(today);
+    const todayString = getTodayString();
+    setHistoryDate(todayString);
     setHistoryEntries([]);
-    fetchHistoryEntries(rider.cee_id, today);
+    fetchHistoryEntries(rider.cee_id, todayString);
   };
 
   const fetchHistoryEntries = async (riderId: string, date: string) => {
