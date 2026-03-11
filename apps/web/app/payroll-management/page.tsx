@@ -339,15 +339,27 @@ export default function PayrollManagement() {
                               let isAddition = true;
                               let entryLabel = entry.entry_type || entry.type || 'Entry';
                               
-                              if (entry.reason !== undefined) {
+                              // Check if it's an ADDITION first (referral, incentive)
+                              if (entry.referrer_cee_id !== undefined || entry.referred_name !== undefined) {
+                                // Has referral fields = it's an addition
+                                isAddition = true;
+                                entryLabel = 'Referral';
+                              } else if (entry.incentive_type !== undefined || entry.incentive_date !== undefined) {
+                                // Has 'incentive_type' or 'incentive_date' = it's an addition
+                                isAddition = true;
+                                entryLabel = entry.incentive_type || 'Incentive';
+                              } else if (entry.reason !== undefined) {
+                                // Has 'reason' field = it's an advance (deduction)
                                 isAddition = false;
                                 entryLabel = 'Advance';
                               } else if (entry.deduction_type !== undefined) {
+                                // Has 'deduction_type' = it's a deduction
                                 isAddition = false;
                                 entryLabel = entry.deduction_type || 'Deduction';
-                              } else if (entry.incentive_type !== undefined || entry.incentive_date !== undefined) {
-                                isAddition = true;
-                                entryLabel = entry.incentive_type || 'Incentive';
+                              } else if (entry.deduction_date !== undefined) {
+                                // Has 'deduction_date' = it's a deduction
+                                isAddition = false;
+                                entryLabel = 'Deduction';
                               }
                               
                               return (
