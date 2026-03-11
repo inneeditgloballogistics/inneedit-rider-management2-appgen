@@ -180,10 +180,20 @@ export async function POST(request: Request) {
       let riderJoinDate: Date | null = null;
       if (riderInfo?.[0]?.join_date) {
         const joinDateStr = riderInfo[0].join_date;
-        // If it's an ISO string like "2026-03-11T00:00:00.000Z", extract just the date part
-        const datePart = joinDateStr.split('T')[0]; // "2026-03-11"
-        const [year, month, day] = datePart.split('-').map(Number);
-        riderJoinDate = new Date(Date.UTC(year, month - 1, day));
+        console.log('🔍 Parsing join_date:', joinDateStr);
+        
+        // Handle ISO string format "2026-03-01T00:00:00.000Z"
+        const dateObj = new Date(joinDateStr);
+        if (!isNaN(dateObj.getTime())) {
+          // Extract the UTC date components
+          const year = dateObj.getUTCFullYear();
+          const month = dateObj.getUTCMonth() + 1;
+          const day = dateObj.getUTCDate();
+          riderJoinDate = new Date(Date.UTC(year, month - 1, day));
+          console.log('✅ Parsed join_date to:', riderJoinDate.toISOString().split('T')[0]);
+        } else {
+          console.warn('⚠️ Invalid join_date format:', joinDateStr);
+        }
       }
       
       console.log("🔍 Deductions Query Debug - Looking for rider_id:", rider_id, "or cee_id:", cee_id);
@@ -294,7 +304,12 @@ export async function POST(request: Request) {
           willGenerate: dailyRent > 0,
           riderJoinDate: riderJoinDate?.toISOString().split('T')[0],
           weekStart: startDateObj.toISOString().split('T')[0],
-          weekEnd: endDateObj.toISOString().split('T')[0]
+          weekEnd: endDateObj.toISOString().split('T')[0],
+          dateComparison: {
+            riderJoinDateMs: riderJoinDate?.getTime(),
+            weekStartMs: startDateObj.getTime(),
+            riderJoinedBeforeWeek: riderJoinDate && startDateObj ? riderJoinDate.getTime() <= startDateObj.getTime() : 'no join date'
+          }
         });
 
         // Only generate if dailyRent > 0
