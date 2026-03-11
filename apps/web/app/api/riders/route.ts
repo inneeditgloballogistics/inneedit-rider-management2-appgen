@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sql } from '../utils/sql';
+import sql from '@/app/api/utils/sql';
 
 export async function GET(request: NextRequest) {
   try {
@@ -50,6 +50,11 @@ export async function POST(request: Request) {
       hubId = hubMap[body.assignedHub] || (isNaN(Number(body.assignedHub)) ? null : Number(body.assignedHub));
     }
     
+    // Determine EV type - use provided value or default based on vehicle ownership
+    const evType = body.vehicleOwnership === 'company_ev' ? (body.evType || 'fixed_battery') : null;
+    const evMonthlyRent = body.vehicleOwnership === 'company_ev' ? (body.evMonthlyRent || 6000) : null;
+    const evWeeklyRent = body.vehicleOwnership === 'company_ev' ? (body.evWeeklyRent || 1500) : null;
+    
     // Insert rider into database
     const result = await sql`
       INSERT INTO riders (
@@ -78,8 +83,8 @@ export async function POST(request: Request) {
         ${ceeId}, ${body.fullName || ''}, ${body.mobile || ''}, ${body.email || null}, ${body.dob || null}, 
         ${body.joinDate || null}, ${body.address || null}, ${body.client || ''}, ${hubId}, ${body.assignedVehicleId || null}, 
         ${body.bankAccount || null}, ${body.ifscCode || null}, ${body.dlUrl || null}, ${body.aadharUrl || null},
-        ${body.vehicleOwnership || 'company_ev'}, ${body.evMonthlyRent || null}, ${body.evWeeklyRent || null},
-        ${body.evType || null}, ${body.isLeader || false}, ${body.leaderDiscountPercentage || 0}, 'active'
+        ${body.vehicleOwnership || 'company_ev'}, ${evMonthlyRent}, ${evWeeklyRent},
+        ${evType}, ${body.isLeader || false}, ${body.leaderDiscountPercentage || 0}, 'active'
       )
       RETURNING *
     `;

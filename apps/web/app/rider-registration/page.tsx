@@ -26,8 +26,7 @@ function RiderRegistrationContent() {
     beneficiaryName: '',
     vehicleOwnership: 'company_ev',
     evType: 'fixed_battery',
-    evMonthlyRent: '6000',
-    evWeeklyRent: '1500',
+    evDailyRent: '215',
     isLeader: false,
     leaderDiscount: '0'
   });
@@ -172,8 +171,7 @@ function RiderRegistrationContent() {
         assignedVehicleId: formData.vehicle && formData.vehicle !== 'later' ? parseInt(formData.vehicle) : null,
         vehicleOwnership: formData.vehicleOwnership || 'company_ev',
         evType: formData.evType || 'fixed_battery',
-        evMonthlyRent: formData.vehicleOwnership === 'company_ev' ? parseFloat(formData.evMonthlyRent) || 6000 : null,
-        evWeeklyRent: formData.vehicleOwnership === 'company_ev' ? parseFloat(formData.evWeeklyRent) || 1500 : null,
+        evDailyRent: formData.vehicleOwnership === 'company_ev' ? parseFloat(formData.evDailyRent) || 215 : null,
         isLeader: formData.isLeader || false,
         leaderDiscountPercentage: formData.isLeader ? parseFloat(formData.leaderDiscount) || 0 : 0
       };
@@ -548,7 +546,7 @@ function RiderRegistrationContent() {
                                   <label className="block text-xs font-medium text-slate-500 mb-3 uppercase tracking-wide">EV Type</label>
                                   <div className="grid grid-cols-2 gap-4">
                                     <div 
-                                      onClick={() => setFormData({ ...formData, evType: 'sunmobility_swap', evWeeklyRent: '1700' })}
+                                      onClick={() => setFormData({ ...formData, evType: 'sunmobility_swap', evDailyRent: '243' })}
                                       className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
                                         formData.evType === 'sunmobility_swap' 
                                           ? 'border-brand-600 bg-brand-50' 
@@ -565,12 +563,12 @@ function RiderRegistrationContent() {
                                         </div>
                                         <div>
                                           <p className="font-medium text-slate-900">Sunmobility Swap</p>
-                                          <p className="text-xs text-slate-500">₹1700/week</p>
+                                          <p className="text-xs text-slate-500">₹243/day</p>
                                         </div>
                                       </div>
                                     </div>
                                     <div 
-                                      onClick={() => setFormData({ ...formData, evType: 'fixed_battery', evWeeklyRent: '1500' })}
+                                      onClick={() => setFormData({ ...formData, evType: 'fixed_battery', evDailyRent: '215' })}
                                       className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
                                         formData.evType === 'fixed_battery' 
                                           ? 'border-brand-600 bg-brand-50' 
@@ -587,34 +585,27 @@ function RiderRegistrationContent() {
                                         </div>
                                         <div>
                                           <p className="font-medium text-slate-900">Fixed Battery</p>
-                                          <p className="text-xs text-slate-500">₹1500/week</p>
+                                          <p className="text-xs text-slate-500">₹215/day</p>
                                         </div>
                                       </div>
                                     </div>
                                   </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                  <div className="input-group">
-                                    <label className="block text-xs font-medium text-slate-500 mb-1.5 uppercase tracking-wide">Monthly Rent (₹)</label>
-                                    <input 
-                                      type="number" 
-                                      placeholder="6000" 
-                                      value={formData.evMonthlyRent}
-                                      onChange={(e) => setFormData({ ...formData, evMonthlyRent: e.target.value })}
-                                      className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50/50 outline-none transition-all placeholder:text-slate-400 text-slate-900 font-medium" 
-                                    />
-                                  </div>
-                                  <div className="input-group">
-                                    <label className="block text-xs font-medium text-slate-500 mb-1.5 uppercase tracking-wide">Weekly Rent (₹)</label>
-                                    <input 
-                                      type="number" 
-                                      placeholder="1500" 
-                                      value={formData.evWeeklyRent}
-                                      onChange={(e) => setFormData({ ...formData, evWeeklyRent: e.target.value })}
-                                      className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50/50 outline-none transition-all placeholder:text-slate-400 text-slate-900 font-medium" 
-                                    />
-                                  </div>
+                                <div className="input-group">
+                                  <label className="block text-xs font-medium text-slate-500 mb-1.5 uppercase tracking-wide">Daily Rent (₹)</label>
+                                  <input 
+                                    type="number" 
+                                    placeholder={formData.evType === 'sunmobility_swap' ? '243' : '215'} 
+                                    value={formData.evDailyRent}
+                                    onChange={(e) => setFormData({ ...formData, evDailyRent: e.target.value })}
+                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50/50 outline-none transition-all placeholder:text-slate-400 text-slate-900 font-medium" 
+                                  />
+                                  <p className="text-[10px] text-slate-400 mt-1">
+                                    {formData.evType === 'sunmobility_swap' 
+                                      ? 'Standard: ₹243/day for Sunmobility Swap' 
+                                      : 'Standard: ₹215/day for Fixed Battery'}
+                                  </p>
                                 </div>
 
                                 {/* Leader/Supervisor Option */}
@@ -649,15 +640,10 @@ function RiderRegistrationContent() {
                                           className="w-32 px-4 py-3 rounded-xl border border-purple-200 bg-white outline-none transition-all placeholder:text-purple-400 text-purple-900 font-medium" 
                                         />
                                         <div className="flex-1 p-3 bg-white rounded-lg border border-purple-200">
-                                          <p className="text-xs text-purple-600 mb-1 font-medium">Final Rent After Discount:</p>
-                                          <div className="flex gap-4">
-                                            <span className="text-sm font-semibold text-purple-900">
-                                              Monthly: ₹{Math.round((formData.evMonthlyRent || 6000) * (1 - (formData.leaderDiscount || 0) / 100))}
-                                            </span>
-                                            <span className="text-sm font-semibold text-purple-900">
-                                              Weekly: ₹{Math.round((formData.evWeeklyRent || 1500) * (1 - (formData.leaderDiscount || 0) / 100))}
-                                            </span>
-                                          </div>
+                                          <p className="text-xs text-purple-600 mb-1 font-medium">Final Daily Rent After Discount:</p>
+                                          <span className="text-sm font-semibold text-purple-900">
+                                            ₹{Math.round((parseFloat(formData.evDailyRent) || 215) * (1 - (formData.leaderDiscount || 0) / 100))}/day
+                                          </span>
                                         </div>
                                       </div>
                                     </div>
