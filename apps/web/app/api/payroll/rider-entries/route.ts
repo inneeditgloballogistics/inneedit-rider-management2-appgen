@@ -186,7 +186,10 @@ export async function POST(request: Request) {
         riderJoinDate = new Date(Date.UTC(year, month - 1, day));
       }
       
+      console.log("🔍 Deductions Query Debug - Looking for rider_id:", rider_id, "or cee_id:", cee_id);
+      
       if (start_date && end_date) {
+        console.log("🔍 Date range query: start_date =", start_date, "end_date =", end_date);
         deductions = await sql`
           SELECT 
             d.id,
@@ -210,8 +213,10 @@ export async function POST(request: Request) {
           AND DATE(d.deduction_date) BETWEEN ${start_date} AND ${end_date}
           ORDER BY d.deduction_date DESC
         `;
-        console.log("Deductions with dates found:", deductions.length, deductions);
+        console.log("✅ Deductions with dates found:", deductions.length);
+        console.log("✅ Deduction details:", JSON.stringify(deductions, null, 2));
       } else {
+        console.log("🔍 No date range - fetching all deductions");
         deductions = await sql`
           SELECT 
             d.id,
@@ -234,8 +239,9 @@ export async function POST(request: Request) {
           WHERE (d.rider_id = ${rider_id} OR d.rider_id = ${cee_id})
           ORDER BY d.deduction_date DESC
         `;
+        console.log("✅ All deductions found:", deductions.length);
       }
-      console.log("Deductions found:", deductions.length, deductions);
+      console.log("=== TOTAL DEDUCTIONS FOUND:", deductions.length);
       entries = [...entries, ...deductions];
       
       // Add daily vehicle rent deduction if it's a company vehicle
