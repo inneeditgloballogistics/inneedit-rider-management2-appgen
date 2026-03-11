@@ -155,7 +155,7 @@ export async function POST(request: Request) {
       
       // First get the rider info to find cee_id and vehicle rent
       const riderInfo = await sql`
-        SELECT cee_id, full_name, vehicle_ownership, ev_weekly_rent, created_at FROM riders 
+        SELECT cee_id, full_name, vehicle_ownership, ev_weekly_rent, join_date FROM riders 
         WHERE user_id = ${rider_id} OR cee_id = ${rider_id}
         LIMIT 1
       `;
@@ -164,7 +164,7 @@ export async function POST(request: Request) {
       const full_name = riderInfo?.[0]?.full_name || 'Unknown';
       const vehicleOwnership = riderInfo?.[0]?.vehicle_ownership;
       const evWeeklyRent = riderInfo?.[0]?.ev_weekly_rent || 0;
-      const riderJoinDate = riderInfo?.[0]?.created_at ? new Date(riderInfo[0].created_at) : null;
+      const riderJoinDate = riderInfo?.[0]?.join_date ? new Date(riderInfo[0].join_date) : null;
       
       if (start_date && end_date) {
         deductions = await sql`

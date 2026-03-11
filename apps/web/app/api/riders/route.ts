@@ -58,6 +58,7 @@ export async function POST(request: Request) {
         phone,
         email,
         date_of_birth,
+        join_date,
         address,
         client,
         assigned_hub_id,
@@ -74,7 +75,7 @@ export async function POST(request: Request) {
         status
       ) VALUES (
         ${ceeId}, ${body.fullName || ''}, ${body.mobile || ''}, ${body.email || null}, ${body.dob || null}, 
-        ${body.address || null}, ${body.client || ''}, ${hubId}, ${body.assignedVehicleId || null}, 
+        ${body.joinDate || null}, ${body.address || null}, ${body.client || ''}, ${hubId}, ${body.assignedVehicleId || null}, 
         ${body.bankAccount || null}, ${body.ifscCode || null}, ${body.dlUrl || null}, ${body.aadharUrl || null},
         ${body.vehicleOwnership || 'company_ev'}, ${body.evMonthlyRent || null}, ${body.evWeeklyRent || null},
         ${body.isLeader || false}, ${body.leaderDiscountPercentage || 0}, 'active'

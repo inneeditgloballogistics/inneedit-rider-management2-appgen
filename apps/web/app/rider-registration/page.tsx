@@ -12,6 +12,7 @@ function RiderRegistrationContent() {
   const [formData, setFormData] = useState({
     fullName: '',
     dob: '',
+    joinDate: '',
     mobile: '',
     email: '',
     address: '',
@@ -297,6 +298,16 @@ function RiderRegistrationContent() {
                                   onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
                                   className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50/50 outline-none transition-all text-slate-900 font-medium" 
                                 />
+                            </div>
+                            <div className="input-group">
+                                <label className="block text-xs font-medium text-slate-500 mb-1.5 uppercase tracking-wide">Join Date</label>
+                                <input 
+                                  type="date" 
+                                  value={formData.joinDate}
+                                  onChange={(e) => setFormData({ ...formData, joinDate: e.target.value })}
+                                  className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50/50 outline-none transition-all text-slate-900 font-medium" 
+                                />
+                                <p className="text-[10px] text-slate-400 mt-1">Date rider starts working</p>
                             </div>
                             <div className="input-group">
                                 <label className="block text-xs font-medium text-slate-500 mb-1.5 uppercase tracking-wide">Mobile Number</label>
