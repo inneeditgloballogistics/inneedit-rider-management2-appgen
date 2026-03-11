@@ -12,6 +12,9 @@ export async function POST(request: Request) {
       );
     }
 
+    // Convert date string to proper format for comparison
+    const dateStr = date + '%'; // Add % for LIKE matching to handle timezone
+
     // Fetch entries from all tables for the specified date
     const [referrals, incentives, deductions, advances] = await Promise.all([
       // Fetch referrals
@@ -25,7 +28,7 @@ export async function POST(request: Request) {
           status
         FROM referrals
         WHERE referrer_cee_id = ${rider_id}
-        AND DATE(created_at) = ${date}
+        AND created_at::date = ${date}::date
         ORDER BY created_at DESC
       `,
       // Fetch incentives
@@ -39,7 +42,7 @@ export async function POST(request: Request) {
           'completed' as status
         FROM incentives
         WHERE rider_id = ${rider_id}
-        AND DATE(created_at) = ${date}
+        AND created_at::date = ${date}::date
         ORDER BY created_at DESC
       `,
       // Fetch deductions
@@ -53,7 +56,7 @@ export async function POST(request: Request) {
           'completed' as status
         FROM deductions
         WHERE rider_id = ${rider_id}
-        AND DATE(created_at) = ${date}
+        AND created_at::date = ${date}::date
         ORDER BY created_at DESC
       `,
       // Fetch advances
@@ -67,7 +70,7 @@ export async function POST(request: Request) {
           status
         FROM advances
         WHERE cee_id = ${rider_id}
-        AND DATE(created_at) = ${date}
+        AND created_at::date = ${date}::date
         ORDER BY created_at DESC
       `
     ]);
