@@ -226,6 +226,14 @@ export async function POST(request: Request) {
       
       // Add vehicle rent deduction with prorate logic if it's a company vehicle
       if (vehicleOwnership === 'company_ev' && evWeeklyRent > 0 && start_date && end_date) {
+        console.log('🚗 Vehicle Rent Debug:', {
+          rider_id,
+          vehicleOwnership,
+          evWeeklyRent,
+          riderJoinDate: riderJoinDate?.toISOString(),
+          startDate: start_date,
+          endDate: end_date
+        });
         const startDateObj = new Date(start_date);
         const endDateObj = new Date(end_date);
 
@@ -285,9 +293,14 @@ export async function POST(request: Request) {
           
           // Check if this week overlaps with the provided date range
           if (weekEndUTC >= startDateUTC && weekStartUTC <= endDateUTC) {
-            // Check if rider has joined by the start of this week
+            console.log(`📅 Week ${weekOfMonth} (${weekStartUTC.toISOString().split('T')[0]} to ${weekEndUTC.toISOString().split('T')[0]}):`, {
+              joinDate: riderJoinDate?.toISOString().split('T')[0],
+              joinIsAfterWeekEnd: riderJoinDate ? riderJoinDate > weekEndUTC : 'no join date'
+            });
+            
+            // Skip if rider hasn't joined yet (joined AFTER this week ends)
             if (riderJoinDate && riderJoinDate > weekEndUTC) {
-              // Rider hasn't joined yet by end of this week, skip entirely
+              console.log(`⏭️  Skipping - rider hasn't joined yet`);
               currentDate.setDate(currentDate.getDate() + 7);
               continue;
             }
@@ -301,6 +314,9 @@ export async function POST(request: Request) {
               const daysRemaining = Math.floor((weekEndUTC.getTime() - riderJoinDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
               rentAmount = Math.round((dailyRate * daysRemaining) * 100) / 100;
               description = `Prorated vehicle rent (${daysRemaining} days)`;
+              console.log(`💰 Prorated for Week ${weekOfMonth}: ${daysRemaining} days × ₹${dailyRate.toFixed(2)} = ₹${rentAmount}`);
+            } else {
+              console.log(`💰 Full rent for Week ${weekOfMonth}: ₹${rentAmount}`);
             }
             // else: rider joined before this week, charge full amount
             
