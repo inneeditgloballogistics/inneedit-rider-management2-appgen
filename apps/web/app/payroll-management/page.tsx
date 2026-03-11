@@ -40,11 +40,14 @@ export default function PayrollManagement() {
   const [loading, setLoading] = useState(false);
   const [selectedRider, setSelectedRider] = useState<Rider | null>(null);
   const [showPanel, setShowPanel] = useState(false);
-  const [panelMode, setPanelMode] = useState<'additions' | 'deductions'>('additions');
+  const [panelMode, setPanelMode] = useState<'additions' | 'deductions' | 'history'>('additions');
   const [additionsType, setAdditionsType] = useState<'referral' | 'incentive' | 'others'>('referral');
   const [deductionsType, setDeductionsType] = useState<'advance' | 'security' | 'damage' | 'challan' | 'others'>('advance');
   const [riderEntries, setRiderEntries] = useState<any[]>([]);
   const [loadingEntries, setLoadingEntries] = useState(false);
+  const [historyDate, setHistoryDate] = useState(new Date().toISOString().split('T')[0]);
+  const [historyEntries, setHistoryEntries] = useState<any[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   // Form states for entries
   const [additionsForm, setAdditionsForm] = useState({ amount: '', description: '', notes: '' });
@@ -80,7 +83,7 @@ export default function PayrollManagement() {
     setLoading(false);
   };
 
-  const openPanel = (rider: Rider, mode: 'additions' | 'deductions') => {
+  const openPanel = (rider: Rider, mode: 'additions' | 'deductions' | 'history') => {
     setSelectedRider(rider);
     setPanelMode(mode);
     setShowPanel(true);
@@ -90,6 +93,9 @@ export default function PayrollManagement() {
     // Reset type dropdowns
     setAdditionsType('referral');
     setDeductionsType('advance');
+    // Reset history date to today
+    setHistoryDate(new Date().toISOString().split('T')[0]);
+    setHistoryEntries([]);
   };
 
   const fetchRiderEntries = async (riderId: string) => {
@@ -107,6 +113,23 @@ export default function PayrollManagement() {
       setRiderEntries([]);
     }
     setLoadingEntries(false);
+  };
+
+  const fetchHistoryEntries = async (riderId: string, date: string) => {
+    setLoadingHistory(true);
+    try {
+      const response = await fetch('/api/payroll/entries-by-date', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rider_id: riderId, date: date })
+      });
+      const data = await response.json();
+      setHistoryEntries(data.entries || []);
+    } catch (error) {
+      console.error('Error fetching history entries:', error);
+      setHistoryEntries([]);
+    }
+    setLoadingHistory(false);
   };
 
   const saveEntry = async () => {
@@ -434,17 +457,22 @@ export default function PayrollManagement() {
 
             {/* Tabs */}
             <div className="flex border-b border-slate-200 bg-white overflow-x-auto px-8">
-              {['additions', 'deductions'].map(tab => (
+              {['additions', 'deductions', 'history'].map(tab => (
                 <button
                   key={tab}
-                  onClick={() => setPanelMode(tab as 'additions' | 'deductions')}
+                  onClick={() => {
+                    setPanelMode(tab as 'additions' | 'deductions' | 'history');
+                    if (tab === 'history' && selectedRider) {
+                      fetchHistoryEntries(selectedRider.cee_id, historyDate);
+                    }
+                  }}
                   className={`px-4 py-3 text-sm font-medium transition-all whitespace-nowrap ${
                     panelMode === tab
                       ? 'border-b-2 border-brand-600 text-brand-600'
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                  {tab === 'history' ? 'History' : tab.charAt(0).toUpperCase() + tab.slice(1)}
                 </button>
               ))}
             </div>
@@ -546,6 +574,87 @@ export default function PayrollManagement() {
                   />
                 </div>
               )}
+
+              {panelMode === 'history' && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-900 mb-2">Select Date</label>
+                    <input
+                      type="date"
+                      value={historyDate}
+                      onChange={(e) => {
+                        setHistoryDate(e.target.value);
+                        if (selectedRider) {
+                          fetchHistoryEntries(selectedRider.cee_id, e.target.value);
+                        }
+                      }}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <h3 className="font-semibold text-slate-900">
+                      Entries on {new Date(historyDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    </h3>
+                    
+                    {loadingHistory ? (
+                      <div className="text-center py-8">
+                        <div className="inline-block w-8 h-8 border-4 border-slate-200 border-t-brand-600 rounded-full animate-spin"></div>
+                      </div>
+                    ) : historyEntries.length === 0 ? (
+                      <div className="text-center py-8 text-slate-500">
+                        No entries found for this date
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto border border-slate-200 rounded-lg">
+                        <table className="w-full text-sm">
+                          <thead className="bg-slate-50 border-b border-slate-200">
+                            <tr>
+                              <th className="px-4 py-3 text-left font-semibold text-slate-900">Type</th>
+                              <th className="px-4 py-3 text-left font-semibold text-slate-900">Description</th>
+                              <th className="px-4 py-3 text-right font-semibold text-slate-900">Amount</th>
+                              <th className="px-4 py-3 text-left font-semibold text-slate-900">Status</th>
+                              <th className="px-4 py-3 text-left font-semibold text-slate-900">Time</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {historyEntries.map((entry, index) => (
+                              <tr key={index} className="border-b border-slate-200 hover:bg-slate-50">
+                                <td className="px-4 py-3">
+                                  <span className={`px-2 py-1 rounded text-xs font-medium whitespace-nowrap ${
+                                    entry.type === 'Referral' ? 'bg-blue-100 text-blue-700' :
+                                    entry.type === 'Incentive' ? 'bg-green-100 text-green-700' :
+                                    entry.type === 'Deduction' ? 'bg-orange-100 text-orange-700' :
+                                    'bg-purple-100 text-purple-700'
+                                  }`}>
+                                    {entry.type}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3 text-slate-700 max-w-xs truncate">{entry.description || 'N/A'}</td>
+                                <td className="px-4 py-3 text-right font-medium text-slate-900">
+                                  {entry.amount ? `₹${parseFloat(entry.amount).toFixed(2)}` : '—'}
+                                </td>
+                                <td className="px-4 py-3">
+                                  <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                    entry.status === 'approved' ? 'bg-green-100 text-green-700' :
+                                    entry.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                                    'bg-slate-100 text-slate-700'
+                                  }`}>
+                                    {entry.status || 'completed'}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3 text-slate-600 text-xs">
+                                  {new Date(entry.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Footer */}
@@ -554,15 +663,17 @@ export default function PayrollManagement() {
                 onClick={() => setShowPanel(false)}
                 className="flex-1 px-4 py-2.5 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 font-medium transition-all"
               >
-                Cancel
+                Close
               </button>
-              <button
-                onClick={saveEntry}
-                disabled={savingEntry}
-                className="flex-1 px-4 py-2.5 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium transition-all disabled:opacity-50"
-              >
-                {savingEntry ? 'Saving...' : 'Approve'}
-              </button>
+              {(panelMode === 'additions' || panelMode === 'deductions') && (
+                <button
+                  onClick={saveEntry}
+                  disabled={savingEntry}
+                  className="flex-1 px-4 py-2.5 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium transition-all disabled:opacity-50"
+                >
+                  {savingEntry ? 'Saving...' : 'Approve'}
+                </button>
+              )}
             </div>
           </div>
         </div>
