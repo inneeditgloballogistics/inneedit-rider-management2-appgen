@@ -798,6 +798,10 @@ function AdminDashboardContent() {
                           <p className="text-slate-900 font-medium mt-1 p-2 bg-slate-50 rounded">{viewItem.gender || 'Not set'}</p>
                         </div>
                       </div>
+                      <div>
+                        <strong className="text-slate-900 text-sm">Joining Date</strong>
+                        <p className="text-slate-900 font-medium mt-1 p-2 bg-slate-50 rounded">{viewItem.join_date ? new Date(viewItem.join_date).toLocaleDateString('en-GB') : 'Not set'}</p>
+                      </div>
                     </div>
 
                     <div className="border-t pt-4 mt-4">
@@ -1108,6 +1112,10 @@ function AdminDashboardContent() {
                         <option value="Female">Female</option>
                         <option value="Other">Other</option>
                       </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-900 mb-2">Joining Date</label>
+                      <input type="date" value={editItem.join_date || ''} onChange={(e) => setEditItem({...editItem, join_date: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
                     </div>
 
                     <h4 className="font-semibold text-slate-900 border-b pb-2 text-sm uppercase pt-2">Address Information</h4>
