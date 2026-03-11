@@ -5,6 +5,11 @@ export async function POST(request: Request) {
   try {
     const { rider_id, start_date, end_date } = await request.json();
 
+    console.log("=== RIDER-ENTRIES API ===");
+    console.log("Received rider_id:", rider_id);
+    console.log("Received start_date:", start_date);
+    console.log("Received end_date:", end_date);
+
     if (!rider_id) {
       return NextResponse.json({ entries: [] });
     }
@@ -205,6 +210,7 @@ export async function POST(request: Request) {
           AND DATE(d.deduction_date) BETWEEN ${start_date} AND ${end_date}
           ORDER BY d.deduction_date DESC
         `;
+        console.log("Deductions with dates found:", deductions.length, deductions);
       } else {
         deductions = await sql`
           SELECT 
@@ -229,6 +235,7 @@ export async function POST(request: Request) {
           ORDER BY d.deduction_date DESC
         `;
       }
+      console.log("Deductions found:", deductions.length, deductions);
       entries = [...entries, ...deductions];
       
       // Add daily vehicle rent deduction if it's a company vehicle

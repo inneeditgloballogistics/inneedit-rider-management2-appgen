@@ -12,6 +12,11 @@ export async function POST(request: Request) {
       );
     }
 
+    console.log("=== ENTRIES-BY-DATE API ===");
+    console.log("Received rider_id:", rider_id);
+    console.log("Received date:", date);
+    console.log("Date type:", typeof date);
+
     // Convert date string to proper format for comparison
     const dateStr = date + '%'; // Add % for LIKE matching to handle timezone
 
@@ -74,6 +79,11 @@ export async function POST(request: Request) {
         ORDER BY requested_at DESC
       `
     ]);
+
+    console.log("Referrals count:", referrals.length);
+    console.log("Incentives count:", incentives.length);
+    console.log("Deductions count:", deductions.length);
+    console.log("Advances count:", advances.length);
 
     // Combine and sort all entries by created_at
     const allEntries = [

@@ -100,17 +100,32 @@ export default function PayrollEntries() {
     try {
       const { startDate, endDate } = getWeekDateRange(selectedWeek, selectedMonth, selectedYear);
       
+      const requestPayload = {
+        rider_id: riderId,
+        start_date: startDate.toISOString().split('T')[0],
+        end_date: endDate.toISOString().split('T')[0]
+      };
+
+      console.log("=== FETCHING RIDER DETAILS ===");
+      console.log("Request payload:", requestPayload);
+
       const response = await fetch('/api/payroll/rider-entries', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          rider_id: riderId,
-          start_date: startDate.toISOString().split('T')[0],
-          end_date: endDate.toISOString().split('T')[0]
-        })
+        body: JSON.stringify(requestPayload)
       });
 
       const data = await response.json();
+      console.log("Response status:", response.status);
+      console.log("Response data:", data);
+      console.log("Number of entries returned:", data.entries?.length || 0);
+      
+      if (data.entries) {
+        data.entries.forEach((entry: any) => {
+          console.log(`  Entry: ${entry.entry_type} - ${entry.description} - ₹${entry.amount}`);
+        });
+      }
+
       setRiderDetails(data.entries || []);
     } catch (error) {
       console.error('Error fetching rider details:', error);
