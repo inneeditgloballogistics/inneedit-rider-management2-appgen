@@ -169,9 +169,10 @@ export async function POST(request: Request) {
       let riderJoinDate: Date | null = null;
       if (riderInfo?.[0]?.join_date) {
         const joinDateStr = riderInfo[0].join_date;
-        // Parse as UTC date to avoid timezone issues
-        const parsed = new Date(joinDateStr);
-        riderJoinDate = new Date(Date.UTC(parsed.getUTCFullYear(), parsed.getUTCMonth(), parsed.getUTCDate()));
+        // If it's an ISO string like "2026-03-11T00:00:00.000Z", extract just the date part
+        const datePart = joinDateStr.split('T')[0]; // "2026-03-11"
+        const [year, month, day] = datePart.split('-').map(Number);
+        riderJoinDate = new Date(Date.UTC(year, month - 1, day));
       }
       
       if (start_date && end_date) {
@@ -226,20 +227,36 @@ export async function POST(request: Request) {
       
       // Add vehicle rent deduction with prorate logic if it's a company vehicle
       if (vehicleOwnership === 'company_ev' && evWeeklyRent > 0 && start_date && end_date) {
+        // Parse dates properly - handle both ISO and YYYY-MM-DD formats
+        let startDateObj: Date;
+        let endDateObj: Date;
+        
+        if (typeof start_date === 'string') {
+          const [year, month, day] = start_date.split('-').map(Number);
+          startDateObj = new Date(Date.UTC(year, month - 1, day));
+        } else {
+          startDateObj = start_date instanceof Date ? start_date : new Date(start_date);
+        }
+        
+        if (typeof end_date === 'string') {
+          const [year, month, day] = end_date.split('-').map(Number);
+          endDateObj = new Date(Date.UTC(year, month - 1, day));
+        } else {
+          endDateObj = end_date instanceof Date ? end_date : new Date(end_date);
+        }
+
         console.log('🚗 Vehicle Rent Debug:', {
           rider_id,
           vehicleOwnership,
           evWeeklyRent,
-          riderJoinDate: riderJoinDate?.toISOString(),
-          startDate: start_date,
-          endDate: end_date
+          riderJoinDate: riderJoinDate?.toISOString().split('T')[0],
+          startDate: startDateObj.toISOString().split('T')[0],
+          endDate: endDateObj.toISOString().split('T')[0]
         });
-        const startDateObj = new Date(start_date);
-        const endDateObj = new Date(end_date);
 
         // Helper function to calculate week boundaries for a given date
         const getWeekBoundaries = (date: Date): { week: number; start: Date; end: Date } => {
-          const dayOfMonth = date.getDate();
+          const dayOfMonth = date.getUTCDate();
           let weekNum: number;
           let startDay: number;
           let endDay: number;
@@ -260,7 +277,7 @@ export async function POST(request: Request) {
             weekNum = 4;
             startDay = 22;
             // Get last day of month
-            const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+            const lastDay = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 0)).getUTCDate();
             endDay = lastDay;
           }
           
@@ -283,16 +300,13 @@ export async function POST(request: Request) {
           
           // Skip if we've already processed this week
           if (processedWeeks.has(weekKey)) {
-            currentDate.setDate(currentDate.getDate() + 1);
+            currentDate.setUTCDate(currentDate.getUTCDate() + 1);
             continue;
           }
           processedWeeks.add(weekKey);
           
-          const startDateUTC = new Date(Date.UTC(startDateObj.getUTCFullYear(), startDateObj.getUTCMonth(), startDateObj.getUTCDate()));
-          const endDateUTC = new Date(Date.UTC(endDateObj.getUTCFullYear(), endDateObj.getUTCMonth(), endDateObj.getUTCDate()));
-          
           // Check if this week overlaps with the provided date range
-          if (weekEnd >= startDateUTC && weekStart <= endDateUTC) {
+          if (weekEnd >= startDateObj && weekStart <= endDateObj) {
             console.log(`📅 Week ${weekOfMonth}:`, {
               weekStart: weekStart.toISOString().split('T')[0],
               weekEnd: weekEnd.toISOString().split('T')[0],
@@ -302,7 +316,7 @@ export async function POST(request: Request) {
             // Skip if rider hasn't joined yet (joined AFTER this week ends)
             if (riderJoinDate && riderJoinDate > weekEnd) {
               console.log(`⏭️  Rider hasn't joined yet`);
-              currentDate.setDate(currentDate.getDate() + 7);
+              currentDate.setUTCDate(currentDate.getUTCDate() + 7);
               continue;
             }
             
@@ -342,7 +356,7 @@ export async function POST(request: Request) {
           }
           
           // Move to next day to check next week
-          currentDate.setDate(currentDate.getDate() + 1);
+          currentDate.setUTCDate(currentDate.getUTCDate() + 1);
         }
       }
     } catch (e) {
