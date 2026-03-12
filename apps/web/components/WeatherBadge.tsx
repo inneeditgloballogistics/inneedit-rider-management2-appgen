@@ -81,8 +81,7 @@ export default function WeatherBadge({ latitude: propLat, longitude: propLng, lo
     // Update time every second (IST)
     const updateTime = () => {
       const now = new Date();
-      const istTime = new Date(now.getTime() + 5.5 * 60 * 60 * 1000);
-      setTime(istTime.toLocaleTimeString('en-IN', { 
+      setTime(now.toLocaleTimeString('en-IN', { 
         hour: '2-digit', 
         minute: '2-digit',
         hour12: true,
@@ -145,8 +144,9 @@ export default function WeatherBadge({ latitude: propLat, longitude: propLng, lo
       
       // Determine if it's day or night based on IST time (6 AM - 6 PM)
       const now = new Date();
-      const istTime = new Date(now.getTime() + 5.5 * 60 * 60 * 1000);
-      const currentHour = istTime.getUTCHours();
+      const istTimeString = now.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+      const istDate = new Date(istTimeString);
+      const currentHour = istDate.getHours();
       const isDay = currentHour >= 6 && currentHour < 18;
 
     // Rainy conditions
@@ -222,9 +222,8 @@ export default function WeatherBadge({ latitude: propLat, longitude: propLng, lo
 
   const finalDisplayName = displayName || (weather ? weather.location.name : 'Current Location');
   const now = new Date();
-  const today = new Date(now.getTime() + 5.5 * 60 * 60 * 1000);
-  const dayName = today.toLocaleString('en-IN', { weekday: 'short', timeZone: 'Asia/Kolkata' });
-  const monthDay = today.toLocaleString('en-IN', { month: 'short', day: 'numeric', timeZone: 'Asia/Kolkata' });
+  const dayName = now.toLocaleString('en-IN', { weekday: 'short', timeZone: 'Asia/Kolkata' });
+  const monthDay = now.toLocaleString('en-IN', { month: 'short', day: 'numeric', timeZone: 'Asia/Kolkata' });
 
   const handleLocationSelect = (lat: number, lng: number, name: string) => {
     console.log('Location selected:', { lat, lng, name });
