@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import WeatherSettingsModal from './WeatherSettingsModal';
+import WeatherModal from './WeatherModal';
 import './WeatherBadge.css';
 
 interface WeatherData {
@@ -28,10 +28,10 @@ interface WeatherBadgeProps {
 }
 
 export default function WeatherBadge({ latitude: propLat, longitude: propLng, locationName = 'Current Location' }: WeatherBadgeProps) {
-  const router = useRouter();
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(true);
   const [time, setTime] = useState<string>('');
+  const [isWeatherModalOpen, setIsWeatherModalOpen] = useState(false);
   const [latitude, setLatitude] = useState<number | null>(propLat || null);
   const [longitude, setLongitude] = useState<number | null>(propLng || null);
   const [displayName, setDisplayName] = useState<string>(locationName);
@@ -248,17 +248,25 @@ export default function WeatherBadge({ latitude: propLat, longitude: propLng, lo
 
   const handleBadgeClick = (e: React.MouseEvent) => {
     // If clicking the settings icon area on the right, open settings
-    // Otherwise, navigate to weather details page
+    // Otherwise, open weather modal
     const target = e.target as HTMLElement;
     if (target.closest('button')) {
       setIsSettingsOpen(true);
       return;
     }
-    router.push('/weather-details');
+    setIsWeatherModalOpen(true);
   };
 
   return (
     <>
+      <WeatherModal
+        isOpen={isWeatherModalOpen}
+        onClose={() => setIsWeatherModalOpen(false)}
+        latitude={latitude || undefined}
+        longitude={longitude || undefined}
+        locationName={displayName}
+      />
+
       <div
         onClick={handleBadgeClick}
         className={`bg-gradient-to-r ${gradientClass} rounded-full px-4 py-2 text-white shadow-lg hover:shadow-xl hover:cursor-pointer transition-all flex items-center gap-2 whitespace-nowrap relative overflow-hidden`}
