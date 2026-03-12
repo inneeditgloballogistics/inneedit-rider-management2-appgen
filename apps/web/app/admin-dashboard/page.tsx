@@ -547,7 +547,7 @@ function AdminDashboardContent() {
                               </span>
                             </td>
                             <td className="px-6 py-4 text-sm text-slate-600">
-                              {advance.requested_at ? new Date(advance.requested_at).toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: '2-digit' }) : 'N/A'}
+                              {advance.requested_at ? new Date(advance.requested_at).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: '2-digit', timeZone: 'Asia/Kolkata' }) : 'N/A'}
                             </td>
                             <td className="px-6 py-4 text-right">
                               <div className="flex gap-2 justify-end flex-wrap">
@@ -557,7 +557,7 @@ function AdminDashboardContent() {
                                 >
                                   View
                                 </button>
-                                {advance.status === 'pending' && (
+                                {advance.status !== 'approved' && advance.status !== 'rejected' && (
                                   <>
                                     <button 
                                       onClick={() => handleAdvanceAction(advance.id, 'approved')} 
@@ -744,14 +744,14 @@ function AdminDashboardContent() {
                       <div>
                         <strong className="text-slate-500 text-sm">Date Requested:</strong>
                         <p className="text-slate-900 font-medium mt-1">
-                          {viewItem.requested_at ? new Date(viewItem.requested_at).toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+                          {viewItem.requested_at ? new Date(viewItem.requested_at).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' }) : 'N/A'}
                         </p>
                       </div>
                       {viewItem.processed_at && (
                         <div>
                           <strong className="text-slate-500 text-sm">Date Processed:</strong>
                           <p className="text-slate-900 font-medium mt-1">
-                            {new Date(viewItem.processed_at).toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                            {new Date(viewItem.processed_at).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' })}
                           </p>
                         </div>
                       )}
@@ -791,7 +791,7 @@ function AdminDashboardContent() {
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <strong className="text-slate-900 text-sm">Date of Birth</strong>
-                          <p className="text-slate-900 font-medium mt-1 p-2 bg-slate-50 rounded">{viewItem.date_of_birth ? new Date(viewItem.date_of_birth).toLocaleDateString('en-GB') : 'Not set'}</p>
+                          <p className="text-slate-900 font-medium mt-1 p-2 bg-slate-50 rounded">{viewItem.date_of_birth ? new Date(viewItem.date_of_birth).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' }) : 'Not set'}</p>
                         </div>
                         <div>
                           <strong className="text-slate-900 text-sm">Gender</strong>
@@ -800,7 +800,7 @@ function AdminDashboardContent() {
                       </div>
                       <div>
                         <strong className="text-slate-900 text-sm">Joining Date</strong>
-                        <p className="text-slate-900 font-medium mt-1 p-2 bg-slate-50 rounded">{viewItem.join_date ? new Date(viewItem.join_date).toLocaleDateString('en-GB') : 'Not set'}</p>
+                        <p className="text-slate-900 font-medium mt-1 p-2 bg-slate-50 rounded">{viewItem.join_date ? new Date(viewItem.join_date).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' }) : 'Not set'}</p>
                       </div>
                     </div>
 
@@ -851,7 +851,7 @@ function AdminDashboardContent() {
                         </div>
                         <div>
                           <strong className="text-slate-900 text-sm">DL Expiry <span className="text-red-600">*</span></strong>
-                          <p className="text-slate-900 font-medium mt-1 p-2 bg-slate-50 rounded">{viewItem.driving_license_expiry ? new Date(viewItem.driving_license_expiry).toLocaleDateString('en-GB') : 'Not set'}</p>
+                          <p className="text-slate-900 font-medium mt-1 p-2 bg-slate-50 rounded">{viewItem.driving_license_expiry ? new Date(viewItem.driving_license_expiry).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' }) : 'Not set'}</p>
                         </div>
                         <div>
                           <strong className="text-slate-900 text-sm">Aadhar <span className="text-red-600">*</span></strong>
