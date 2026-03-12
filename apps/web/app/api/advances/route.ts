@@ -51,8 +51,8 @@ export async function POST(request: NextRequest) {
     const { riderId, ceeId, riderName, storeLocation, amount, reason } = body;
 
     const result = await sql`
-      INSERT INTO advances (rider_id, cee_id, rider_name, store_location, amount, reason)
-      VALUES (${riderId}, ${ceeId}, ${riderName}, ${storeLocation}, ${amount}, ${reason})
+      INSERT INTO advances (rider_id, cee_id, rider_name, store_location, amount, reason, requested_at)
+      VALUES (${riderId}, ${ceeId}, ${riderName}, ${storeLocation}, ${amount}, ${reason}, CURRENT_TIMESTAMP)
       RETURNING *
     `;
 
