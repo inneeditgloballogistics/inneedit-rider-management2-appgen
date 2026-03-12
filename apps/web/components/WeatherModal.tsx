@@ -208,7 +208,7 @@ export default function WeatherModal({
         }}
       >
         <div
-          className={`pointer-events-auto relative w-full md:w-full md:max-w-md md:rounded-3xl rounded-t-3xl overflow-hidden shadow-2xl bg-gradient-to-b ${getWeatherGradient()} text-white max-h-[90vh] md:max-h-none overflow-y-auto`}
+          className={`pointer-events-auto relative w-full md:w-full md:max-w-md md:rounded-3xl rounded-t-3xl overflow-hidden shadow-2xl bg-gradient-to-b ${getWeatherGradient()} text-white max-h-[50vh] md:max-h-[60vh] overflow-y-auto`}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
