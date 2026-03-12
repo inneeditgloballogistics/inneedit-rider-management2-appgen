@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import WeatherSettingsModal from './WeatherSettingsModal';
 import './WeatherBadge.css';
 
@@ -27,6 +28,7 @@ interface WeatherBadgeProps {
 }
 
 export default function WeatherBadge({ latitude: propLat, longitude: propLng, locationName = 'Current Location' }: WeatherBadgeProps) {
+  const router = useRouter();
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(true);
   const [time, setTime] = useState<string>('');
@@ -244,10 +246,21 @@ export default function WeatherBadge({ latitude: propLat, longitude: propLng, lo
   const gradientClass = getWeatherGradient();
   const animationClass = getWeatherAnimation();
 
+  const handleBadgeClick = (e: React.MouseEvent) => {
+    // If clicking the settings icon area on the right, open settings
+    // Otherwise, navigate to weather details page
+    const target = e.target as HTMLElement;
+    if (target.closest('button')) {
+      setIsSettingsOpen(true);
+      return;
+    }
+    router.push('/weather-details');
+  };
+
   return (
     <>
       <div
-        onClick={() => setIsSettingsOpen(true)}
+        onClick={handleBadgeClick}
         className={`bg-gradient-to-r ${gradientClass} rounded-full px-4 py-2 text-white shadow-lg hover:shadow-xl hover:cursor-pointer transition-all flex items-center gap-2 whitespace-nowrap relative overflow-hidden`}
         style={{ animation: animationClass ? `var(--weather-animation)` : 'none' }}>
       
