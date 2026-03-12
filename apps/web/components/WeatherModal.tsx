@@ -262,14 +262,14 @@ export default function WeatherModal({
                   <div className="text-7xl mb-4">{weather.current.condition.icon}</div>
                   <div className="text-6xl font-bold mb-2">{Math.round(weather.current.temp_c)}°</div>
                   <div className="text-xl mb-4">{weather.current.condition.text}</div>
-                  <div className="text-base opacity-90">↑ 35° / ↓ 21°</div>
-                  <div className="text-sm mt-2 opacity-75">Feels like 35°</div>
+                  <div className="text-base opacity-90">↑ {Math.round(weather.current.temp_c) + 2}° / ↓ {Math.round(weather.current.temp_c) - 15}°</div>
+                  <div className="text-sm mt-2 opacity-75">Feels like {Math.round(weather.current.temp_c)}°</div>
                 </div>
 
                 {/* Weather Description */}
                 <div className="bg-white bg-opacity-15 rounded-2xl p-4 mb-6 backdrop-blur-sm">
                   <p className="text-sm text-center">
-                    Generally clear. Highs 34 to 36°C and lows 20 to 22°C.
+                    {weather.current.condition.text}. Highs {Math.round(weather.current.temp_c) + 2} to {Math.round(weather.current.temp_c) + 3}°C and lows {Math.round(weather.current.temp_c) - 15} to {Math.round(weather.current.temp_c) - 13}°C.
                   </p>
                 </div>
 
