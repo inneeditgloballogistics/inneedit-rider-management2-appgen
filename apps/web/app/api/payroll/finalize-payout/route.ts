@@ -61,13 +61,23 @@ export async function POST(request: Request) {
         const cee_id = entry.cee_id;
         const basePayout = parseFloat(entry.base_payout) || 0;
 
-        // Get rider info
-        const riderInfo = await sql`
+        // Get rider info - try matching by cee_id first, then by rider_name if needed
+        let riderInfo = await sql`
           SELECT user_id, vehicle_ownership, ev_daily_rent, ev_type, join_date 
           FROM riders
           WHERE cee_id = ${cee_id}
           LIMIT 1
         `;
+
+        // If no match by cee_id, try matching by name from payout_entries
+        if (riderInfo.length === 0 && entry.rider_name) {
+          riderInfo = await sql`
+            SELECT user_id, vehicle_ownership, ev_daily_rent, ev_type, join_date 
+            FROM riders
+            WHERE full_name = ${entry.rider_name}
+            LIMIT 1
+          `;
+        }
 
         if (riderInfo.length === 0) {
           errors.push(`Rider not found for CEE ID: ${cee_id}`);
