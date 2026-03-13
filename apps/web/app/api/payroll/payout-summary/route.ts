@@ -8,13 +8,15 @@ export async function POST(request: Request) {
     // Fetch payout entries for the given period
     const payoutEntries = await sql`
       SELECT 
-        cee_id,
-        rider_name,
-        week,
-        base_payout
-      FROM payout_entries
-      WHERE year = ${year} AND month = ${month} AND week = ${week}
-      ORDER BY cee_id ASC
+        pe.cee_id,
+        pe.rider_name,
+        pe.week,
+        pe.base_payout,
+        r.user_id as rider_id
+      FROM payout_entries pe
+      LEFT JOIN riders r ON r.cee_id = pe.cee_id
+      WHERE pe.year = ${year} AND pe.month = ${month} AND pe.week = ${week}
+      ORDER BY pe.cee_id ASC
     `;
 
     // For each rider, calculate final amount from payroll entries
@@ -69,53 +71,14 @@ export async function POST(request: Request) {
           AND deduction_date <= ${endDateStr}
         `;
 
-        // Get rider info for vehicle rent calculation
-        const riderInfo = await sql`
-          SELECT vehicle_ownership, ev_daily_rent, ev_type, join_date FROM riders
-          WHERE cee_id = ${entry.cee_id}
-          LIMIT 1
-        `;
-        
         const totalReferrals = parseFloat(referralData[0]?.total || 0);
         const totalIncentives = parseFloat(incentiveData[0]?.total || 0);
         const totalAdvances = parseFloat(advanceData[0]?.total || 0);
         const totalDeductions = parseFloat(deductionData[0]?.total || 0);
 
-        // Calculate vehicle rent
-        let totalVehicleRent = 0;
-        if (riderInfo && riderInfo[0]?.vehicle_ownership === 'company_ev') {
-          const dailyRent = riderInfo[0]?.ev_daily_rent || 
-                           (riderInfo[0]?.ev_type === 'sunmobility_swap' ? 243 : 215);
-          
-          // Parse join_date
-          let riderJoinDate: Date | null = null;
-          if (riderInfo[0]?.join_date) {
-            const joinDateStr = riderInfo[0].join_date;
-            const dateObj = new Date(joinDateStr);
-            if (!isNaN(dateObj.getTime())) {
-              const year = dateObj.getUTCFullYear();
-              const month = dateObj.getUTCMonth() + 1;
-              const day = dateObj.getUTCDate();
-              riderJoinDate = new Date(Date.UTC(year, month - 1, day));
-            }
-          }
-          
-          // Count days in week, considering join_date
-          let currentDate = new Date(startDate);
-          let daysCount = 0;
-          while (currentDate <= endDate) {
-            // Only count if rider has joined
-            if (!riderJoinDate || currentDate >= riderJoinDate) {
-              daysCount++;
-            }
-            currentDate.setUTCDate(currentDate.getUTCDate() + 1);
-          }
-          
-          totalVehicleRent = dailyRent * daysCount;
-        }
-
-        // Final Amount = Referrals + Incentives - Advances - Deductions - Vehicle Rent
-        const finalAmount = totalReferrals + totalIncentives - totalAdvances - totalDeductions - totalVehicleRent;
+        // Final Amount = Referrals + Incentives - Advances - Deductions
+        // Note: Do NOT include vehicle rent here as it may already be in the deductions table
+        const finalAmount = totalReferrals + totalIncentives - totalAdvances - totalDeductions;
         
         // Convert base_payout to number
         const basePayout = parseFloat(entry.base_payout) || 0;
@@ -126,6 +89,7 @@ export async function POST(request: Request) {
         return {
           cee_id: entry.cee_id,
           rider_name: entry.rider_name,
+          rider_id: entry.rider_id,
           week: entry.week,
           base_payout: basePayout,
           final_amount: finalAmount,

@@ -116,32 +116,11 @@ export async function POST(request: Request) {
         const totalAdvances = parseFloat(advanceData[0]?.total || 0);
         const totalDeductions = parseFloat(deductionData[0]?.total || 0);
 
-        // Calculate vehicle rent
-        let totalVehicleRent = 0;
-        if (vehicleOwnership === "company_ev") {
-          const dailyRent = riderInfo[0]?.ev_daily_rent || 
-                           (riderInfo[0]?.ev_type === "sunmobility_swap" ? 243 : 215);
-          
-          let riderJoinDate: Date | null = null;
-          if (riderInfo[0]?.join_date) {
-            riderJoinDate = new Date(riderInfo[0].join_date);
-          }
-
-          let currentDate = new Date(startDate);
-          let daysCount = 0;
-          while (currentDate <= endDate) {
-            if (!riderJoinDate || currentDate >= riderJoinDate) {
-              daysCount++;
-            }
-            currentDate.setDate(currentDate.getDate() + 1);
-          }
-
-          totalVehicleRent = dailyRent * daysCount;
-        }
-
         // Calculate final amounts
+        // Note: Do NOT include vehicle rent here as it may already be in the deductions table
         const totalAdditions = totalReferrals + totalIncentives;
-        const finalAmount = totalAdditions - totalAdvances - totalDeductions - totalVehicleRent;
+        const totalDeductionsAndAdvances = totalAdvances + totalDeductions;
+        const finalAmount = totalAdditions - totalDeductionsAndAdvances;
         const finalPayout = basePayout + finalAmount;
 
         // Check if payout exists
@@ -161,7 +140,7 @@ export async function POST(request: Request) {
             SET 
               base_payout = ${basePayout},
               total_incentives = ${totalAdditions},
-              total_deductions = ${totalAdvances + totalDeductions + totalVehicleRent},
+              total_deductions = ${totalDeductionsAndAdvances},
               net_payout = ${finalPayout},
               status = 'finalized'
             WHERE id = ${existingPayout[0].id}
@@ -190,7 +169,7 @@ export async function POST(request: Request) {
               ${year},
               ${basePayout},
               ${totalAdditions},
-              ${totalAdvances + totalDeductions + totalVehicleRent},
+              ${totalDeductionsAndAdvances},
               ${finalPayout},
               'finalized',
               NOW()
