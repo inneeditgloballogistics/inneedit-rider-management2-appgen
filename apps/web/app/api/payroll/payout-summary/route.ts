@@ -5,120 +5,79 @@ export async function POST(request: Request) {
   try {
     const { year, month, week } = await request.json();
 
-    // Fetch payout entries for the given period
-    const payoutEntries = await sql`
+    // Calculate week start and end dates using PostgreSQL syntax
+    const weekDates = {
+      1: { start: `${year}-${String(month).padStart(2, '0')}-01`, end: `${year}-${String(month).padStart(2, '0')}-07` },
+      2: { start: `${year}-${String(month).padStart(2, '0')}-08`, end: `${year}-${String(month).padStart(2, '0')}-14` },
+      3: { start: `${year}-${String(month).padStart(2, '0')}-15`, end: `${year}-${String(month).padStart(2, '0')}-21` },
+      4: { start: `${year}-${String(month).padStart(2, '0')}-22`, end: `${year}-${String(month).padStart(2, '0')}-31` }
+    };
+
+    const weekStart = weekDates[week as keyof typeof weekDates].start;
+    const weekEnd = weekDates[week as keyof typeof weekDates].end;
+
+    // Fetch payout entries with final_amount already calculated (from payroll management)
+    const payouts = await sql`
       SELECT 
         pe.cee_id,
         pe.rider_name,
         pe.week,
         pe.base_payout,
-        r.user_id as rider_id
+        r.user_id as rider_id,
+        COALESCE(
+          (
+            SELECT SUM(COALESCE(amount, 0)) FROM incentives 
+            WHERE rider_id = pe.cee_id 
+            AND incentive_date >= ${weekStart}::date
+            AND incentive_date <= ${weekEnd}::date
+          ),
+          0
+        ) +
+        COALESCE(
+          (
+            SELECT SUM(COALESCE(amount, 0)) FROM referrals 
+            WHERE referrer_cee_id = pe.cee_id 
+            AND DATE(created_at) >= ${weekStart}::date
+            AND DATE(created_at) <= ${weekEnd}::date
+          ),
+          0
+        ) -
+        COALESCE(
+          (
+            SELECT SUM(COALESCE(amount, 0)) FROM advances 
+            WHERE (rider_id = pe.cee_id OR cee_id = pe.cee_id)
+            AND DATE(requested_at) >= ${weekStart}::date
+            AND DATE(requested_at) <= ${weekEnd}::date
+          ),
+          0
+        ) -
+        COALESCE(
+          (
+            SELECT SUM(COALESCE(amount, 0)) FROM deductions 
+            WHERE rider_id = pe.cee_id 
+            AND deduction_date >= ${weekStart}::date
+            AND deduction_date <= ${weekEnd}::date
+          ),
+          0
+        ) as final_amount
       FROM payout_entries pe
       LEFT JOIN riders r ON r.cee_id = pe.cee_id
       WHERE pe.year = ${year} AND pe.month = ${month} AND pe.week = ${week}
       ORDER BY pe.cee_id ASC
     `;
 
-    // For each rider, calculate final amount from payroll entries
-    const payouts = await Promise.all(
-      payoutEntries.map(async (entry: any) => {
-        // Get week date range
-        let startDate, endDate;
-        let daysInWeek = 7;
-        
-        if (week === 1) {
-          startDate = new Date(year, month - 1, 1);
-          endDate = new Date(year, month - 1, 7);
-        } else if (week === 2) {
-          startDate = new Date(year, month - 1, 8);
-          endDate = new Date(year, month - 1, 14);
-        } else if (week === 3) {
-          startDate = new Date(year, month - 1, 15);
-          endDate = new Date(year, month - 1, 21);
-        } else if (week === 4) {
-          startDate = new Date(year, month - 1, 22);
-          endDate = new Date(year, month + 1, 0); // Last day of month
-          // Calculate days in week 4
-          daysInWeek = endDate.getDate() - startDate.getDate() + 1;
-        }
+    // Convert to required format
+    const result = payouts.map((entry: any) => ({
+      cee_id: entry.cee_id,
+      rider_name: entry.rider_name,
+      rider_id: entry.rider_id,
+      week: entry.week,
+      base_payout: parseFloat(entry.base_payout) || 0,
+      final_amount: parseFloat(entry.final_amount) || 0,
+      final_payout: parseFloat(entry.base_payout) + parseFloat(entry.final_amount) || 0
+    }));
 
-        const startDateStr = startDate?.toISOString().split('T')[0];
-        const endDateStr = endDate?.toISOString().split('T')[0];
-
-        // Fetch all payroll entries (referrals, incentives, advances, deductions)
-        const referralData = await sql`
-          SELECT COALESCE(SUM(amount), 0) as total FROM referrals 
-          WHERE referrer_id = ${entry.cee_id} 
-          AND DATE(created_at) >= ${startDateStr}
-          AND DATE(created_at) <= ${endDateStr}
-        `;
-
-        const incentiveData = await sql`
-          SELECT COALESCE(SUM(amount), 0) as total FROM incentives 
-          WHERE rider_id = ${entry.cee_id} 
-          AND incentive_date >= ${startDateStr}
-          AND incentive_date <= ${endDateStr}
-        `;
-
-        const advanceData = await sql`
-          SELECT COALESCE(SUM(amount), 0) as total FROM advances 
-          WHERE (rider_id = ${entry.cee_id} OR cee_id = ${entry.cee_id})
-          AND DATE(requested_at) >= ${startDateStr}
-          AND DATE(requested_at) <= ${endDateStr}
-        `;
-
-        const deductionData = await sql`
-          SELECT COALESCE(SUM(amount), 0) as total FROM deductions 
-          WHERE rider_id = ${entry.cee_id} 
-          AND deduction_date >= ${startDateStr}
-          AND deduction_date <= ${endDateStr}
-        `;
-
-        // Fetch vehicle rent for this rider
-        const riderData = await sql`
-          SELECT ev_daily_rent, ev_weekly_rent, ev_monthly_rent FROM riders
-          WHERE cee_id = ${entry.cee_id}
-        `;
-
-        let vehicleRent = 0;
-        if (riderData && riderData.length > 0) {
-          const rider = riderData[0];
-          // Check for weekly rent first, then daily rent * days in week
-          if (rider.ev_weekly_rent) {
-            vehicleRent = parseFloat(rider.ev_weekly_rent);
-          } else if (rider.ev_daily_rent) {
-            vehicleRent = parseFloat(rider.ev_daily_rent) * daysInWeek;
-          }
-        }
-
-        const totalReferrals = parseFloat(referralData[0]?.total || 0);
-        const totalIncentives = parseFloat(incentiveData[0]?.total || 0);
-        const totalAdvances = parseFloat(advanceData[0]?.total || 0);
-        const totalDeductions = parseFloat(deductionData[0]?.total || 0);
-
-        // Final Amount = Referrals + Incentives - Advances - Deductions - Vehicle Rent
-        const finalAmount = totalReferrals + totalIncentives - totalAdvances - totalDeductions - vehicleRent;
-        
-        // Convert base_payout to number
-        const basePayout = parseFloat(entry.base_payout) || 0;
-        
-        // Final Payout = Base Payout + Final Amount (Final Amount is already signed)
-        const finalPayout = basePayout + finalAmount;
-
-        return {
-          cee_id: entry.cee_id,
-          rider_name: entry.rider_name,
-          rider_id: entry.rider_id,
-          week: entry.week,
-          base_payout: basePayout,
-          final_amount: finalAmount,
-          final_payout: Number(finalPayout.toFixed(2)),
-          vehicle_rent: Number(vehicleRent.toFixed(2))
-        };
-      })
-    );
-
-    return NextResponse.json({ payouts }, { status: 200 });
+    return NextResponse.json({ payouts: result }, { status: 200 });
   } catch (error) {
     console.error("Error fetching payout summary:", error);
     return NextResponse.json({ message: "Error fetching payout summary", payouts: [] }, { status: 500 });
