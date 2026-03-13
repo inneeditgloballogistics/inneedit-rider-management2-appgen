@@ -217,9 +217,11 @@ export async function POST(request: Request) {
       errors: errors.length > 0 ? errors : undefined
     });
   } catch (error) {
-    console.error("Error finalizing payouts:", error);
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    console.error("Error finalizing payouts:", errorMsg);
+    console.error("Full error:", error);
     return NextResponse.json(
-      { message: "Error finalizing payouts", error: String(error) },
+      { message: "Error finalizing payouts", error: errorMsg },
       { status: 500 }
     );
   }
