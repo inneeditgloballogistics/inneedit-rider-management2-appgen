@@ -38,7 +38,7 @@ export default function PayrollPayout() {
   const [payoutLoading, setPayoutLoading] = useState(false);
   const [uploadMessage, setUploadMessage] = useState('');
   const [uploadError, setUploadError] = useState('');
-  const [finalizingId, setFinalizingId] = useState<string | null>(null);
+  const [finalizing, setFinalizing] = useState(false);
 
   const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
   const months = Array.from({ length: 12 }, (_, i) => ({ 
@@ -206,21 +206,24 @@ export default function PayrollPayout() {
     setLoading(false);
   };
 
-  // Finalize payout for a specific rider
-  const finalizePayout = async (ceeId: string, riderId: string | undefined) => {
-    if (!riderId) {
-      alert('Rider ID not found');
+  // Finalize payout for ALL riders
+  const finalizeAllPayouts = async () => {
+    if (payoutData.length === 0) {
+      alert('No riders to finalize');
       return;
     }
 
-    setFinalizingId(ceeId);
+    const confirmMessage = `Finalize payout for ${payoutData.length} riders for Week ${selectedWeek}, ${months.find(m => m.num === selectedMonth)?.name} ${selectedYear}? This action cannot be undone.`;
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+
+    setFinalizing(true);
     try {
       const response = await fetch('/api/payroll/finalize-payout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          rider_id: riderId,
-          cee_id: ceeId,
           year: selectedYear,
           month: selectedMonth,
           week: selectedWeek
@@ -230,17 +233,17 @@ export default function PayrollPayout() {
       const result = await response.json();
 
       if (!response.ok) {
-        alert(`Error: ${result.message || 'Failed to finalize payout'}`);
+        alert(`Error: ${result.message || 'Failed to finalize payouts'}`);
       } else {
-        alert(`Payout finalized successfully for ${result.rider_name}`);
+        alert(`Payouts finalized successfully for ${result.count || payoutData.length} riders!`);
         // Refresh the payout summary
         fetchPayoutSummary();
       }
     } catch (error) {
-      console.error('Error finalizing payout:', error);
-      alert('Error finalizing payout');
+      console.error('Error finalizing payouts:', error);
+      alert('Error finalizing payouts');
     }
-    setFinalizingId(null);
+    setFinalizing(false);
   };
 
   // Calculate totals
@@ -507,7 +510,6 @@ export default function PayrollPayout() {
                           <th className="px-6 py-4 text-right text-sm font-semibold text-slate-900">Base Payout (₹)</th>
                           <th className="px-6 py-4 text-right text-sm font-semibold text-slate-900">Final Amount (₹)</th>
                           <th className="px-6 py-4 text-right text-sm font-semibold text-slate-900">Final Payout (₹)</th>
-                          <th className="px-6 py-4 text-center text-sm font-semibold text-slate-900">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -523,25 +525,6 @@ export default function PayrollPayout() {
                             }`}>
                               ₹{payout.final_payout.toFixed(2)}
                             </td>
-                            <td className="px-6 py-4 text-center">
-                              <button
-                                onClick={() => finalizePayout(payout.cee_id, payout.rider_id)}
-                                disabled={finalizingId === payout.cee_id}
-                                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 justify-center"
-                              >
-                                {finalizingId === payout.cee_id ? (
-                                  <>
-                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                    Finalizing...
-                                  </>
-                                ) : (
-                                  <>
-                                    <i className="ph-bold ph-check-circle"></i>
-                                    Finalize Payout
-                                  </>
-                                )}
-                              </button>
-                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -552,7 +535,7 @@ export default function PayrollPayout() {
                 {/* Total Summary Footer */}
                 {payoutData.length > 0 && (
                   <div className="bg-brand-50 border-t border-slate-200 px-6 py-6">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between mb-6">
                       <div>
                         <p className="text-sm text-slate-600 font-medium mb-1">Total Riders: {payoutData.length}</p>
                         <p className="text-xl font-bold text-slate-900">Total Final Payout</p>
@@ -565,6 +548,25 @@ export default function PayrollPayout() {
                         </p>
                         <p className="text-xs text-slate-600 mt-1">Amount to be transferred to riders</p>
                       </div>
+                    </div>
+                    <div className="flex justify-end">
+                      <button
+                        onClick={finalizeAllPayouts}
+                        disabled={finalizing}
+                        className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                      >
+                        {finalizing ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            Finalizing Payouts...
+                          </>
+                        ) : (
+                          <>
+                            <i className="ph-bold ph-check-circle"></i>
+                            Finalize Payout
+                          </>
+                        )}
+                      </button>
                     </div>
                   </div>
                 )}
