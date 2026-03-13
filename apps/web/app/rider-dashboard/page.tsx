@@ -34,6 +34,7 @@ interface OrderStats {
 interface Payout {
   id: number;
   week_period: string;
+  week_number: number;
   month: number;
   year: number;
   orders_count: number;
@@ -140,7 +141,21 @@ export default function RiderDashboard() {
       
       // Set current month's payout (most recent)
       if (payoutsData.length > 0) {
-        setCurrentPayrollWeek(payoutsData[0]);
+        const currentPayout = payoutsData[0];
+        setCurrentPayrollWeek(currentPayout);
+        
+        // If payout is finalized, set payoutDetails with correct calculation
+        if (currentPayout.status === 'finalized') {
+          const basePayout = parseFloat(currentPayout.base_payout);
+          const netPayout = parseFloat(currentPayout.net_payout);
+          const finalAmount = netPayout - basePayout;
+          
+          setPayoutDetails({
+            basePayout: basePayout,
+            finalAmount: finalAmount,
+            finalPayout: netPayout,
+          });
+        }
       }
 
       // Fetch referrals
@@ -227,46 +242,18 @@ export default function RiderDashboard() {
     ) || currentPayrollWeek;
     if (weekPayout) {
       setCurrentPayrollWeek(weekPayout);
-      // Try to fetch finalized payout details if they exist
-      try {
-        const response = await fetch('/api/payroll/rider-payout', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            rider_id: rider?.user_id,
-            week,
-            month: weekPayout.month,
-            year: weekPayout.year,
-          }),
+      // If payout is finalized, use the net_payout directly from the payout record
+      if (weekPayout.status === 'finalized') {
+        const basePayout = parseFloat(weekPayout.base_payout);
+        const netPayout = parseFloat(weekPayout.net_payout);
+        const finalAmount = netPayout - basePayout;
+        
+        setPayoutDetails({
+          basePayout: basePayout,
+          finalAmount: finalAmount,
+          finalPayout: netPayout,
         });
-        const data = await response.json();
-        if (data.payout) {
-          // If payout is finalized, calculate and set details
-          if (data.payout.status === 'finalized') {
-            setPayoutDetails({
-              basePayout: parseFloat(data.payout.base_payout),
-              additions: {
-                referrals: 0,
-                incentives: parseFloat(data.payout.total_incentives),
-                total: parseFloat(data.payout.total_incentives),
-              },
-              deductions: {
-                advances: 0,
-                otherDeductions: 0,
-                vehicleRent: 0,
-                total: parseFloat(data.payout.total_deductions),
-              },
-              finalAmount: parseFloat(data.payout.net_payout) - parseFloat(data.payout.base_payout),
-              finalPayout: parseFloat(data.payout.net_payout),
-            });
-          } else {
-            setPayoutDetails(null);
-          }
-        } else {
-          setPayoutDetails(null);
-        }
-      } catch (error) {
-        console.error('Error fetching payout details:', error);
+      } else {
         setPayoutDetails(null);
       }
     }
@@ -482,70 +469,79 @@ export default function RiderDashboard() {
 
               {/* Final Amount Calculation */}
               {payoutDetails ? (
-                <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-lg border-2 border-green-200">
-                  <p className="text-sm font-semibold text-green-700 mb-4 flex items-center gap-2">
-                    <span className="w-5 h-5 bg-green-600 text-white rounded-full flex items-center justify-center text-xs">✓</span>
-                    Payout Finalized
-                  </p>
-                  <div className="space-y-3">
-                    <div className="bg-white p-4 rounded-lg">
-                      <p className="text-xs text-gray-600 font-medium mb-1">ADDITIONS</p>
-                      <div className="space-y-2 ml-2">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-gray-700">Referrals</span>
-                          <span className="font-medium text-green-600">+₹{payoutDetails.additions.referrals.toFixed(2)}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-gray-700">Incentives</span>
-                          <span className="font-medium text-green-600">+₹{payoutDetails.additions.incentives.toFixed(2)}</span>
-                        </div>
-                        <div className="border-t border-gray-200 pt-2 flex items-center justify-between">
-                          <span className="text-sm font-medium text-gray-900">Total Additions</span>
-                          <span className="font-semibold text-green-600">₹{payoutDetails.additions.total.toFixed(2)}</span>
-                        </div>
-                      </div>
+                <div className="space-y-4">
+                  {/* Calculation Breakdown */}
+                  <div className="bg-white p-6 rounded-lg border-2 border-gray-200">
+                    <p className="text-sm font-semibold text-green-700 mb-6 flex items-center gap-2">
+                      <span className="w-5 h-5 bg-green-600 text-white rounded-full flex items-center justify-center text-xs">✓</span>
+                      Payout Finalized
+                    </p>
+
+                    {/* All Additions */}
+                    <div className="mb-6 p-4 bg-green-50 rounded-lg border border-green-200">
+                      <p className="text-sm font-semibold text-green-700 mb-3">All Additions (Week {currentPayrollWeek?.week_number})</p>
+                      <p className="text-2xl font-bold text-green-600">₹{Math.max(0, payoutDetails.finalAmount + (stats?.totalDeductions || 0)).toFixed(2)}</p>
+                      <p className="text-xs text-gray-600 mt-1">Referrals + Incentives</p>
                     </div>
 
-                    <div className="bg-white p-4 rounded-lg">
-                      <p className="text-xs text-gray-600 font-medium mb-1">DEDUCTIONS</p>
-                      <div className="space-y-2 ml-2">
+                    {/* All Deductions */}
+                    <div className="mb-6 p-4 bg-red-50 rounded-lg border border-red-200">
+                      <p className="text-sm font-semibold text-red-700 mb-3">All Deductions (Week {currentPayrollWeek?.week_number})</p>
+                      <p className="text-2xl font-bold text-red-600">₹{(stats?.totalDeductions || 0).toFixed(2)}</p>
+                      <p className="text-xs text-gray-600 mt-1">Advances + Other Deductions</p>
+                    </div>
+
+                    {/* Vehicle Rent */}
+                    <div className="mb-6 p-4 bg-orange-50 rounded-lg border border-orange-200">
+                      <p className="text-sm font-semibold text-orange-700 mb-3">Vehicle Rent (Week {currentPayrollWeek?.week_number})</p>
+                      <p className="text-2xl font-bold text-orange-600">₹0.00</p>
+                      <p className="text-xs text-gray-600 mt-1">Already deducted in total deductions</p>
+                    </div>
+
+                    {/* Final Amount Calculation */}
+                    <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <p className="text-sm font-semibold text-blue-700 mb-4">Final Amount Calculation</p>
+                      <div className="space-y-2">
                         <div className="flex items-center justify-between text-sm">
-                          <span className="text-gray-700">Advances</span>
-                          <span className="font-medium text-red-600">-₹{payoutDetails.deductions.advances.toFixed(2)}</span>
+                          <span className="text-gray-700">All Additions</span>
+                          <span className="font-medium text-green-600">+₹{Math.max(0, payoutDetails.finalAmount + (stats?.totalDeductions || 0)).toFixed(2)}</span>
                         </div>
                         <div className="flex items-center justify-between text-sm">
-                          <span className="text-gray-700">Other Deductions</span>
-                          <span className="font-medium text-red-600">-₹{payoutDetails.deductions.otherDeductions.toFixed(2)}</span>
+                          <span className="text-gray-700">All Deductions</span>
+                          <span className="font-medium text-red-600">-₹{(stats?.totalDeductions || 0).toFixed(2)}</span>
                         </div>
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-gray-700">Vehicle Rent</span>
-                          <span className="font-medium text-red-600">-₹{payoutDetails.deductions.vehicleRent.toFixed(2)}</span>
+                          <span className="font-medium text-orange-600">-₹0.00</span>
                         </div>
-                        <div className="border-t border-gray-200 pt-2 flex items-center justify-between">
-                          <span className="text-sm font-medium text-gray-900">Total Deductions</span>
-                          <span className="font-semibold text-red-600">₹{payoutDetails.deductions.total.toFixed(2)}</span>
+                        <div className="border-t-2 border-blue-300 pt-2 flex items-center justify-between">
+                          <span className="font-semibold text-gray-900">= Final Amount</span>
+                          <span className={`text-lg font-bold ${payoutDetails.finalAmount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {payoutDetails.finalAmount >= 0 ? '+' : ''}₹{payoutDetails.finalAmount.toFixed(2)}
+                          </span>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="border-t-2 border-green-300 mt-4 pt-4 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-700">Base Payout</span>
-                      <span className="text-sm font-medium text-gray-900">₹{payoutDetails.basePayout.toFixed(2)}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-700">Final Amount</span>
-                      <span className={`text-sm font-medium ${payoutDetails.finalAmount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {payoutDetails.finalAmount >= 0 ? '+' : ''}₹{payoutDetails.finalAmount.toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="bg-green-600 text-white p-4 rounded-lg mt-4 flex items-center justify-between">
-                    <div>
-                      <p className="text-xs font-medium text-green-100">FINAL PAYOUT DUE</p>
-                      <p className="text-3xl font-bold mt-1">₹{payoutDetails.finalPayout.toFixed(2)}</p>
+                  {/* Final Payout Box (Green Transparent) */}
+                  <div className="bg-gradient-to-br from-green-50 via-emerald-50 to-green-50 p-6 rounded-lg border-2 border-green-300 backdrop-blur-sm">
+                    <p className="text-xs font-semibold text-green-700 mb-4 uppercase tracking-wide">Final Payout Calculation</p>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-700">Base Amount</span>
+                        <span className="text-sm font-semibold text-gray-900">₹{payoutDetails.basePayout.toFixed(2)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-700">Final Amount</span>
+                        <span className={`text-sm font-semibold ${payoutDetails.finalAmount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {payoutDetails.finalAmount >= 0 ? '+' : ''}₹{payoutDetails.finalAmount.toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="border-t-2 border-green-400 pt-3 flex items-center justify-between">
+                        <span className="font-bold text-gray-900">= FINAL PAYOUT</span>
+                        <span className="text-2xl font-bold text-green-600">₹{payoutDetails.finalPayout.toFixed(2)}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -627,30 +623,7 @@ export default function RiderDashboard() {
               </div>
             </div>
 
-            {/* Incentives */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-              <div className="p-6 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900">Recent Incentives</h3>
-                <p className="text-sm text-gray-600 mt-1">Total: ₹{incentives.reduce((sum, i) => sum + parseFloat(i.amount || '0'), 0).toFixed(2)}</p>
-              </div>
-              <div className="divide-y">
-                {incentives.length > 0 ? (
-                  incentives.slice(0, 5).map((incentive) => (
-                    <div key={incentive.id} className="p-4 hover:bg-gray-50 flex items-center justify-between">
-                      <div>
-                        <p className="font-medium text-gray-900 capitalize">{incentive.incentive_type}</p>
-                        <p className="text-xs text-gray-600 mt-1">{new Date(incentive.incentive_date).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })}</p>
-                      </div>
-                      <p className="font-semibold text-green-600">+₹{parseFloat(incentive.amount || '0').toFixed(2)}</p>
-                    </div>
-                  ))
-                ) : (
-                  <div className="p-6 text-center text-gray-500">
-                    No incentives yet
-                  </div>
-                )}
-              </div>
-            </div>
+
           </div>
 
           {/* Right: Quick Actions & Status */}
