@@ -24,6 +24,7 @@ export async function POST(request: Request) {
       payoutEntries.map(async (entry: any) => {
         // Get week date range
         let startDate, endDate;
+        let daysInWeek = 7;
         
         if (week === 1) {
           startDate = new Date(year, month - 1, 1);
@@ -37,6 +38,8 @@ export async function POST(request: Request) {
         } else if (week === 4) {
           startDate = new Date(year, month - 1, 22);
           endDate = new Date(year, month + 1, 0); // Last day of month
+          // Calculate days in week 4
+          daysInWeek = endDate.getDate() - startDate.getDate() + 1;
         }
 
         const startDateStr = startDate?.toISOString().split('T')[0];
@@ -71,14 +74,30 @@ export async function POST(request: Request) {
           AND deduction_date <= ${endDateStr}
         `;
 
+        // Fetch vehicle rent for this rider
+        const riderData = await sql`
+          SELECT ev_daily_rent, ev_weekly_rent, ev_monthly_rent FROM riders
+          WHERE cee_id = ${entry.cee_id}
+        `;
+
+        let vehicleRent = 0;
+        if (riderData && riderData.length > 0) {
+          const rider = riderData[0];
+          // Check for weekly rent first, then daily rent * days in week
+          if (rider.ev_weekly_rent) {
+            vehicleRent = parseFloat(rider.ev_weekly_rent);
+          } else if (rider.ev_daily_rent) {
+            vehicleRent = parseFloat(rider.ev_daily_rent) * daysInWeek;
+          }
+        }
+
         const totalReferrals = parseFloat(referralData[0]?.total || 0);
         const totalIncentives = parseFloat(incentiveData[0]?.total || 0);
         const totalAdvances = parseFloat(advanceData[0]?.total || 0);
         const totalDeductions = parseFloat(deductionData[0]?.total || 0);
 
-        // Final Amount = Referrals + Incentives - Advances - Deductions
-        // Note: Do NOT include vehicle rent here as it may already be in the deductions table
-        const finalAmount = totalReferrals + totalIncentives - totalAdvances - totalDeductions;
+        // Final Amount = Referrals + Incentives - Advances - Deductions - Vehicle Rent
+        const finalAmount = totalReferrals + totalIncentives - totalAdvances - totalDeductions - vehicleRent;
         
         // Convert base_payout to number
         const basePayout = parseFloat(entry.base_payout) || 0;
@@ -93,7 +112,8 @@ export async function POST(request: Request) {
           week: entry.week,
           base_payout: basePayout,
           final_amount: finalAmount,
-          final_payout: Number(finalPayout.toFixed(2))
+          final_payout: Number(finalPayout.toFixed(2)),
+          vehicle_rent: Number(vehicleRent.toFixed(2))
         };
       })
     );
