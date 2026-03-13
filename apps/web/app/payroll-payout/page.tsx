@@ -24,6 +24,7 @@ interface RiderPayoutData {
   final_amount: number;
   final_payout: number;
   rider_id?: string;
+  vehicle_rent?: number;
 }
 
 export default function PayrollPayout() {
@@ -508,6 +509,7 @@ export default function PayrollPayout() {
                           <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Rider Name</th>
                           <th className="px-6 py-4 text-center text-sm font-semibold text-slate-900">Week</th>
                           <th className="px-6 py-4 text-right text-sm font-semibold text-slate-900">Base Payout (₹)</th>
+                          <th className="px-6 py-4 text-right text-sm font-semibold text-slate-900">Vehicle Rent (₹)</th>
                           <th className="px-6 py-4 text-right text-sm font-semibold text-slate-900">Final Amount (₹)</th>
                           <th className="px-6 py-4 text-right text-sm font-semibold text-slate-900">Final Payout (₹)</th>
                         </tr>
@@ -519,6 +521,7 @@ export default function PayrollPayout() {
                             <td className="px-6 py-4 text-sm text-slate-900">{payout.rider_name}</td>
                             <td className="px-6 py-4 text-center text-sm text-slate-900">{payout.week}</td>
                             <td className="px-6 py-4 text-right text-sm font-semibold text-slate-900">₹{payout.base_payout.toFixed(2)}</td>
+                            <td className="px-6 py-4 text-right text-sm text-slate-600">₹{(payout.vehicle_rent || 0).toFixed(2)}</td>
                             <td className="px-6 py-4 text-right text-sm font-semibold text-slate-900">₹{payout.final_amount.toFixed(2)}</td>
                             <td className={`px-6 py-4 text-right text-sm font-bold ${
                               payout.final_payout >= 0 ? 'text-green-700' : 'text-red-700'
