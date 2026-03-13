@@ -251,6 +251,10 @@ export default function RiderDashboard() {
                 locationName={rider.city || 'Your Location'}
               />
             )}
+            <button className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition" title="Notifications">
+              <Bell className="w-5 h-5" />
+              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
+            </button>
             <div className="text-right hidden sm:block">
               <p className="text-sm font-medium text-gray-900">{rider.full_name}</p>
               <p className="text-xs text-gray-500">{rider.client || 'Rider'}</p>
@@ -328,7 +332,7 @@ export default function RiderDashboard() {
                 <div>
                   <h2 className="text-2xl font-bold">Payroll Summary</h2>
                   <p className="text-indigo-100 text-sm mt-1">
-                    {new Date(currentPayrollWeek.month + '-01-' + currentPayrollWeek.year).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}
+                    {new Date(currentPayrollWeek.month + '-01-' + currentPayrollWeek.year).toLocaleDateString('en-IN', { month: 'long', year: 'numeric', timeZone: 'Asia/Kolkata' })}
                   </p>
                 </div>
                 <button
@@ -440,7 +444,7 @@ export default function RiderDashboard() {
                 </div>
                 {currentPayrollWeek.payment_date && (
                   <p className="text-xs text-gray-600 mt-3 pt-3 border-t border-indigo-300">
-                    Paid on: {new Date(currentPayrollWeek.payment_date).toLocaleDateString()}
+                    Paid on: {new Date(currentPayrollWeek.payment_date).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })}
                   </p>
                 )}
               </div>
@@ -503,7 +507,7 @@ export default function RiderDashboard() {
                     <div key={incentive.id} className="p-4 hover:bg-gray-50 flex items-center justify-between">
                       <div>
                         <p className="font-medium text-gray-900 capitalize">{incentive.incentive_type}</p>
-                        <p className="text-xs text-gray-600 mt-1">{new Date(incentive.incentive_date).toLocaleDateString()}</p>
+                        <p className="text-xs text-gray-600 mt-1">{new Date(incentive.incentive_date).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })}</p>
                       </div>
                       <p className="font-semibold text-green-600">+₹{parseFloat(incentive.amount || '0').toFixed(2)}</p>
                     </div>
