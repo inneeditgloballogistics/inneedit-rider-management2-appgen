@@ -70,20 +70,18 @@ export async function POST(request: NextRequest) {
     // Get or create user entry
     let userId = rider.user_id;
 
-    if (!userId) {
-      // Check if user already exists by email
-      const existingUsers = await sql`
-        SELECT id FROM "user" WHERE LOWER(email) = LOWER(${rider.email})
+    // ALWAYS check if the user exists in the user table
+    if (userId) {
+      const userExists = await sql`
+        SELECT id FROM "user" WHERE id = ${userId}
       `;
-
-      if (existingUsers.length > 0) {
-        userId = existingUsers[0].id;
-      } else {
-        // Create a new user entry if doesn't exist
-        const newUsers = await sql`
+      
+      if (userExists.length === 0) {
+        // User ID exists in rider but user doesn't exist, create it
+        await sql`
           INSERT INTO "user" (id, name, email, role, "emailVerified", "createdAt", "updatedAt")
           VALUES (
-            ${crypto.randomUUID()},
+            ${userId},
             ${rider.full_name},
             ${rider.email},
             'rider',
@@ -91,9 +89,31 @@ export async function POST(request: NextRequest) {
             NOW(),
             NOW()
           )
-          RETURNING id
         `;
-        userId = newUsers[0].id;
+      }
+    } else {
+      // No user_id in rider, check if user exists by email
+      const existingUsers = await sql`
+        SELECT id FROM "user" WHERE LOWER(email) = LOWER(${rider.email})
+      `;
+
+      if (existingUsers.length > 0) {
+        userId = existingUsers[0].id;
+      } else {
+        // Create a new user entry
+        userId = crypto.randomUUID();
+        await sql`
+          INSERT INTO "user" (id, name, email, role, "emailVerified", "createdAt", "updatedAt")
+          VALUES (
+            ${userId},
+            ${rider.full_name},
+            ${rider.email},
+            'rider',
+            true,
+            NOW(),
+            NOW()
+          )
+        `;
       }
 
       // Link user to rider
