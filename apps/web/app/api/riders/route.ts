@@ -35,6 +35,9 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     
+    // Generate a unique user_id for the rider (required for payroll finalization and dashboard access)
+    const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
     // Use the provided CEE ID or generate if empty
     const ceeId = body.ceeId || `CEE-${Math.floor(10000 + Math.random() * 90000)}`;
     
@@ -57,6 +60,7 @@ export async function POST(request: Request) {
     // Insert rider into database
     const result = await sql`
       INSERT INTO riders (
+        user_id,
         cee_id,
         full_name,
         phone,
@@ -78,7 +82,7 @@ export async function POST(request: Request) {
         leader_discount_percentage,
         status
       ) VALUES (
-        ${ceeId}, ${body.fullName || ''}, ${body.mobile || ''}, ${body.email || null}, ${body.dob || null}, 
+        ${userId}, ${ceeId}, ${body.fullName || ''}, ${body.mobile || ''}, ${body.email || null}, ${body.dob || null}, 
         ${body.joinDate || null}, ${body.address || null}, ${body.client || ''}, ${hubId}, ${body.assignedVehicleId || null}, 
         ${body.bankAccount || null}, ${body.ifscCode || null}, ${body.dlUrl || null}, ${body.aadharUrl || null},
         ${body.vehicleOwnership || 'company_ev'}, ${evDailyRent},
@@ -95,7 +99,7 @@ export async function POST(request: Request) {
       console.log('Vehicle assigned to rider:', body.assignedVehicleId, ceeId);
     }
     
-    return NextResponse.json({ success: true, rider: newRider, ceeId });
+    return NextResponse.json({ success: true, rider: newRider, ceeId, userId });
   } catch (error: any) {
     console.error('Error creating rider:', error);
     
