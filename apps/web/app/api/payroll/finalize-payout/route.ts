@@ -41,11 +41,16 @@ export async function POST(request: Request) {
       endDate = new Date(year, month - 1, 21);
     } else if (week === 4) {
       startDate = new Date(year, month - 1, 22);
-      endDate = new Date(year, month + 1, 0);
+      endDate = new Date(year, month, 0); // Last day of the month
+    } else {
+      return NextResponse.json(
+        { message: "Invalid week number. Must be 1-4" },
+        { status: 400 }
+      );
     }
 
-    const startDateStr = startDate?.toISOString().split("T")[0];
-    const endDateStr = endDate?.toISOString().split("T")[0];
+    const startDateStr = startDate.toISOString().split("T")[0];
+    const endDateStr = endDate.toISOString().split("T")[0];
 
     let finalizedCount = 0;
     let errors: string[] = [];
