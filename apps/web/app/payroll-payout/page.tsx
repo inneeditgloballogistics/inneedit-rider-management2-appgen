@@ -23,6 +23,7 @@ interface RiderPayoutData {
   base_payout: number;
   final_amount: number;
   final_payout: number;
+  rider_id?: string;
 }
 
 export default function PayrollPayout() {
@@ -37,6 +38,7 @@ export default function PayrollPayout() {
   const [payoutLoading, setPayoutLoading] = useState(false);
   const [uploadMessage, setUploadMessage] = useState('');
   const [uploadError, setUploadError] = useState('');
+  const [finalizingId, setFinalizingId] = useState<string | null>(null);
 
   const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
   const months = Array.from({ length: 12 }, (_, i) => ({ 
@@ -87,7 +89,7 @@ export default function PayrollPayout() {
     const rows = [
       headers,
       // Sample row
-      [new Date().getFullYear(), new Date().getMonth() + 1, 1, 'BB123456', 'John Doe', 25, 95, 5000, 0]
+      [new Date().getFullYear(), new Date().getMonth() + 1, 1, 'BB123456', 'John Doe', 25, 95, 5000, 0] // Sample data - IST timezone
     ];
 
     const csvContent = rows.map(row => row.join(',')).join('\n');
@@ -96,7 +98,8 @@ export default function PayrollPayout() {
     const url = URL.createObjectURL(blob);
     
     link.setAttribute('href', url);
-    link.setAttribute('download', `payout-template-${new Date().toISOString().split('T')[0]}.csv`);
+    const istDate = new Date(new Date().getTime() + 5.5 * 60 * 60 * 1000);
+    link.setAttribute('download', `payout-template-${istDate.toISOString().split('T')[0]}.csv`);
     link.style.visibility = 'hidden';
     
     document.body.appendChild(link);
@@ -201,6 +204,43 @@ export default function PayrollPayout() {
       setUploadError('Error uploading data to server.');
     }
     setLoading(false);
+  };
+
+  // Finalize payout for a specific rider
+  const finalizePayout = async (ceeId: string, riderId: string | undefined) => {
+    if (!riderId) {
+      alert('Rider ID not found');
+      return;
+    }
+
+    setFinalizingId(ceeId);
+    try {
+      const response = await fetch('/api/payroll/finalize-payout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          rider_id: riderId,
+          cee_id: ceeId,
+          year: selectedYear,
+          month: selectedMonth,
+          week: selectedWeek
+        })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        alert(`Error: ${result.message || 'Failed to finalize payout'}`);
+      } else {
+        alert(`Payout finalized successfully for ${result.rider_name}`);
+        // Refresh the payout summary
+        fetchPayoutSummary();
+      }
+    } catch (error) {
+      console.error('Error finalizing payout:', error);
+      alert('Error finalizing payout');
+    }
+    setFinalizingId(null);
   };
 
   // Calculate totals
@@ -467,6 +507,7 @@ export default function PayrollPayout() {
                           <th className="px-6 py-4 text-right text-sm font-semibold text-slate-900">Base Payout (₹)</th>
                           <th className="px-6 py-4 text-right text-sm font-semibold text-slate-900">Final Amount (₹)</th>
                           <th className="px-6 py-4 text-right text-sm font-semibold text-slate-900">Final Payout (₹)</th>
+                          <th className="px-6 py-4 text-center text-sm font-semibold text-slate-900">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -481,6 +522,25 @@ export default function PayrollPayout() {
                               payout.final_payout >= 0 ? 'text-green-700' : 'text-red-700'
                             }`}>
                               ₹{payout.final_payout.toFixed(2)}
+                            </td>
+                            <td className="px-6 py-4 text-center">
+                              <button
+                                onClick={() => finalizePayout(payout.cee_id, payout.rider_id)}
+                                disabled={finalizingId === payout.cee_id}
+                                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 justify-center"
+                              >
+                                {finalizingId === payout.cee_id ? (
+                                  <>
+                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                    Finalizing...
+                                  </>
+                                ) : (
+                                  <>
+                                    <i className="ph-bold ph-check-circle"></i>
+                                    Finalize Payout
+                                  </>
+                                )}
+                              </button>
                             </td>
                           </tr>
                         ))}

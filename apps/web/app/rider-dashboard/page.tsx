@@ -88,7 +88,9 @@ export default function RiderDashboard() {
   const [incentives, setIncentives] = useState<Incentive[]>([]);
   const [advances, setAdvances] = useState<Advance[]>([]);
   const [currentPayrollWeek, setCurrentPayrollWeek] = useState<Payout | null>(null);
+  const [selectedWeek, setSelectedWeek] = useState<number>(1);
   const [downloadingPayslip, setDownloadingPayslip] = useState(false);
+  const [payoutDetails, setPayoutDetails] = useState<any>(null);
   const [showAdvanceModal, setShowAdvanceModal] = useState(false);
   const [showReferralModal, setShowReferralModal] = useState(false);
 
@@ -217,6 +219,61 @@ export default function RiderDashboard() {
   const approvedReferrals = referrals.filter(r => r.approval_status === 'approved').length;
   const pendingAdvances = advances.filter(a => a.status === 'pending').length;
 
+  const handleWeekChange = async (week: number) => {
+    setSelectedWeek(week);
+    // Find payout for selected week
+    const weekPayout = payouts.find(
+      (p) => p.week_number === week && p.month === new Date().getMonth() + 1 && p.year === new Date().getFullYear()
+    ) || currentPayrollWeek;
+    if (weekPayout) {
+      setCurrentPayrollWeek(weekPayout);
+      // Try to fetch finalized payout details if they exist
+      try {
+        const response = await fetch('/api/payroll/rider-payout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            rider_id: rider?.user_id,
+            week,
+            month: weekPayout.month,
+            year: weekPayout.year,
+          }),
+        });
+        const data = await response.json();
+        if (data.payout) {
+          // If payout is finalized, calculate and set details
+          if (data.payout.status === 'finalized') {
+            setPayoutDetails({
+              basePayout: parseFloat(data.payout.base_payout),
+              additions: {
+                referrals: 0,
+                incentives: parseFloat(data.payout.total_incentives),
+                total: parseFloat(data.payout.total_incentives),
+              },
+              deductions: {
+                advances: 0,
+                otherDeductions: 0,
+                vehicleRent: 0,
+                total: parseFloat(data.payout.total_deductions),
+              },
+              finalAmount: parseFloat(data.payout.net_payout) - parseFloat(data.payout.base_payout),
+              finalPayout: parseFloat(data.payout.net_payout),
+            });
+          } else {
+            setPayoutDetails(null);
+          }
+        } else {
+          setPayoutDetails(null);
+        }
+      } catch (error) {
+        console.error('Error fetching payout details:', error);
+        setPayoutDetails(null);
+      }
+    }
+  };
+
+
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -335,16 +392,20 @@ export default function RiderDashboard() {
                     {new Date(currentPayrollWeek.month + '-01-' + currentPayrollWeek.year).toLocaleDateString('en-IN', { month: 'long', year: 'numeric', timeZone: 'Asia/Kolkata' })}
                   </p>
                 </div>
-                <button
-                  onClick={downloadPayslip}
-                  disabled={downloadingPayslip}
-                  className="flex items-center gap-2 bg-white text-indigo-600 px-4 py-2 rounded-lg font-medium hover:bg-indigo-50 transition disabled:opacity-50"
-                >
-                  <Download className="w-4 h-4" />
-                  {downloadingPayslip ? 'Generating...' : 'Download Payslip'}
-                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={downloadPayslip}
+                    disabled={downloadingPayslip}
+                    className="flex items-center gap-2 bg-white text-indigo-600 px-4 py-2 rounded-lg font-medium hover:bg-indigo-50 transition disabled:opacity-50"
+                  >
+                    <Download className="w-4 h-4" />
+                    {downloadingPayslip ? 'Generating...' : 'Download Payslip'}
+                  </button>
+                </div>
               </div>
             </div>
+
+
 
             {/* Payslip Content */}
             <div id="payslip-content" className="p-8">
@@ -420,34 +481,105 @@ export default function RiderDashboard() {
               </div>
 
               {/* Final Amount Calculation */}
-              <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-6 rounded-lg border border-indigo-200">
-                <div className="space-y-2 mb-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-700">Base Payout</span>
-                    <span className="text-sm font-medium text-gray-900">₹{stats.basePayout.toFixed(2)}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-700">+ Incentives</span>
-                    <span className="text-sm font-medium text-green-600">₹{stats.totalIncentives.toFixed(2)}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-700">- Deductions</span>
-                    <span className="text-sm font-medium text-red-600">₹{stats.totalDeductions.toFixed(2)}</span>
-                  </div>
-                </div>
-                <div className="border-t border-indigo-300 pt-4 flex items-center justify-between">
-                  <span className="text-base font-bold text-gray-900">=</span>
-                  <div className="text-right">
-                    <p className="text-xs text-gray-600 mb-1">FINAL AMOUNT DUE</p>
-                    <p className="text-3xl font-bold text-indigo-600">₹{stats.netPayout.toFixed(2)}</p>
-                  </div>
-                </div>
-                {currentPayrollWeek.payment_date && (
-                  <p className="text-xs text-gray-600 mt-3 pt-3 border-t border-indigo-300">
-                    Paid on: {new Date(currentPayrollWeek.payment_date).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })}
+              {payoutDetails ? (
+                <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-lg border-2 border-green-200">
+                  <p className="text-sm font-semibold text-green-700 mb-4 flex items-center gap-2">
+                    <span className="w-5 h-5 bg-green-600 text-white rounded-full flex items-center justify-center text-xs">✓</span>
+                    Payout Finalized
                   </p>
-                )}
-              </div>
+                  <div className="space-y-3">
+                    <div className="bg-white p-4 rounded-lg">
+                      <p className="text-xs text-gray-600 font-medium mb-1">ADDITIONS</p>
+                      <div className="space-y-2 ml-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-700">Referrals</span>
+                          <span className="font-medium text-green-600">+₹{payoutDetails.additions.referrals.toFixed(2)}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-700">Incentives</span>
+                          <span className="font-medium text-green-600">+₹{payoutDetails.additions.incentives.toFixed(2)}</span>
+                        </div>
+                        <div className="border-t border-gray-200 pt-2 flex items-center justify-between">
+                          <span className="text-sm font-medium text-gray-900">Total Additions</span>
+                          <span className="font-semibold text-green-600">₹{payoutDetails.additions.total.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-white p-4 rounded-lg">
+                      <p className="text-xs text-gray-600 font-medium mb-1">DEDUCTIONS</p>
+                      <div className="space-y-2 ml-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-700">Advances</span>
+                          <span className="font-medium text-red-600">-₹{payoutDetails.deductions.advances.toFixed(2)}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-700">Other Deductions</span>
+                          <span className="font-medium text-red-600">-₹{payoutDetails.deductions.otherDeductions.toFixed(2)}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-700">Vehicle Rent</span>
+                          <span className="font-medium text-red-600">-₹{payoutDetails.deductions.vehicleRent.toFixed(2)}</span>
+                        </div>
+                        <div className="border-t border-gray-200 pt-2 flex items-center justify-between">
+                          <span className="text-sm font-medium text-gray-900">Total Deductions</span>
+                          <span className="font-semibold text-red-600">₹{payoutDetails.deductions.total.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="border-t-2 border-green-300 mt-4 pt-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-700">Base Payout</span>
+                      <span className="text-sm font-medium text-gray-900">₹{payoutDetails.basePayout.toFixed(2)}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-700">Final Amount</span>
+                      <span className={`text-sm font-medium ${payoutDetails.finalAmount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {payoutDetails.finalAmount >= 0 ? '+' : ''}₹{payoutDetails.finalAmount.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="bg-green-600 text-white p-4 rounded-lg mt-4 flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-medium text-green-100">FINAL PAYOUT DUE</p>
+                      <p className="text-3xl font-bold mt-1">₹{payoutDetails.finalPayout.toFixed(2)}</p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                  <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-6 rounded-lg border border-indigo-200">
+                  <div className="space-y-2 mb-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-700">Base Payout</span>
+                      <span className="text-sm font-medium text-gray-900">₹{stats.basePayout.toFixed(2)}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-700">+ Incentives</span>
+                      <span className="text-sm font-medium text-green-600">₹{stats.totalIncentives.toFixed(2)}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-700">- Deductions</span>
+                      <span className="text-sm font-medium text-red-600">₹{stats.totalDeductions.toFixed(2)}</span>
+                    </div>
+                  </div>
+                  <div className="border-t border-indigo-300 pt-4 flex items-center justify-between">
+                    <span className="text-base font-bold text-gray-900">=</span>
+                    <div className="text-right">
+                      <p className="text-xs text-gray-600 mb-1">ESTIMATED AMOUNT</p>
+                      <p className="text-3xl font-bold text-indigo-600">₹{stats.netPayout.toFixed(2)}</p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-600 mt-4 text-center">Awaiting Admin Approval</p>
+                </div>
+              )}
+              {currentPayrollWeek.payment_date && (
+                <p className="text-xs text-gray-600 mt-3 pt-3">
+                  Paid on: {new Date(currentPayrollWeek.payment_date).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })}
+                </p>
+              )}
             </div>
           </div>
         )}
