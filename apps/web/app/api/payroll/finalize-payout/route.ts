@@ -88,8 +88,8 @@ export async function POST(request: Request) {
       const incentiveData = await sql`
         SELECT COALESCE(SUM(amount), 0) as total FROM incentives 
         WHERE rider_id = ${rider_id}
-        AND incentive_date >= ${startDateStr}
-        AND incentive_date <= ${endDateStr}
+        AND incentive_date >= DATE(${startDateStr})
+        AND incentive_date <= DATE(${endDateStr})
       `;
 
       // Fetch all deductions (advances + other deductions)
@@ -104,8 +104,8 @@ export async function POST(request: Request) {
       const deductionData = await sql`
         SELECT COALESCE(SUM(amount), 0) as total FROM deductions 
         WHERE rider_id = ${rider_id}
-        AND deduction_date >= ${startDateStr}
-        AND deduction_date <= ${endDateStr}
+        AND deduction_date >= DATE(${startDateStr})
+        AND deduction_date <= DATE(${endDateStr})
       `;
 
       const totalReferrals = parseFloat(referralData[0]?.total || 0);
