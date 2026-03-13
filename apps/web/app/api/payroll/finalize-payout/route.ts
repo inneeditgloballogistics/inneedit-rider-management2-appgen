@@ -14,7 +14,7 @@ export async function POST(request: Request) {
 
     // Get all payout entries for this week
     const payoutEntries = await sql`
-      SELECT DISTINCT cee_id, rider_id FROM payout_entries
+      SELECT DISTINCT cee_id, base_payout FROM payout_entries
       WHERE year = ${year}
       AND month = ${month}
       AND week = ${week}
@@ -48,10 +48,12 @@ export async function POST(request: Request) {
     const endDateStr = endDate?.toISOString().split("T")[0];
 
     let finalizedCount = 0;
+    let errors: string[] = [];
 
     // Process each rider
     for (const entry of payoutEntries) {
       const cee_id = entry.cee_id;
+      const basePayout = parseFloat(entry.base_payout) || 0;
 
       // Get rider info
       const riderInfo = await sql`
@@ -62,26 +64,27 @@ export async function POST(request: Request) {
       `;
 
       if (riderInfo.length === 0) {
+        errors.push(`Rider not found for CEE ID: ${cee_id}`);
         continue; // Skip if rider not found
       }
 
       const rider_id = riderInfo[0].user_id;
-      const vehicleOwnership = riderInfo[0].vehicle_ownership;
+      const vehicleOwnership = riderInfo[0].vehicle_ownership || null;
 
       // Fetch all additions (referrals + incentives)
       const referralData = await sql`
         SELECT COALESCE(SUM(amount), 0) as total FROM referrals 
-        WHERE referrer_id = ${rider_id}
+        WHERE (referrer_id = ${rider_id} OR referrer_id = ${cee_id})
         AND approval_status = 'approved'
-        AND DATE(created_at) >= ${startDateStr}
-        AND DATE(created_at) <= ${endDateStr}
+        AND created_at::date >= ${startDateStr}::date
+        AND created_at::date <= ${endDateStr}::date
       `;
 
       const incentiveData = await sql`
         SELECT COALESCE(SUM(amount), 0) as total FROM incentives 
         WHERE rider_id = ${rider_id}
-        AND DATE(created_at) >= ${startDateStr}
-        AND DATE(created_at) <= ${endDateStr}
+        AND incentive_date >= ${startDateStr}::date
+        AND incentive_date <= ${endDateStr}::date
       `;
 
       // Fetch all deductions (advances + other deductions)
@@ -89,32 +92,17 @@ export async function POST(request: Request) {
         SELECT COALESCE(SUM(amount), 0) as total FROM advances 
         WHERE (rider_id = ${rider_id} OR cee_id = ${cee_id})
         AND status = 'approved'
-        AND DATE(requested_at) >= ${startDateStr}
-        AND DATE(requested_at) <= ${endDateStr}
+        AND requested_at::date >= ${startDateStr}::date
+        AND requested_at::date <= ${endDateStr}::date
       `;
 
       const deductionData = await sql`
         SELECT COALESCE(SUM(amount), 0) as total FROM deductions 
         WHERE rider_id = ${rider_id}
-        AND DATE(deduction_date) >= ${startDateStr}
-        AND DATE(deduction_date) <= ${endDateStr}
+        AND deduction_date >= ${startDateStr}::date
+        AND deduction_date <= ${endDateStr}::date
       `;
 
-      // Get base payout from payout_entries
-      const payoutEntryData = await sql`
-        SELECT base_payout FROM payout_entries
-        WHERE cee_id = ${cee_id}
-        AND year = ${year}
-        AND month = ${month}
-        AND week = ${week}
-        LIMIT 1
-      `;
-
-      if (payoutEntryData.length === 0) {
-        continue; // Skip if no payout entry
-      }
-
-      const basePayout = parseFloat(payoutEntryData[0].base_payout) || 0;
       const totalReferrals = parseFloat(referralData[0]?.total || 0);
       const totalIncentives = parseFloat(incentiveData[0]?.total || 0);
       const totalAdvances = parseFloat(advanceData[0]?.total || 0);
@@ -221,6 +209,7 @@ export async function POST(request: Request) {
       success: true,
       message: `Payouts finalized successfully for ${finalizedCount} riders`,
       count: finalizedCount,
+      errors: errors.length > 0 ? errors : undefined
     });
   } catch (error) {
     console.error("Error finalizing payouts:", error);
