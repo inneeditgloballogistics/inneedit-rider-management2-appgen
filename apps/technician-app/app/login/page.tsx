@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Eye, EyeOff, Mail, Lock, Bell } from 'lucide-react';
 
-export default function RiderLoginPage() {
+export default function TechnicianLoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -25,8 +25,8 @@ export default function RiderLoginPage() {
         return;
       }
 
-      // Call rider login API
-      const response = await fetch('/api/rider-auth/login', {
+      // Call technician login API (adjust endpoint as needed)
+      const response = await fetch('/api/technician-auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -41,20 +41,14 @@ export default function RiderLoginPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        // Check if error is about no password set
-        if (data.error && data.error.includes('password')) {
-          setLoading(false);
-          router.push('/rider-password-setup');
-          return;
-        }
         setError(data.error || 'Login failed. Please try again.');
         setLoading(false);
         return;
       }
 
-      // Login successful - redirect immediately
+      // Login successful - redirect to technician dashboard
       setLoading(false);
-      router.push('/rider-dashboard');
+      router.push('/technician-dashboard');
     } catch (err: any) {
       console.error('Login error:', err);
       setError(err.message || 'An error occurred. Please try again.');
@@ -90,13 +84,13 @@ export default function RiderLoginPage() {
                 inneedit Global Logistics
               </h1>
               <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">
-                Rider Portal
+                Technician Portal
               </span>
             </div>
           </div>
-          <h2 className="text-xl font-semibold text-slate-900 mt-6">Rider Login</h2>
+          <h2 className="text-xl font-semibold text-slate-900 mt-6">Technician Login</h2>
           <p className="text-slate-500 text-sm mt-2">
-            Sign in to access your rider dashboard
+            Sign in to manage maintenance and repairs
           </p>
         </div>
 
@@ -122,8 +116,8 @@ export default function RiderLoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  placeholder="rider@example.com"
-                  className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                  placeholder="technician@example.com"
+                  className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
                 />
               </div>
               <p className="text-xs text-slate-500 mt-1.5">
@@ -144,7 +138,7 @@ export default function RiderLoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   placeholder="••••••••"
-                  className="w-full pl-12 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                  className="w-full pl-12 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
                 />
                 <button
                   type="button"
@@ -167,7 +161,7 @@ export default function RiderLoginPage() {
             <button
               type="submit"
               disabled={loading || !email || !password}
-              className="w-full px-4 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-600/25 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full px-4 py-3 bg-orange-600 text-white rounded-lg font-medium hover:bg-orange-700 transition-all shadow-lg shadow-orange-600/25 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>
@@ -188,20 +182,10 @@ export default function RiderLoginPage() {
             <p className="text-xs text-slate-600">
               <span className="text-lg">ℹ️</span>
               <span className="ml-2">
-                New rider? Contact your hub manager or admin to get registered.
+                Contact your administrator if you don't have login credentials.
               </span>
             </p>
           </div>
-        </div>
-
-        {/* Back to Login */}
-        <div className="mt-6 text-center">
-          <Link
-            href="/login"
-            className="text-sm text-slate-600 hover:text-slate-900 font-medium transition-colors"
-          >
-            ← Back to Main Login
-          </Link>
         </div>
 
         {/* Footer */}
