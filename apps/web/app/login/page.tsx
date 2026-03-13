@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Bell } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -58,6 +59,16 @@ export default function LoginPage() {
 
   return (
     <div className="mesh-bg min-h-screen flex items-center justify-center px-6 py-12">
+      {/* Notification Bell - Top Right */}
+      <div className="fixed top-8 right-8 cursor-pointer group">
+        <div className="relative">
+          <Bell size={24} className="text-slate-600 group-hover:text-slate-900 transition-colors" />
+          <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs flex items-center justify-center rounded-full font-bold">
+            0
+          </span>
+        </div>
+      </div>
+
       <div className="w-full max-w-md">
         {/* Brand Header */}
         <div className="text-center mb-8">
