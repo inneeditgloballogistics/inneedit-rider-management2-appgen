@@ -50,7 +50,7 @@ export async function POST(request: Request) {
           COALESCE(
             (
               SELECT SUM(COALESCE(amount, 0)) FROM advances 
-              WHERE (rider_id = pe.cee_id OR cee_id = pe.cee_id)
+              WHERE rider_id = pe.cee_id
               AND requested_at >= ${weekStart}::date
               AND requested_at <= ${weekEnd}::date
               AND status = 'approved'
@@ -70,7 +70,7 @@ export async function POST(request: Request) {
         COALESCE(
           (
             SELECT SUM(COALESCE(daily_rent_amount, 0)) FROM vehicle_rent 
-            WHERE (rider_id = pe.cee_id OR cee_id = pe.cee_id)
+            WHERE rider_id = pe.cee_id
             AND rent_date >= ${weekStart}::date
             AND rent_date <= ${weekEnd}::date
           ),
