@@ -133,7 +133,40 @@ export async function POST(request: Request) {
               const y = dateObj.getUTCFullYear();
               const m = dateObj.getUTCMonth() + 1;
               const d = dateObj.getUTCDate();
-              riderJoinDate = new Date(Date.UTC(y, m - 1, d));\n            }\n          }\n          \n          let dailyRent = 0;\n          const evDailyRent = riderInfo[0]?.ev_daily_rent || null;\n          const evType = riderInfo[0]?.ev_type;\n          \n          if (evDailyRent && evDailyRent > 0) {\n            dailyRent = Number(evDailyRent);\n          } else if (evType === 'sunmobility_swap') {\n            dailyRent = 243;\n          } else if (evType === 'fixed_battery') {\n            dailyRent = 215;\n          }\n          \n          if (dailyRent > 0) {\n            const startDate = new Date(`${startDateStr}T00:00:00Z`);\n            const endDate = new Date(`${endDateStr}T00:00:00Z`);\n            let currentDate = new Date(startDate);\n            let daysCount = 0;\n            \n            while (currentDate <= endDate) {\n              if (!riderJoinDate || currentDate >= riderJoinDate) {\n                daysCount++;\n              }\n              currentDate.setUTCDate(currentDate.getUTCDate() + 1);\n            }\n            \n            vehicleRent = dailyRent * daysCount;\n          }\n        }\n        \n        const finalAmount = allAdditions - allDeductions - vehicleRent;
+              riderJoinDate = new Date(Date.UTC(y, m - 1, d));
+            }
+          }
+          
+          let dailyRent = 0;
+          const evDailyRent = riderInfo[0]?.ev_daily_rent || null;
+          const evType = riderInfo[0]?.ev_type;
+          
+          if (evDailyRent && evDailyRent > 0) {
+            dailyRent = Number(evDailyRent);
+          } else if (evType === 'sunmobility_swap') {
+            dailyRent = 243;
+          } else if (evType === 'fixed_battery') {
+            dailyRent = 215;
+          }
+          
+          if (dailyRent > 0) {
+            const startDate = new Date(`${startDateStr}T00:00:00Z`);
+            const endDate = new Date(`${endDateStr}T00:00:00Z`);
+            let currentDate = new Date(startDate);
+            let daysCount = 0;
+            
+            while (currentDate <= endDate) {
+              if (!riderJoinDate || currentDate >= riderJoinDate) {
+                daysCount++;
+              }
+              currentDate.setUTCDate(currentDate.getUTCDate() + 1);
+            }
+            
+            vehicleRent = dailyRent * daysCount;
+          }
+        }
+        
+        const finalAmount = allAdditions - allDeductions - vehicleRent;
         const finalPayout = basePayout + finalAmount;
 
         // Check if payout exists

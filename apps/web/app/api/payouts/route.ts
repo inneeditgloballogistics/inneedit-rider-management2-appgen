@@ -36,7 +36,25 @@ export async function GET(request: NextRequest) {
     `;
 
     console.log('Payouts GET - Payouts found:', payouts.length);
-    return NextResponse.json(payouts);
+    
+    // For each payout, if final_payout is not set (old records), calculate it using the new formula
+    const processedPayouts = payouts.map((payout: any) => {
+      // If final_payout doesn't exist or is null, calculate it using final_amount if available
+      if (!payout.final_payout && payout.final_amount !== undefined && payout.final_amount !== null) {
+        // Calculate final payout using new formula
+        const basePayout = parseFloat(payout.base_payout) || 0;
+        const finalAmount = parseFloat(payout.final_amount) || 0;
+        payout.final_payout = basePayout + finalAmount;
+        
+        // For display, use final_payout in net_payout if it hasn't been updated
+        payout.net_payout = payout.final_payout;
+      }
+      // If final_payout exists, use it
+      else if (payout.final_payout !== undefined && payout.final_payout !== null) {\n        payout.net_payout = payout.final_payout;\n      }
+      return payout;
+    });
+
+    return NextResponse.json(processedPayouts);
   } catch (error) {
     console.error('Error fetching payouts:', error);
     return NextResponse.json({ error: 'Failed to fetch payouts', details: String(error) }, { status: 500 });

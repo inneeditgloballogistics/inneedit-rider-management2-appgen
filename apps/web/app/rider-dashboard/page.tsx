@@ -42,6 +42,8 @@ interface Payout {
   total_incentives: string;
   total_deductions: string;
   net_payout: string;
+  final_amount?: string | number;
+  final_payout?: string | number;
   status: string;
   payment_date: string;
 }
@@ -1056,7 +1058,11 @@ export default function RiderDashboard() {
                 </div>
                 <div className="p-4">
                   <p className="text-xs text-gray-600 font-medium">This Week Payout</p>
-                  <p className="text-sm font-semibold text-indigo-600 mt-1">₹{stats?.netPayout.toFixed(2) || '0.00'}</p>
+                  <p className="text-sm font-semibold text-indigo-600 mt-1">
+                    ₹{currentPayrollWeek?.final_payout !== undefined && currentPayrollWeek?.final_payout !== null 
+                      ? parseFloat(currentPayrollWeek.final_payout).toFixed(2) 
+                      : stats?.netPayout.toFixed(2) || '0.00'}
+                  </p>
                 </div>
               </div>
             </div>
