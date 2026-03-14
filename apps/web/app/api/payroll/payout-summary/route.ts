@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     const weekEnd = weekDates[week as keyof typeof weekDates].end;
 
     // Fetch payout entries with final_amount calculated using new formula:
-    // All Additions (Incentives + Referrals) - All Deductions (Advances + Deductions) - Vehicle Rent = Final Amount
+    // All Additions (Incentives + Referrals) - All Deductions (Advances + Deductions) - Vehicle Rent (day-wise) = Final Amount
     const payouts = await sql`
       SELECT 
         pe.cee_id,
@@ -66,15 +66,7 @@ export async function POST(request: Request) {
             0
           )
         ) -
-        COALESCE(
-          (
-            SELECT SUM(COALESCE(payout_amount, 0)) FROM orders o
-            WHERE o.rider_id = pe.cee_id 
-            AND DATE(o.order_date) >= ${weekStart}::date
-            AND DATE(o.order_date) <= ${weekEnd}::date
-          ),
-          0
-        ) as final_amount
+        COALESCE(r.ev_daily_rent, 0) as final_amount
       FROM payout_entries pe
       LEFT JOIN riders r ON r.cee_id = pe.cee_id
       WHERE pe.year = ${year} AND pe.month = ${month} AND pe.week = ${week}
