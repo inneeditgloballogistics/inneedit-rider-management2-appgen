@@ -213,8 +213,16 @@ export async function POST(request: Request) {
       
       console.log("🔍 Deductions Query Debug - Looking for rider_id:", rider_id, "or cee_id:", cee_id);
       
+      console.log("🔍 === DEDUCTIONS QUERY DEBUG ===");
+      console.log("Looking for deductions with rider_id:", rider_id, "or cee_id:", cee_id, "or resolvedCeeId:", resolvedCeeId);
+      
       if (start_date && end_date) {
         console.log("🔍 Date range query: start_date =", start_date, "end_date =", end_date);
+        console.log("🔍 Query will match deductions WHERE:");
+        console.log("    rider_id =", rider_id, "OR");
+        console.log("    rider_id =", cee_id, "OR");
+        console.log("    rider_id =", resolvedCeeId);
+        
         deductions = await sql`
           SELECT 
             d.id,

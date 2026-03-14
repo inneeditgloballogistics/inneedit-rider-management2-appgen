@@ -360,16 +360,23 @@ export default function RiderDashboard() {
   const stats = getPayrollStats();
 
   const getEntriesByType = (type: string): PayrollEntry[] => {
-    return riderEntries.filter(e => {
+    console.log(`Filtering entries for type: ${type}, total entries:`, riderEntries.length);
+    const filtered = riderEntries.filter(e => {
+      const entryType = e.entry_type?.toLowerCase() || '';
+      console.log(`Checking entry:`, { entryType, description: e.description, amount: e.amount });
+      
       if (type === 'additions') {
-        return ['referral', 'incentive'].includes(e.entry_type?.toLowerCase());
+        return ['referral', 'incentive'].includes(entryType);
       } else if (type === 'deductions') {
-        return ['security_deposit', 'damage', 'challan', 'other'].includes(e.entry_type?.toLowerCase());
+        // Include all deductions: advances, security deposits, damages, challans, and others
+        return ['advance', 'security_deposit', 'damage', 'challan', 'other'].includes(entryType);
       } else if (type === 'vehicle_rent') {
-        return e.entry_type?.toLowerCase() === 'vehicle_rent';
+        return entryType === 'vehicle_rent';
       }
       return false;
     });
+    console.log(`Filtered entries for ${type}:`, filtered.length);
+    return filtered;
   };
 
   const ExpandableSection = ({ title, amount, type, entries, color }: any) => (
