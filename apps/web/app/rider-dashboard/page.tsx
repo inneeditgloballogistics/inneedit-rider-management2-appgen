@@ -83,6 +83,7 @@ interface PayoutDetails {
   allDeductions: number;
   vehicleRent: number;
   finalAmount: number;
+  basePayout?: number;
   entries?: PayrollEntry[];
 }
 
@@ -147,7 +148,7 @@ export default function RiderDashboard() {
     }
   };
 
-  const fetchPayoutDetails = async (riderId: string, weekNumber: number, month: number, year: number) => {
+  const fetchPayoutDetails = async (riderId: string, weekNumber: number, month: number, year: number, basePayout: number = 0) => {
     try {
       setEntriesLoading(true);
       
@@ -185,16 +186,14 @@ export default function RiderDashboard() {
       const entriesData = await entriesRes.json();
       setRiderEntries(entriesData.entries || []);
 
-      // Calculate base payout from payouts table (8000 as per user's latest instruction)
-      const basePayout = 8000;
       const finalAmount = details.finalAmount || 0;
-      const finalPayout = basePayout + finalAmount;
 
       setPayoutDetails({
         allAdditions: details.allAdditions || 0,
         allDeductions: details.allDeductions || 0,
         vehicleRent: details.vehicleRent || 0,
         finalAmount: finalAmount,
+        basePayout: basePayout,
       });
     } catch (error) {
       console.error('Error fetching payout details:', error);
@@ -243,7 +242,8 @@ export default function RiderDashboard() {
         
         // If payout is finalized, fetch the detailed payout breakdown
         if (currentPayout.status === 'finalized') {
-          await fetchPayoutDetails(riderId, currentPayout.week_number, currentPayout.month, currentPayout.year);
+          const basePayout = parseFloat(currentPayout.base_payout) || 0;
+          await fetchPayoutDetails(riderId, currentPayout.week_number, currentPayout.month, currentPayout.year, basePayout);
         }
       }
 
@@ -333,7 +333,8 @@ export default function RiderDashboard() {
       setCurrentPayrollWeek(weekPayout);
       // If payout is finalized, fetch detailed breakdown
       if (weekPayout.status === 'finalized') {
-        await fetchPayoutDetails(rider.user_id, weekPayout.week_number, weekPayout.month, weekPayout.year);
+        const basePayout = parseFloat(weekPayout.base_payout) || 0;
+        await fetchPayoutDetails(rider.user_id, weekPayout.week_number, weekPayout.month, weekPayout.year, basePayout);
       } else {
         setPayoutDetails(null);
       }
@@ -663,7 +664,7 @@ export default function RiderDashboard() {
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-gray-700">Base Payout</span>
-                        <span className="text-sm font-semibold text-gray-900">₹8000.00</span>
+                        <span className="text-sm font-semibold text-gray-900">₹{(payoutDetails.basePayout || 0).toFixed(2)}</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-gray-700">Final Amount</span>
@@ -673,7 +674,7 @@ export default function RiderDashboard() {
                       </div>
                       <div className="border-t-2 border-green-400 pt-3 flex items-center justify-between">
                         <span className="font-bold text-gray-900">= FINAL PAYOUT</span>
-                        <span className="text-2xl font-bold text-green-600">₹{(8000 + payoutDetails.finalAmount).toFixed(2)}</span>
+                        <span className="text-2xl font-bold text-green-600">₹{((payoutDetails.basePayout || 0) + payoutDetails.finalAmount).toFixed(2)}</span>
                       </div>
                     </div>
                   </div>
