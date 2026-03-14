@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { getTodayIST, formatDateIST } from '@/lib/timezone';
 
 interface Rider {
   id: number;
@@ -22,18 +23,10 @@ interface Rider {
 
 export default function PayrollManagement() {
   const router = useRouter();
-  // Get today's date in local timezone (not UTC)
-  const getTodayString = () => {
-    const date = new Date();
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
 
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
-  const [selectedDate, setSelectedDate] = useState(getTodayString());
+  const [selectedDate, setSelectedDate] = useState(getTodayIST());
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [riders, setRiders] = useState<Rider[]>([]);
@@ -41,7 +34,7 @@ export default function PayrollManagement() {
   const [selectedRider, setSelectedRider] = useState<Rider | null>(null);
   const [showPanel, setShowPanel] = useState(false);
   const [panelMode, setPanelMode] = useState<'view' | 'add'>('view');
-  const [historyDate, setHistoryDate] = useState(new Date().toISOString().split('T')[0]);
+  const [historyDate, setHistoryDate] = useState(getTodayIST());
   const [historyEntries, setHistoryEntries] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
@@ -85,7 +78,7 @@ export default function PayrollManagement() {
     setShowPanel(true);
     setFormData({ amount: '', description: '', notes: '' });
     // Always default to today's date in the modal, not the selected filter date
-    const todayString = getTodayString();
+    const todayString = getTodayIST();
     setHistoryDate(todayString);
     setHistoryEntries([]);
     fetchHistoryEntries(rider.cee_id, todayString);
@@ -131,7 +124,8 @@ export default function PayrollManagement() {
 
       if (entryType === 'addition') {
         if (additionType === 'referral') {
-          payload = { ...payload, referrer_cee_id: selectedRider.cee_id, referred_name: formData.description, referred_phone: '', preferred_location: '', notes: formData.notes, amount: parseFloat(formData.amount), approval_status: 'approved', created_at: new Date().toISOString() };
+          // Use the selected date (historyDate) not today's date
+          payload = { ...payload, referrer_cee_id: selectedRider.cee_id, referred_name: formData.description, referred_phone: '', preferred_location: '', notes: formData.notes, amount: parseFloat(formData.amount), approval_status: 'approved', created_at: historyDate };
           endpoint = '/api/payroll/referrals';
         } else {
           payload = { ...payload, incentive_type: additionType, amount: parseFloat(formData.amount), description: formData.description, incentive_date: historyDate };
@@ -348,7 +342,7 @@ export default function PayrollManagement() {
 
                       {/* History Entries */}
                       <div className="bg-slate-50 rounded-lg border border-slate-200 p-4">
-                        <h4 className="font-semibold text-slate-900 mb-4">Entries for {new Date(historyDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</h4>
+                        <h4 className="font-semibold text-slate-900 mb-4">Entries for {new Date(historyDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' })}</h4>
                         
                         {historyEntries.length === 0 ? (
                           <div className="text-center py-8 text-slate-500">
