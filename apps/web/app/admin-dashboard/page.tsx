@@ -984,17 +984,22 @@ function AdminDashboardContent() {
                     required
                   >
                     <option value="">Select Vehicle Type</option>
-                    <option value="EV Scooter">EV Scooter</option>\n                    <option value="EV Bike">EV Bike</option>\n                    <option value="E-Auto">E-Auto</option>\n                  </select>
+                    <option value="EV Two Wheeler">EV Two Wheeler</option>
+                  </select>
                 </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-900 mb-2">Model</label>
-                  <input
-                    type="text"
+                <div>
+                  <label className="block text-sm font-semibold text-slate-900 mb-2">Model <span className="text-red-600">*</span></label>
+                  <select
                     value={formData.model || ''}
                     onChange={(e) => setFormData({...formData, model: e.target.value})}
-                    placeholder="e.g., Ather 450"
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                  />
+                    required
+                  >
+                    <option value="">Select Model</option>
+                    <option value="E-Sprinto">E-Sprinto</option>
+                    <option value="Quantum Bziness XS">Quantum Bziness XS</option>
+                    <option value="Motovolt M7">Motovolt M7</option>
+                  </select>
                 </div>
 
                 <div>
@@ -1345,22 +1350,25 @@ function AdminDashboardContent() {
                         onChange={(e) => setEditItem({...editItem, vehicle_type: e.target.value})} 
                         className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
                         required
-                  >
-                    <option value="">Select Vehicle Type</option>
-                    <option value="EV Scooter">EV Scooter</option>
-                    <option value="EV Bike">EV Bike</option>
-                    <option value="E-Auto">E-Auto</option>
-                  </select>
+                      >
+                        <option value="">Select Vehicle Type</option>
+                        <option value="EV Two Wheeler">EV Two Wheeler</option>
+                      </select>
                     </div>
 
                     <div>
-                      <label className="block text-sm font-semibold text-slate-900 mb-2\">Model</label>
-                      <input 
+                      <label className="block text-sm font-semibold text-slate-900 mb-2">Model <span className="text-red-600">*</span></label>
+                      <select 
                         value={editItem.model || ''} 
                         onChange={(e) => setEditItem({...editItem, model: e.target.value})} 
-                        placeholder="Model (e.g., Ather 450)" 
                         className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                      />
+                        required
+                      >
+                        <option value="">Select Model</option>
+                        <option value="E-Sprinto">E-Sprinto</option>
+                        <option value="Quantum Bziness XS">Quantum Bziness XS</option>
+                        <option value="Motovolt M7">Motovolt M7</option>
+                      </select>
                     </div>
 
                     <div>
