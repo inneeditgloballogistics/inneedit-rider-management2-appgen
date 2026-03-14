@@ -665,7 +665,7 @@ export default function PayrollEntries() {
                                   {' '}-{' '}
                                   <span className="text-indigo-700">Vehicle Rent (₹{totalVehicleRent.toFixed(2)})</span>
                                   {' '}={' '}
-                                  <span className="text-slate-900 font-bold">Final Amount (₹{finalAmount.toFixed(2)})</span>
+                                  <span className="text-slate-900 font-bold\">Final Amount (₹{finalAmount.toFixed(2)})</span>
                                 </p>
                               </>
                             );

@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     const weekEnd = weekDates[week as keyof typeof weekDates].end;
 
     // Fetch payout entries with final_amount calculated using new formula:
-    // All Additions - All Deductions - Vehicle Rent = Final Amount
+    // All Additions (Incentives + Referrals) - All Deductions (Advances + Deductions) - Vehicle Rent = Final Amount
     const payouts = await sql`
       SELECT 
         pe.cee_id,
@@ -25,45 +25,50 @@ export async function POST(request: Request) {
         pe.week,
         pe.base_payout,
         r.user_id as rider_id,
-        COALESCE(
-          (
-            SELECT SUM(COALESCE(amount, 0)) FROM incentives 
-            WHERE rider_id = pe.cee_id 
-            AND incentive_date >= ${weekStart}::date
-            AND incentive_date <= ${weekEnd}::date
-          ),
-          0
-        ) +
-        COALESCE(
-          (
-            SELECT SUM(COALESCE(amount, 0)) FROM referrals 
-            WHERE referrer_cee_id = pe.cee_id 
-            AND DATE(created_at) >= ${weekStart}::date
-            AND DATE(created_at) <= ${weekEnd}::date
-          ),
-          0
+        (
+          COALESCE(
+            (
+              SELECT SUM(COALESCE(amount, 0)) FROM incentives 
+              WHERE rider_id = pe.cee_id 
+              AND incentive_date >= ${weekStart}::date
+              AND incentive_date <= ${weekEnd}::date
+            ),
+            0
+          ) +
+          COALESCE(
+            (
+              SELECT SUM(COALESCE(amount, 0)) FROM referrals 
+              WHERE referrer_cee_id = pe.cee_id 
+              AND DATE(created_at) >= ${weekStart}::date
+              AND DATE(created_at) <= ${weekEnd}::date
+            ),
+            0
+          )
+        ) -
+        (
+          COALESCE(
+            (
+              SELECT SUM(COALESCE(amount, 0)) FROM advances 
+              WHERE (rider_id = pe.cee_id OR cee_id = pe.cee_id)
+              AND DATE(requested_at) >= ${weekStart}::date
+              AND DATE(requested_at) <= ${weekEnd}::date
+              AND status = 'approved'
+            ),
+            0
+          ) +
+          COALESCE(
+            (
+              SELECT SUM(COALESCE(amount, 0)) FROM deductions 
+              WHERE rider_id = pe.cee_id 
+              AND deduction_date >= ${weekStart}::date
+              AND deduction_date <= ${weekEnd}::date
+            ),
+            0
+          )
         ) -
         COALESCE(
           (
-            SELECT SUM(COALESCE(amount, 0)) FROM advances 
-            WHERE (rider_id = pe.cee_id OR cee_id = pe.cee_id)
-            AND DATE(requested_at) >= ${weekStart}::date
-            AND DATE(requested_at) <= ${weekEnd}::date
-          ),
-          0
-        ) -
-        COALESCE(
-          (
-            SELECT SUM(COALESCE(amount, 0)) FROM deductions 
-            WHERE rider_id = pe.cee_id 
-            AND deduction_date >= ${weekStart}::date
-            AND deduction_date <= ${weekEnd}::date
-          ),
-          0
-        ) -
-        COALESCE(
-          (
-            SELECT SUM(COALESCE(amount, 0)) FROM orders o
+            SELECT SUM(COALESCE(payout_amount, 0)) FROM orders o
             WHERE o.rider_id = pe.cee_id 
             AND DATE(o.order_date) >= ${weekStart}::date
             AND DATE(o.order_date) <= ${weekEnd}::date
