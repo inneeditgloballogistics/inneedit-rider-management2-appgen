@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Bell, LogOut, Package, TrendingUp, Users, Wallet, AlertCircle, Gift, DollarSign, Download, TrendingDown, Target, Trophy, TrendingDownIcon, CheckCircle, ArrowUpRight } from 'lucide-react';
+import { Bell, LogOut, Package, TrendingUp, Users, Wallet, AlertCircle, Gift, DollarSign, Download, TrendingDown, Target, Trophy, TrendingDownIcon, CheckCircle, ArrowUpRight, User } from 'lucide-react';
 import WeatherBadge from '@/components/WeatherBadge';
 import RequestAdvanceModal from '@/components/RequestAdvanceModal';
 import ReferRiderModal from '@/components/ReferRiderModal';
@@ -555,6 +555,14 @@ export default function RiderDashboard() {
             <button className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition" title="Notifications">
               <Bell className="w-5 h-5" />
               <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
+            </button>
+            <button
+              onClick={() => router.push('/rider-profile')}
+              className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition"
+              title="View Profile"
+            >
+              <User className="w-5 h-5" />
+              <span className="text-sm font-medium hidden sm:inline">Profile</span>
             </button>
             <div className="text-right hidden sm:block">
               <p className="text-sm font-medium text-gray-900">{rider.full_name}</p>
