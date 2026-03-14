@@ -109,24 +109,6 @@ export async function PATCH(request: NextRequest) {
       RETURNING *
     `;
 
-    // If approved, create deduction record with cee_id
-    if (status === 'approved') {
-      // Use the original requested_at date from the advance
-      const requestedDate = result[0].requested_at ? new Date(result[0].requested_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
-      
-      await sql`
-        INSERT INTO deductions (cee_id, rider_id, deduction_type, amount, description, deduction_date)
-        VALUES (
-          ${result[0].cee_id},
-          ${result[0].rider_id},
-          'advance',
-          ${result[0].amount},
-          ${`Advance approved: ${result[0].reason}`},
-          ${requestedDate}
-        )
-      `;
-    }
-
     return NextResponse.json(result[0]);
   } catch (error) {
     console.error('Error updating advance:', error);
