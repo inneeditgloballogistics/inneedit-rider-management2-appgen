@@ -10,9 +10,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Rider ID is required' }, { status: 400 });
     }
 
+    // Resolve riderId to cee_id first
+    const riderInfo = await sql`
+      SELECT cee_id FROM riders 
+      WHERE user_id = ${riderId} OR cee_id = ${riderId}
+      LIMIT 1
+    `;
+    
+    const ceeId = riderInfo.length > 0 ? riderInfo[0].cee_id : riderId;
+
     const deductions = await sql`
       SELECT * FROM deductions 
-      WHERE rider_id = ${riderId}
+      WHERE cee_id = ${ceeId}
       ORDER BY deduction_date DESC
     `;
 
@@ -21,7 +30,7 @@ export async function GET(request: NextRequest) {
         deduction_type,
         COALESCE(SUM(amount), 0) as total_amount
       FROM deductions 
-      WHERE rider_id = ${riderId}
+      WHERE cee_id = ${ceeId}
       GROUP BY deduction_type
     `;
 
@@ -38,11 +47,22 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { riderId, deductionType, amount, description, deductionDate } = body;
+    const { riderId, ceeId, deductionType, amount, description, deductionDate } = body;
+
+    // Resolve to cee_id if not provided
+    let resolvedCeeId = ceeId;
+    if (!resolvedCeeId) {
+      const riderInfo = await sql`
+        SELECT cee_id FROM riders 
+        WHERE user_id = ${riderId} OR cee_id = ${riderId}
+        LIMIT 1
+      `;
+      resolvedCeeId = riderInfo.length > 0 ? riderInfo[0].cee_id : riderId;
+    }
 
     const result = await sql`
-      INSERT INTO deductions (rider_id, deduction_type, amount, description, deduction_date)
-      VALUES (${riderId}, ${deductionType}, ${amount}, ${description}, ${deductionDate})
+      INSERT INTO deductions (cee_id, rider_id, deduction_type, amount, description, deduction_date)
+      VALUES (${resolvedCeeId}, ${riderId}, ${deductionType}, ${amount}, ${description}, ${deductionDate})
       RETURNING *
     `;
 

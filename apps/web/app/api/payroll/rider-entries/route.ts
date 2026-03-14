@@ -83,7 +83,7 @@ export async function POST(request: Request) {
           SELECT 
             i.id,
             i.rider_id,
-            COALESCE(r.cee_id, 'N/A') as cee_id,
+            COALESCE(i.cee_id, 'N/A') as cee_id,
             COALESCE(r.full_name, 'Unknown') as full_name,
             'incentive' as entry_type,
             COALESCE(i.amount, 0) as amount,
@@ -93,7 +93,7 @@ export async function POST(request: Request) {
             i.created_at
           FROM incentives i
           LEFT JOIN riders r ON i.rider_id = r.user_id OR i.rider_id = r.cee_id
-          WHERE (i.rider_id = ${rider_id} OR i.rider_id = ${resolvedCeeId})
+          WHERE i.cee_id = ${cee_id}
           AND DATE(i.incentive_date) BETWEEN ${start_date} AND ${end_date}
           ORDER BY i.incentive_date DESC
         `;
@@ -102,7 +102,7 @@ export async function POST(request: Request) {
           SELECT 
             i.id,
             i.rider_id,
-            COALESCE(r.cee_id, 'N/A') as cee_id,
+            COALESCE(i.cee_id, 'N/A') as cee_id,
             COALESCE(r.full_name, 'Unknown') as full_name,
             'incentive' as entry_type,
             COALESCE(i.amount, 0) as amount,
@@ -112,7 +112,7 @@ export async function POST(request: Request) {
             i.created_at
           FROM incentives i
           LEFT JOIN riders r ON i.rider_id = r.user_id OR i.rider_id = r.cee_id
-          WHERE (i.rider_id = ${rider_id} OR i.rider_id = ${resolvedCeeId})
+          WHERE i.cee_id = ${cee_id}
           ORDER BY i.incentive_date DESC
         `;
       }
@@ -139,7 +139,7 @@ export async function POST(request: Request) {
             a.requested_at as entry_date,
             a.requested_at as created_at
           FROM advances a
-          WHERE (a.rider_id = ${rider_id} OR a.cee_id = ${rider_id} OR a.rider_id = ${resolvedCeeId} OR a.cee_id = ${resolvedCeeId})
+          WHERE a.cee_id = ${cee_id}
           AND a.status = 'approved'
           AND DATE(a.requested_at) BETWEEN ${start_date} AND ${end_date}
           ORDER BY a.requested_at DESC
@@ -158,7 +158,7 @@ export async function POST(request: Request) {
             a.requested_at as entry_date,
             a.requested_at as created_at
           FROM advances a
-          WHERE (a.rider_id = ${rider_id} OR a.cee_id = ${rider_id} OR a.rider_id = ${resolvedCeeId} OR a.cee_id = ${resolvedCeeId})
+          WHERE a.cee_id = ${cee_id}
           AND a.status = 'approved'
           ORDER BY a.requested_at DESC
         `;
@@ -218,10 +218,7 @@ export async function POST(request: Request) {
       
       if (start_date && end_date) {
         console.log("🔍 Date range query: start_date =", start_date, "end_date =", end_date);
-        console.log("🔍 Query will match deductions WHERE:");
-        console.log("    rider_id =", rider_id, "OR");
-        console.log("    rider_id =", cee_id, "OR");
-        console.log("    rider_id =", resolvedCeeId);
+        console.log("🔍 Query will match deductions WHERE cee_id =", cee_id);
         
         deductions = await sql`
           SELECT 
@@ -242,7 +239,7 @@ export async function POST(request: Request) {
             d.deduction_date as entry_date,
             d.created_at
           FROM deductions d
-          WHERE (d.rider_id = ${rider_id} OR d.rider_id = ${cee_id} OR d.rider_id = ${resolvedCeeId})
+          WHERE d.cee_id = ${cee_id}
           AND DATE(d.deduction_date) BETWEEN ${start_date} AND ${end_date}
           ORDER BY d.deduction_date DESC
         `;
@@ -269,7 +266,7 @@ export async function POST(request: Request) {
             d.deduction_date as entry_date,
             d.created_at
           FROM deductions d
-          WHERE (d.rider_id = ${rider_id} OR d.rider_id = ${cee_id} OR d.rider_id = ${resolvedCeeId})
+          WHERE d.cee_id = ${cee_id}
           ORDER BY d.deduction_date DESC
         `;
         console.log("✅ All deductions found:", deductions.length);

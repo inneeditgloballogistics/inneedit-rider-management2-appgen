@@ -19,9 +19,18 @@ export async function GET(request: NextRequest) {
 
     let query;
     if (riderId) {
+      // Resolve riderId to cee_id first
+      const riderInfo = await sql`
+        SELECT cee_id FROM riders 
+        WHERE user_id = ${riderId} OR cee_id = ${riderId}
+        LIMIT 1
+      `;
+      
+      const ceeId = riderInfo.length > 0 ? riderInfo[0].cee_id : riderId;
+
       query = sql`
         SELECT * FROM advances 
-        WHERE rider_id = ${riderId}
+        WHERE cee_id = ${ceeId}
         ORDER BY requested_at DESC
       `;
     } else if (status) {
@@ -50,9 +59,20 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { riderId, ceeId, riderName, storeLocation, amount, reason } = body;
 
+    // Resolve to cee_id if not provided
+    let resolvedCeeId = ceeId;
+    if (!resolvedCeeId) {
+      const riderInfo = await sql`
+        SELECT cee_id FROM riders 
+        WHERE user_id = ${riderId} OR cee_id = ${riderId}
+        LIMIT 1
+      `;
+      resolvedCeeId = riderInfo.length > 0 ? riderInfo[0].cee_id : riderId;
+    }
+
     const result = await sql`
-      INSERT INTO advances (rider_id, cee_id, rider_name, store_location, amount, reason, requested_at)
-      VALUES (${riderId}, ${ceeId}, ${riderName}, ${storeLocation}, ${amount}, ${reason}, CURRENT_TIMESTAMP)
+      INSERT INTO advances (cee_id, rider_id, rider_name, store_location, amount, reason, requested_at)
+      VALUES (${resolvedCeeId}, ${riderId}, ${riderName}, ${storeLocation}, ${amount}, ${reason}, CURRENT_TIMESTAMP)
       RETURNING *
     `;
 
@@ -62,7 +82,7 @@ export async function POST(request: NextRequest) {
       VALUES (
         'advance',
         'New Advance Request',
-        ${`${riderName} (${ceeId}) from ${storeLocation} requested ₹${amount}`},
+        ${`${riderName} (${resolvedCeeId}) from ${storeLocation} requested ₹${amount}`},
         ${result[0].id}
       )
     `;
@@ -89,11 +109,12 @@ export async function PATCH(request: NextRequest) {
       RETURNING *
     `;
 
-    // If approved, create deduction record
+    // If approved, create deduction record with cee_id
     if (status === 'approved') {
       await sql`
-        INSERT INTO deductions (rider_id, deduction_type, amount, description, deduction_date)
+        INSERT INTO deductions (cee_id, rider_id, deduction_type, amount, description, deduction_date)
         VALUES (
+          ${result[0].cee_id},
           ${result[0].rider_id},
           'advance',
           ${result[0].amount},
