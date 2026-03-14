@@ -419,53 +419,7 @@ export default function RiderDashboard() {
                 </div>
               </div>
 
-              {/* Earnings Breakdown */}
-              <div className="mb-8 pb-6 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900 mb-6">Earnings Breakdown</h3>
-                <div className="space-y-3">
-                  {/* Base Payout */}
-                  <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-blue-200 rounded-lg flex items-center justify-center">
-                        <DollarSign className="w-5 h-5 text-blue-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">Base Payout</p>
-                        <p className="text-xs text-gray-600">Orders: {currentPayrollWeek.orders_count}</p>
-                      </div>
-                    </div>
-                    <p className="text-lg font-bold text-gray-900">₹{stats.basePayout.toFixed(2)}</p>
-                  </div>
 
-                  {/* Incentives */}
-                  <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-green-200 rounded-lg flex items-center justify-center">
-                        <Gift className="w-5 h-5 text-green-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">Total Incentives</p>
-                        <p className="text-xs text-gray-600">Referrals, Bonuses, etc</p>
-                      </div>
-                    </div>
-                    <p className="text-lg font-bold text-green-600">+₹{stats.totalIncentives.toFixed(2)}</p>
-                  </div>
-
-                  {/* Deductions */}
-                  <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg border border-red-200">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-red-200 rounded-lg flex items-center justify-center">
-                        <TrendingDown className="w-5 h-5 text-red-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">Total Deductions</p>
-                        <p className="text-xs text-gray-600">Damages, Advances, etc</p>
-                      </div>
-                    </div>
-                    <p className="text-lg font-bold text-red-600">-₹{stats.totalDeductions.toFixed(2)}</p>
-                  </div>
-                </div>
-              </div>
 
               {/* Final Amount Calculation */}
               {payoutDetails ? (
