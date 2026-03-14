@@ -115,18 +115,23 @@ export async function POST(request: Request) {
         }
       }
 
-      const totalAdditions = parseFloat(entry.total_incentives) + parseFloat(entry.total_referrals);
-      const totalDeductions = parseFloat(entry.total_advances) + parseFloat(entry.total_deductions);
-      const finalAmount = totalAdditions - totalDeductions - vehicleRent;
+      const allAdditions = parseFloat(entry.total_incentives) + parseFloat(entry.total_referrals);
+      const allDeductions = parseFloat(entry.total_advances) + parseFloat(entry.total_deductions);
+      const finalAmount = allAdditions - allDeductions - vehicleRent;
+      const basePayout = parseFloat(entry.base_payout) || 0;
+      const finalPayout = basePayout + finalAmount;
       
       return {
         cee_id: entry.cee_id,
         rider_name: entry.rider_name,
         rider_id: entry.rider_id,
         week: entry.week,
-        base_payout: parseFloat(entry.base_payout) || 0,
+        base_payout: basePayout,
+        all_additions: allAdditions,
+        all_deductions: allDeductions,
+        vehicle_rent: vehicleRent,
         final_amount: finalAmount,
-        final_payout: parseFloat(entry.base_payout) + finalAmount
+        final_payout: finalPayout
       };
     });
 

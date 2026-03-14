@@ -850,6 +850,15 @@ export default function RiderDashboard() {
                       Payout Finalized
                     </p>
 
+                    {/* Formula Info Box */}
+                    <div className="mb-6 p-4 bg-amber-50 rounded-lg border border-amber-200">
+                      <p className="text-xs font-semibold text-amber-900 mb-3 uppercase tracking-wide">Formula Applied:</p>
+                      <div className="text-xs text-amber-800 space-y-1 font-mono">
+                        <p><strong>Final Amount</strong> = All Additions - All Deductions - Vehicle Rent</p>
+                        <p><strong>Final Payout</strong> = Base Payout + Final Amount</p>
+                      </div>
+                    </div>
+
                     {/* Expandable Sections */}
                     <ExpandableSection
                       title={`All Additions (Week ${currentPayrollWeek?.week_number})`}
@@ -877,7 +886,7 @@ export default function RiderDashboard() {
 
                     {/* Final Amount Calculation */}
                     <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                      <p className="text-sm font-semibold text-blue-700 mb-4">Final Amount Calculation</p>
+                      <p className="text-sm font-semibold text-blue-700 mb-4">Final Amount = All Additions - All Deductions - Vehicle Rent</p>
                       <div className="space-y-2">
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-gray-700">All Additions</span>
@@ -903,14 +912,14 @@ export default function RiderDashboard() {
 
                   {/* Final Payout Box (Green Transparent) */}
                   <div className="bg-gradient-to-br from-green-50 via-emerald-50 to-green-50 p-6 rounded-lg border-2 border-green-300 backdrop-blur-sm">
-                    <p className="text-xs font-semibold text-green-700 mb-4 uppercase tracking-wide">Final Payout Calculation</p>
+                    <p className="text-xs font-semibold text-green-700 mb-4 uppercase tracking-wide">Final Payout = Base Payout + Final Amount</p>
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-gray-700">Base Payout</span>
                         <span className="text-sm font-semibold text-gray-900">₹{(payoutDetails.basePayout || 0).toFixed(2)}</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-700">Final Amount</span>
+                        <span className="text-sm text-gray-700">+ Final Amount</span>
                         <span className={`text-sm font-semibold ${payoutDetails.finalAmount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                           {payoutDetails.finalAmount >= 0 ? '+' : ''}₹{payoutDetails.finalAmount.toFixed(2)}
                         </span>

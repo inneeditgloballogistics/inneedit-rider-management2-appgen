@@ -116,11 +116,24 @@ export async function POST(request: Request) {
         const totalAdvances = parseFloat(advanceData[0]?.total || 0);
         const totalDeductions = parseFloat(deductionData[0]?.total || 0);
 
-        // Calculate final amounts
-        // Note: Do NOT include vehicle rent here as it may already be in the deductions table
-        const totalAdditions = totalReferrals + totalIncentives;
-        const totalDeductionsAndAdvances = totalAdvances + totalDeductions;
-        const finalAmount = totalAdditions - totalDeductionsAndAdvances;
+        // NEW FORMULA:
+        // Final Amount = All Additions - All Deductions - Vehicle Rent
+        // Final Payout = Base Payout + Final Amount
+        
+        const allAdditions = totalReferrals + totalIncentives;
+        const allDeductions = totalAdvances + totalDeductions;
+        
+        // Calculate vehicle rent dynamically
+        let vehicleRent = 0;
+        if (vehicleOwnership === 'company_ev') {
+          let riderJoinDate: Date | null = null;
+          if (riderInfo[0]?.join_date) {
+            const dateObj = new Date(riderInfo[0].join_date);
+            if (!isNaN(dateObj.getTime())) {
+              const y = dateObj.getUTCFullYear();
+              const m = dateObj.getUTCMonth() + 1;
+              const d = dateObj.getUTCDate();
+              riderJoinDate = new Date(Date.UTC(y, m - 1, d));\n            }\n          }\n          \n          let dailyRent = 0;\n          const evDailyRent = riderInfo[0]?.ev_daily_rent || null;\n          const evType = riderInfo[0]?.ev_type;\n          \n          if (evDailyRent && evDailyRent > 0) {\n            dailyRent = Number(evDailyRent);\n          } else if (evType === 'sunmobility_swap') {\n            dailyRent = 243;\n          } else if (evType === 'fixed_battery') {\n            dailyRent = 215;\n          }\n          \n          if (dailyRent > 0) {\n            const startDate = new Date(`${startDateStr}T00:00:00Z`);\n            const endDate = new Date(`${endDateStr}T00:00:00Z`);\n            let currentDate = new Date(startDate);\n            let daysCount = 0;\n            \n            while (currentDate <= endDate) {\n              if (!riderJoinDate || currentDate >= riderJoinDate) {\n                daysCount++;\n              }\n              currentDate.setUTCDate(currentDate.getUTCDate() + 1);\n            }\n            \n            vehicleRent = dailyRent * daysCount;\n          }\n        }\n        \n        const finalAmount = allAdditions - allDeductions - vehicleRent;
         const finalPayout = basePayout + finalAmount;
 
         // Check if payout exists
@@ -134,19 +147,21 @@ export async function POST(request: Request) {
         `;
 
         if (existingPayout.length > 0) {
-          // Update existing
+          // Update existing with new formula
           await sql`
             UPDATE payouts
             SET 
               base_payout = ${basePayout},
-              total_incentives = ${totalAdditions},
-              total_deductions = ${totalDeductionsAndAdvances},
+              total_incentives = ${allAdditions},
+              total_deductions = ${allDeductions},
               net_payout = ${finalPayout},
+              final_amount = ${finalAmount},
+              final_payout = ${finalPayout},
               status = 'finalized'
             WHERE id = ${existingPayout[0].id}
           `;
         } else {
-          // Insert new
+          // Insert new with new formula
           await sql`
             INSERT INTO payouts (
               rider_id,
@@ -158,6 +173,8 @@ export async function POST(request: Request) {
               total_incentives,
               total_deductions,
               net_payout,
+              final_amount,
+              final_payout,
               status,
               created_at
             )
@@ -168,8 +185,10 @@ export async function POST(request: Request) {
               ${month},
               ${year},
               ${basePayout},
-              ${totalAdditions},
-              ${totalDeductionsAndAdvances},
+              ${allAdditions},
+              ${allDeductions},
+              ${finalPayout},
+              ${finalAmount},
               ${finalPayout},
               'finalized',
               NOW()

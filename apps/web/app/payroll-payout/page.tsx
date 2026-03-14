@@ -21,10 +21,12 @@ interface RiderPayoutData {
   rider_name: string;
   week: number;
   base_payout: number;
+  all_additions: number;
+  all_deductions: number;
+  vehicle_rent: number;
   final_amount: number;
   final_payout: number;
   rider_id?: string;
-  vehicle_rent?: number;
 }
 
 export default function PayrollPayout() {
@@ -442,6 +444,15 @@ export default function PayrollPayout() {
           {/* Summary Tab */}
           {tab === 'summary' && (
             <div className="space-y-6">
+              {/* Formula Info Box */}
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+                <p className="text-sm font-semibold text-blue-900 mb-3">✓ Formula Applied:</p>
+                <div className="text-sm text-blue-800 space-y-2 font-mono">
+                  <p><strong>Final Amount</strong> = All Additions - All Deductions - Vehicle Rent</p>
+                  <p><strong>Final Payout</strong> = Base Payout + Final Amount</p>
+                </div>
+              </div>
+
               {/* Filters */}
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
                 <h2 className="font-display text-xl font-bold text-slate-900 mb-4">Riders Payout Summary</h2>
@@ -509,6 +520,8 @@ export default function PayrollPayout() {
                           <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Rider Name</th>
                           <th className="px-6 py-4 text-center text-sm font-semibold text-slate-900">Week</th>
                           <th className="px-6 py-4 text-right text-sm font-semibold text-slate-900">Base Payout (₹)</th>
+                          <th className="px-6 py-4 text-right text-sm font-semibold text-slate-900">All Additions (₹)</th>
+                          <th className="px-6 py-4 text-right text-sm font-semibold text-slate-900">All Deductions (₹)</th>
                           <th className="px-6 py-4 text-right text-sm font-semibold text-slate-900">Vehicle Rent (₹)</th>
                           <th className="px-6 py-4 text-right text-sm font-semibold text-slate-900">Final Amount (₹)</th>
                           <th className="px-6 py-4 text-right text-sm font-semibold text-slate-900">Final Payout (₹)</th>
@@ -521,7 +534,9 @@ export default function PayrollPayout() {
                             <td className="px-6 py-4 text-sm text-slate-900">{payout.rider_name}</td>
                             <td className="px-6 py-4 text-center text-sm text-slate-900">{payout.week}</td>
                             <td className="px-6 py-4 text-right text-sm font-semibold text-slate-900">₹{payout.base_payout.toFixed(2)}</td>
-                            <td className="px-6 py-4 text-right text-sm text-slate-600">₹{(payout.vehicle_rent || 0).toFixed(2)}</td>
+                            <td className="px-6 py-4 text-right text-sm text-green-700">₹{payout.all_additions?.toFixed(2) || '0.00'}</td>
+                            <td className="px-6 py-4 text-right text-sm text-red-700">₹{payout.all_deductions?.toFixed(2) || '0.00'}</td>
+                            <td className="px-6 py-4 text-right text-sm text-red-700">₹{payout.vehicle_rent?.toFixed(2) || '0.00'}</td>
                             <td className="px-6 py-4 text-right text-sm font-semibold text-slate-900">₹{payout.final_amount.toFixed(2)}</td>
                             <td className={`px-6 py-4 text-right text-sm font-bold ${
                               payout.final_payout >= 0 ? 'text-green-700' : 'text-red-700'
