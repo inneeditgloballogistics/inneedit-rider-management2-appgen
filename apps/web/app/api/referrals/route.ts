@@ -17,11 +17,25 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ pendingCount: result[0].count || 0 });
     }
 
-    let query;
+    let ceeId = riderId;
+    
+    // Resolve rider_id to cee_id if needed
     if (riderId) {
+      const rider = await sql`
+        SELECT cee_id FROM riders 
+        WHERE user_id = ${riderId} OR cee_id = ${riderId}
+        LIMIT 1
+      `;
+      if (rider.length > 0) {
+        ceeId = rider[0].cee_id;
+      }
+    }
+
+    let query;
+    if (ceeId) {
       query = sql`
         SELECT * FROM referrals 
-        WHERE referrer_id = ${riderId}
+        WHERE referrer_cee_id = ${ceeId}
         ORDER BY created_at DESC
       `;
     } else if (status) {
@@ -48,11 +62,11 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { referrerId, referrerCeeId, referrerName, referredName, referredPhone, preferredLocation, notes } = body;
+    const { referrerCeeId, referrerName, referredName, referredPhone, preferredLocation, notes } = body;
 
     const result = await sql`
-      INSERT INTO referrals (referrer_id, referrer_cee_id, referrer_name, referred_name, referred_phone, preferred_location, notes)
-      VALUES (${referrerId}, ${referrerCeeId}, ${referrerName}, ${referredName}, ${referredPhone}, ${preferredLocation}, ${notes || null})
+      INSERT INTO referrals (referrer_cee_id, referrer_name, referred_name, referred_phone, preferred_location, notes, status)
+      VALUES (${referrerCeeId}, ${referrerName}, ${referredName}, ${referredPhone}, ${preferredLocation}, ${notes || null}, 'pending')
       RETURNING *
     `;
 

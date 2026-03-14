@@ -69,7 +69,7 @@ export async function POST(request: Request) {
       const referrals = await sql`
         SELECT COALESCE(SUM(amount), 0) as total
         FROM referrals
-        WHERE (referrer_cee_id = ${cee_id} OR referrer_id = ${rider_id})
+        WHERE referrer_cee_id = ${cee_id}
         AND approval_status = 'approved'
         AND DATE(created_at) BETWEEN ${startDateStr} AND ${endDateStr}
       `;

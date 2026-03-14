@@ -35,7 +35,7 @@ export async function POST(request: Request) {
         referrals = await sql`
           SELECT 
             r.id,
-            r.referrer_id as rider_id,
+            r.referrer_cee_id as rider_id,
             COALESCE(r.referrer_cee_id, 'N/A') as cee_id,
             COALESCE(r.referrer_name, 'Unknown') as full_name,
             'referral' as entry_type,
@@ -45,7 +45,7 @@ export async function POST(request: Request) {
             r.created_at as entry_date,
             r.created_at as created_at
           FROM referrals r
-          WHERE (r.referrer_cee_id = ${resolvedCeeId} OR r.referrer_id = ${resolvedCeeId} OR r.referrer_id = ${rider_id})
+          WHERE r.referrer_cee_id = ${resolvedCeeId}
           AND r.approval_status = 'approved'
           AND DATE(r.created_at) BETWEEN ${start_date} AND ${end_date}
           ORDER BY r.created_at DESC
@@ -54,7 +54,7 @@ export async function POST(request: Request) {
         referrals = await sql`
           SELECT 
             r.id,
-            r.referrer_id as rider_id,
+            r.referrer_cee_id as rider_id,
             COALESCE(r.referrer_cee_id, 'N/A') as cee_id,
             COALESCE(r.referrer_name, 'Unknown') as full_name,
             'referral' as entry_type,
@@ -64,7 +64,7 @@ export async function POST(request: Request) {
             r.created_at as entry_date,
             r.created_at as created_at
           FROM referrals r
-          WHERE (r.referrer_cee_id = ${resolvedCeeId} OR r.referrer_id = ${resolvedCeeId} OR r.referrer_id = ${rider_id})
+          WHERE r.referrer_cee_id = ${resolvedCeeId}
           AND r.approval_status = 'approved'
           ORDER BY r.created_at DESC
         `;

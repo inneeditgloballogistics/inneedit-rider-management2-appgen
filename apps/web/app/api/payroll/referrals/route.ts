@@ -5,9 +5,8 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const {
-      rider_id,
-      rider_name,
       referrer_cee_id,
+      rider_name,
       referred_name,
       referred_phone,
       preferred_location,
@@ -19,7 +18,6 @@ export async function POST(request: NextRequest) {
 
     const result = await sql`
       INSERT INTO referrals (
-        referrer_id,
         referrer_cee_id,
         referrer_name,
         referred_name,
@@ -30,8 +28,7 @@ export async function POST(request: NextRequest) {
         approval_status,
         created_at
       ) VALUES (
-        ${rider_id},
-        ${referrer_cee_id || rider_id},
+        ${referrer_cee_id},
         ${rider_name},
         ${referred_name},
         ${referred_phone},

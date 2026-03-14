@@ -271,7 +271,7 @@ export async function DELETE(request: NextRequest) {
     const [orders, advances, referrals, deductions, incentives, payouts] = await Promise.all([
       sql`SELECT COUNT(*) as count FROM orders WHERE rider_id = ${riderData.cee_id}`,
       sql`SELECT COUNT(*) as count FROM advances WHERE rider_id = ${riderData.cee_id}`,
-      sql`SELECT COUNT(*) as count FROM referrals WHERE referrer_id = ${riderData.cee_id}`,
+      sql`SELECT COUNT(*) as count FROM referrals WHERE referrer_cee_id = ${riderData.cee_id}`,
       sql`SELECT COUNT(*) as count FROM deductions WHERE rider_id = ${riderData.cee_id}`,
       sql`SELECT COUNT(*) as count FROM incentives WHERE rider_id = ${riderData.cee_id}`,
       sql`SELECT COUNT(*) as count FROM payouts WHERE rider_id = ${riderData.cee_id}`

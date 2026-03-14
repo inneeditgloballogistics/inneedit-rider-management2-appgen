@@ -11,7 +11,7 @@ export async function POST(request: Request) {
       const referrals = await sql`
         SELECT 
           id,
-          referrer_id as rider_id,
+          referrer_cee_id as rider_id,
           referrer_name as rider_name,
           'referral' as entry_type,
           1000 as amount,
@@ -23,7 +23,7 @@ export async function POST(request: Request) {
         WHERE EXTRACT(YEAR FROM created_at) = ${year}
         AND EXTRACT(MONTH FROM created_at) = ${month}
         AND approval_status = 'approved'
-        ${search ? sql`AND (referrer_name ILIKE ${'%' + search + '%'} OR referrer_id ILIKE ${'%' + search + '%'})` : sql``}
+        ${search ? sql`AND (referrer_name ILIKE ${'%' + search + '%'} OR referrer_cee_id ILIKE ${'%' + search + '%'})` : sql``}
         ORDER BY created_at DESC
       `;
       entries = [...entries, ...referrals];
