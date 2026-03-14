@@ -78,6 +78,23 @@ interface Advance {
   requested_at: string;
 }
 
+interface PayoutDetails {
+  allAdditions: number;
+  allDeductions: number;
+  vehicleRent: number;
+  finalAmount: number;
+  entries?: PayrollEntry[];
+}
+
+interface PayrollEntry {
+  id: number | string;
+  entry_type: string;
+  amount: number;
+  description: string;
+  entry_date: string;
+  status: string;
+}
+
 export default function RiderDashboard() {
   const router = useRouter();
   const [rider, setRider] = useState<RiderData | null>(null);
@@ -91,9 +108,12 @@ export default function RiderDashboard() {
   const [currentPayrollWeek, setCurrentPayrollWeek] = useState<Payout | null>(null);
   const [selectedWeek, setSelectedWeek] = useState<number>(1);
   const [downloadingPayslip, setDownloadingPayslip] = useState(false);
-  const [payoutDetails, setPayoutDetails] = useState<any>(null);
+  const [payoutDetails, setPayoutDetails] = useState<PayoutDetails | null>(null);
   const [showAdvanceModal, setShowAdvanceModal] = useState(false);
   const [showReferralModal, setShowReferralModal] = useState(false);
+  const [riderEntries, setRiderEntries] = useState<PayrollEntry[]>([]);
+  const [expandedSection, setExpandedSection] = useState<string | null>(null);
+  const [entriesLoading, setEntriesLoading] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -127,6 +147,83 @@ export default function RiderDashboard() {
     }
   };
 
+  const fetchPayoutDetails = async (riderId: string, weekNumber: number, month: number, year: number) => {
+    try {
+      setEntriesLoading(true);
+      
+      // Fetch aggregated payout details
+      const detailsRes = await fetch('/api/payroll/rider-payout-details', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          rider_id: riderId,
+          week_number: weekNumber,
+          month: month,
+          year: year
+        })
+      });
+      const details = await detailsRes.json();
+
+      // Fetch individual entries for expandable sections
+      const { startDate, endDate } = getWeekDateRange(weekNumber, month, year);
+      const formatDate = (date: Date) => {
+        const y = date.getUTCFullYear();
+        const m = String(date.getUTCMonth() + 1).padStart(2, '0');
+        const d = String(date.getUTCDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+      };
+
+      const entriesRes = await fetch('/api/payroll/rider-entries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          rider_id: riderId,
+          start_date: formatDate(startDate),
+          end_date: formatDate(endDate)
+        })
+      });
+      const entriesData = await entriesRes.json();
+      setRiderEntries(entriesData.entries || []);
+
+      // Calculate base payout from payouts table (8000 as per user's latest instruction)
+      const basePayout = 8000;
+      const finalAmount = details.finalAmount || 0;
+      const finalPayout = basePayout + finalAmount;
+
+      setPayoutDetails({
+        allAdditions: details.allAdditions || 0,
+        allDeductions: details.allDeductions || 0,
+        vehicleRent: details.vehicleRent || 0,
+        finalAmount: finalAmount,
+      });
+    } catch (error) {
+      console.error('Error fetching payout details:', error);
+      setPayoutDetails(null);
+    } finally {
+      setEntriesLoading(false);
+    }
+  };
+
+  const getWeekDateRange = (week: number, month: number, year: number) => {
+    let startDate, endDate;
+    
+    if (week === 1) {
+      startDate = new Date(Date.UTC(year, month - 1, 1));
+      endDate = new Date(Date.UTC(year, month - 1, 7));
+    } else if (week === 2) {
+      startDate = new Date(Date.UTC(year, month - 1, 8));
+      endDate = new Date(Date.UTC(year, month - 1, 14));
+    } else if (week === 3) {
+      startDate = new Date(Date.UTC(year, month - 1, 15));
+      endDate = new Date(Date.UTC(year, month - 1, 21));
+    } else if (week === 4) {
+      startDate = new Date(Date.UTC(year, month - 1, 22));
+      endDate = new Date(Date.UTC(year, month, 0));
+    }
+    
+    return { startDate, endDate };
+  };
+
   const fetchAllData = async (riderId: string) => {
     try {
       // Fetch orders
@@ -144,17 +241,9 @@ export default function RiderDashboard() {
         const currentPayout = payoutsData[0];
         setCurrentPayrollWeek(currentPayout);
         
-        // If payout is finalized, set payoutDetails with correct calculation
+        // If payout is finalized, fetch the detailed payout breakdown
         if (currentPayout.status === 'finalized') {
-          const basePayout = parseFloat(currentPayout.base_payout);
-          const netPayout = parseFloat(currentPayout.net_payout);
-          const finalAmount = netPayout - basePayout;
-          
-          setPayoutDetails({
-            basePayout: basePayout,
-            finalAmount: finalAmount,
-            finalPayout: netPayout,
-          });
+          await fetchPayoutDetails(riderId, currentPayout.week_number, currentPayout.month, currentPayout.year);
         }
       }
 
@@ -240,19 +329,11 @@ export default function RiderDashboard() {
     const weekPayout = payouts.find(
       (p) => p.week_number === week && p.month === new Date().getMonth() + 1 && p.year === new Date().getFullYear()
     ) || currentPayrollWeek;
-    if (weekPayout) {
+    if (weekPayout && rider) {
       setCurrentPayrollWeek(weekPayout);
-      // If payout is finalized, use the net_payout directly from the payout record
+      // If payout is finalized, fetch detailed breakdown
       if (weekPayout.status === 'finalized') {
-        const basePayout = parseFloat(weekPayout.base_payout);
-        const netPayout = parseFloat(weekPayout.net_payout);
-        const finalAmount = netPayout - basePayout;
-        
-        setPayoutDetails({
-          basePayout: basePayout,
-          finalAmount: finalAmount,
-          finalPayout: netPayout,
-        });
+        await fetchPayoutDetails(rider.user_id, weekPayout.week_number, weekPayout.month, weekPayout.year);
       } else {
         setPayoutDetails(null);
       }
@@ -277,6 +358,93 @@ export default function RiderDashboard() {
   }
 
   const stats = getPayrollStats();
+
+  const getEntriesByType = (type: string): PayrollEntry[] => {
+    return riderEntries.filter(e => {
+      if (type === 'additions') {
+        return ['referral', 'incentive'].includes(e.entry_type?.toLowerCase());
+      } else if (type === 'deductions') {
+        return ['advance', 'security_deposit', 'damage', 'challan', 'other'].includes(e.entry_type?.toLowerCase());
+      } else if (type === 'vehicle_rent') {
+        return e.entry_type?.toLowerCase() === 'vehicle_rent';
+      }
+      return false;
+    });
+  };
+
+  const ExpandableSection = ({ title, amount, type, entries, color }: any) => (
+    <div className={`mb-6 p-4 rounded-lg border ${
+      color === 'green' ? 'bg-green-50 border-green-200' :
+      color === 'red' ? 'bg-red-50 border-red-200' :
+      'bg-orange-50 border-orange-200'
+    }`}>
+      <button
+        onClick={() => setExpandedSection(expandedSection === type ? null : type)}
+        className="w-full flex items-center justify-between mb-0"
+      >
+        <div className="flex-1 text-left">
+          <p className={`text-sm font-semibold ${
+            color === 'green' ? 'text-green-700' :
+            color === 'red' ? 'text-red-700' :
+            'text-orange-700'
+          } mb-3`}>{title}</p>
+          <p className={`text-2xl font-bold ${
+            color === 'green' ? 'text-green-600' :
+            color === 'red' ? 'text-red-600' :
+            'text-orange-600'
+          }`}>₹{amount.toFixed(2)}</p>
+        </div>
+        <div className={`transform transition-transform ml-4 ${
+          expandedSection === type ? 'rotate-180' : ''
+        }`}>
+          <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+          </svg>
+        </div>
+      </button>
+
+      {/* Expanded Content */}
+      {expandedSection === type && (
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          {entriesLoading ? (
+            <div className="text-center py-4">
+              <div className="inline-block">
+                <div className="w-6 h-6 border-2 border-gray-300 border-t-indigo-600 rounded-full animate-spin"></div>
+              </div>
+            </div>
+          ) : entries.length === 0 ? (
+            <p className="text-sm text-gray-600 text-center py-4">No entries</p>
+          ) : (
+            <div className="space-y-2">
+              {entries.map((entry, idx) => (
+                <div key={`${type}-${entry.id}-${idx}`} className="flex items-center justify-between text-sm bg-white p-3 rounded border border-gray-100">
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-900 capitalize">{entry.entry_type.replace(/_/g, ' ')}</p>
+                    <p className="text-xs text-gray-600">{entry.description}</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {new Date(entry.entry_date).toLocaleDateString('en-IN', { 
+                        day: '2-digit', 
+                        month: 'short', 
+                        year: 'numeric',
+                        timeZone: 'Asia/Kolkata'
+                      })}
+                    </p>
+                  </div>
+                  <div className={`text-right font-semibold ${
+                    type === 'additions' ? 'text-green-600' :
+                    type === 'deductions' ? 'text-red-600' :
+                    'text-orange-600'
+                  }`}>
+                    {type === 'additions' ? '+' : type === 'deductions' ? '-' : '-'}₹{Math.abs(entry.amount).toFixed(2)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100">
@@ -431,26 +599,30 @@ export default function RiderDashboard() {
                       Payout Finalized
                     </p>
 
-                    {/* All Additions */}
-                    <div className="mb-6 p-4 bg-green-50 rounded-lg border border-green-200">
-                      <p className="text-sm font-semibold text-green-700 mb-3">All Additions (Week {currentPayrollWeek?.week_number})</p>
-                      <p className="text-2xl font-bold text-green-600">₹{Math.max(0, payoutDetails.finalAmount + (stats?.totalDeductions || 0)).toFixed(2)}</p>
-                      <p className="text-xs text-gray-600 mt-1">Referrals + Incentives</p>
-                    </div>
+                    {/* Expandable Sections */}
+                    <ExpandableSection
+                      title={`All Additions (Week ${currentPayrollWeek?.week_number})`}
+                      amount={payoutDetails.allAdditions}
+                      type="additions"
+                      entries={getEntriesByType('additions')}
+                      color="green"
+                    />
 
-                    {/* All Deductions */}
-                    <div className="mb-6 p-4 bg-red-50 rounded-lg border border-red-200">
-                      <p className="text-sm font-semibold text-red-700 mb-3">All Deductions (Week {currentPayrollWeek?.week_number})</p>
-                      <p className="text-2xl font-bold text-red-600">₹{(stats?.totalDeductions || 0).toFixed(2)}</p>
-                      <p className="text-xs text-gray-600 mt-1">Advances + Other Deductions</p>
-                    </div>
+                    <ExpandableSection
+                      title={`All Deductions (Week ${currentPayrollWeek?.week_number})`}
+                      amount={payoutDetails.allDeductions}
+                      type="deductions"
+                      entries={getEntriesByType('deductions')}
+                      color="red"
+                    />
 
-                    {/* Vehicle Rent */}
-                    <div className="mb-6 p-4 bg-orange-50 rounded-lg border border-orange-200">
-                      <p className="text-sm font-semibold text-orange-700 mb-3">Vehicle Rent (Week {currentPayrollWeek?.week_number})</p>
-                      <p className="text-2xl font-bold text-orange-600">₹0.00</p>
-                      <p className="text-xs text-gray-600 mt-1">Already deducted in total deductions</p>
-                    </div>
+                    <ExpandableSection
+                      title={`Vehicle Rent (Week ${currentPayrollWeek?.week_number})`}
+                      amount={payoutDetails.vehicleRent}
+                      type="vehicle_rent"
+                      entries={getEntriesByType('vehicle_rent')}
+                      color="orange"
+                    />
 
                     {/* Final Amount Calculation */}
                     <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
@@ -458,15 +630,15 @@ export default function RiderDashboard() {
                       <div className="space-y-2">
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-gray-700">All Additions</span>
-                          <span className="font-medium text-green-600">+₹{Math.max(0, payoutDetails.finalAmount + (stats?.totalDeductions || 0)).toFixed(2)}</span>
+                          <span className="font-medium text-green-600">+₹{payoutDetails.allAdditions.toFixed(2)}</span>
                         </div>
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-gray-700">All Deductions</span>
-                          <span className="font-medium text-red-600">-₹{(stats?.totalDeductions || 0).toFixed(2)}</span>
+                          <span className="font-medium text-red-600">-₹{payoutDetails.allDeductions.toFixed(2)}</span>
                         </div>
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-gray-700">Vehicle Rent</span>
-                          <span className="font-medium text-orange-600">-₹0.00</span>
+                          <span className="font-medium text-orange-600">-₹{payoutDetails.vehicleRent.toFixed(2)}</span>
                         </div>
                         <div className="border-t-2 border-blue-300 pt-2 flex items-center justify-between">
                           <span className="font-semibold text-gray-900">= Final Amount</span>
@@ -483,8 +655,8 @@ export default function RiderDashboard() {
                     <p className="text-xs font-semibold text-green-700 mb-4 uppercase tracking-wide">Final Payout Calculation</p>
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-700">Base Amount</span>
-                        <span className="text-sm font-semibold text-gray-900">₹{payoutDetails.basePayout.toFixed(2)}</span>
+                        <span className="text-sm text-gray-700">Base Payout</span>
+                        <span className="text-sm font-semibold text-gray-900">₹8000.00</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-gray-700">Final Amount</span>
@@ -494,7 +666,7 @@ export default function RiderDashboard() {
                       </div>
                       <div className="border-t-2 border-green-400 pt-3 flex items-center justify-between">
                         <span className="font-bold text-gray-900">= FINAL PAYOUT</span>
-                        <span className="text-2xl font-bold text-green-600">₹{payoutDetails.finalPayout.toFixed(2)}</span>
+                        <span className="text-2xl font-bold text-green-600">₹{(8000 + payoutDetails.finalAmount).toFixed(2)}</span>
                       </div>
                     </div>
                   </div>
