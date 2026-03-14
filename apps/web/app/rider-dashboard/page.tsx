@@ -364,7 +364,7 @@ export default function RiderDashboard() {
       if (type === 'additions') {
         return ['referral', 'incentive'].includes(e.entry_type?.toLowerCase());
       } else if (type === 'deductions') {
-        return ['advance', 'security_deposit', 'damage', 'challan', 'other'].includes(e.entry_type?.toLowerCase());
+        return ['security_deposit', 'damage', 'challan', 'other'].includes(e.entry_type?.toLowerCase());
       } else if (type === 'vehicle_rent') {
         return e.entry_type?.toLowerCase() === 'vehicle_rent';
       }

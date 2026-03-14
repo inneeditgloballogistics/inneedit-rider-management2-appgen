@@ -14,6 +14,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ entries: [] });
     }
 
+    // First, resolve rider_id to cee_id (in case rider_id is a user_id)
+    let resolvedCeeId = rider_id;
+    try {
+      const riderResolve = await sql`SELECT cee_id FROM riders WHERE user_id = ${rider_id} OR cee_id = ${rider_id} LIMIT 1`;
+      if (riderResolve?.[0]?.cee_id) {
+        resolvedCeeId = riderResolve[0].cee_id;
+        console.log("Resolved rider_id to cee_id:", resolvedCeeId);
+      }
+    } catch (e) {
+      console.log("Could not resolve cee_id, using rider_id as-is");
+    }
+
     let entries: any[] = [];
 
     // Fetch referrals - only include approved ones (filter by created_at for week determination)
@@ -33,7 +45,7 @@ export async function POST(request: Request) {
             r.created_at as entry_date,
             r.created_at as created_at
           FROM referrals r
-          WHERE (r.referrer_cee_id = ${rider_id} OR r.referrer_id = ${rider_id})
+          WHERE (r.referrer_cee_id = ${resolvedCeeId} OR r.referrer_id = ${resolvedCeeId} OR r.referrer_id = ${rider_id})
           AND r.approval_status = 'approved'
           AND DATE(r.created_at) BETWEEN ${start_date} AND ${end_date}
           ORDER BY r.created_at DESC
@@ -52,12 +64,13 @@ export async function POST(request: Request) {
             r.created_at as entry_date,
             r.created_at as created_at
           FROM referrals r
-          WHERE (r.referrer_cee_id = ${rider_id} OR r.referrer_id = ${rider_id})
+          WHERE (r.referrer_cee_id = ${resolvedCeeId} OR r.referrer_id = ${resolvedCeeId} OR r.referrer_id = ${rider_id})
           AND r.approval_status = 'approved'
           ORDER BY r.created_at DESC
         `;
       }
       entries = [...entries, ...referrals];
+      console.log("Referrals found:", referrals.length);
     } catch (e) {
       console.log('Referrals query error (non-critical):', e);
     }
@@ -80,7 +93,7 @@ export async function POST(request: Request) {
             i.created_at
           FROM incentives i
           LEFT JOIN riders r ON i.rider_id = r.user_id OR i.rider_id = r.cee_id
-          WHERE (i.rider_id = ${rider_id})
+          WHERE (i.rider_id = ${rider_id} OR i.rider_id = ${resolvedCeeId})
           AND DATE(i.incentive_date) BETWEEN ${start_date} AND ${end_date}
           ORDER BY i.incentive_date DESC
         `;
@@ -99,11 +112,12 @@ export async function POST(request: Request) {
             i.created_at
           FROM incentives i
           LEFT JOIN riders r ON i.rider_id = r.user_id OR i.rider_id = r.cee_id
-          WHERE (i.rider_id = ${rider_id})
+          WHERE (i.rider_id = ${rider_id} OR i.rider_id = ${resolvedCeeId})
           ORDER BY i.incentive_date DESC
         `;
       }
       entries = [...entries, ...incentives];
+      console.log("Incentives found:", incentives.length);
     } catch (e) {
       console.log('Incentives query error (non-critical):', e);
     }
@@ -125,7 +139,7 @@ export async function POST(request: Request) {
             a.requested_at as entry_date,
             a.requested_at as created_at
           FROM advances a
-          WHERE (a.rider_id = ${rider_id} OR a.cee_id = ${rider_id})
+          WHERE (a.rider_id = ${rider_id} OR a.cee_id = ${rider_id} OR a.rider_id = ${resolvedCeeId} OR a.cee_id = ${resolvedCeeId})
           AND a.status = 'approved'
           AND DATE(a.requested_at) BETWEEN ${start_date} AND ${end_date}
           ORDER BY a.requested_at DESC
@@ -144,12 +158,13 @@ export async function POST(request: Request) {
             a.requested_at as entry_date,
             a.requested_at as created_at
           FROM advances a
-          WHERE (a.rider_id = ${rider_id} OR a.cee_id = ${rider_id})
+          WHERE (a.rider_id = ${rider_id} OR a.cee_id = ${rider_id} OR a.rider_id = ${resolvedCeeId} OR a.cee_id = ${resolvedCeeId})
           AND a.status = 'approved'
           ORDER BY a.requested_at DESC
         `;
       }
       entries = [...entries, ...advances];
+      console.log("Advances found:", advances.length);
     } catch (e) {
       console.log('Advances query error (non-critical):', e);
     }
@@ -158,14 +173,14 @@ export async function POST(request: Request) {
     try {
       let deductions: any[] = [];
       
-      // First get the rider info to find cee_id and vehicle rent
+      // First get the rider info to find cee_id and vehicle rent (already resolved above)
       const riderInfo = await sql`
         SELECT cee_id, full_name, vehicle_ownership, ev_daily_rent, ev_type, join_date FROM riders 
-        WHERE user_id = ${rider_id} OR cee_id = ${rider_id}
+        WHERE user_id = ${rider_id} OR cee_id = ${rider_id} OR cee_id = ${resolvedCeeId}
         LIMIT 1
       `;
       
-      console.log('🔍 Rider Info Query - Searching for rider_id:', rider_id);
+      console.log('🔍 Rider Info Query - Searching for rider_id:', rider_id, 'and cee_id:', resolvedCeeId);
       console.log('🔍 Rider Info Found:', riderInfo);
       
       const cee_id = riderInfo?.[0]?.cee_id || rider_id;
@@ -219,7 +234,7 @@ export async function POST(request: Request) {
             d.deduction_date as entry_date,
             d.created_at
           FROM deductions d
-          WHERE (d.rider_id = ${rider_id} OR d.rider_id = ${cee_id})
+          WHERE (d.rider_id = ${rider_id} OR d.rider_id = ${cee_id} OR d.rider_id = ${resolvedCeeId})
           AND DATE(d.deduction_date) BETWEEN ${start_date} AND ${end_date}
           ORDER BY d.deduction_date DESC
         `;
@@ -246,7 +261,7 @@ export async function POST(request: Request) {
             d.deduction_date as entry_date,
             d.created_at
           FROM deductions d
-          WHERE (d.rider_id = ${rider_id} OR d.rider_id = ${cee_id})
+          WHERE (d.rider_id = ${rider_id} OR d.rider_id = ${cee_id} OR d.rider_id = ${resolvedCeeId})
           ORDER BY d.deduction_date DESC
         `;
         console.log("✅ All deductions found:", deductions.length);
