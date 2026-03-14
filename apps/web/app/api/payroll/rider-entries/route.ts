@@ -33,7 +33,7 @@ export async function POST(request: Request) {
             r.created_at as entry_date,
             r.created_at as created_at
           FROM referrals r
-          WHERE (r.referrer_id = ${rider_id} OR r.referrer_cee_id = ${rider_id})
+          WHERE (r.referrer_cee_id = ${rider_id} OR r.referrer_id = ${rider_id})
           AND r.approval_status = 'approved'
           AND DATE(r.created_at) BETWEEN ${start_date} AND ${end_date}
           ORDER BY r.created_at DESC
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
             r.created_at as entry_date,
             r.created_at as created_at
           FROM referrals r
-          WHERE (r.referrer_id = ${rider_id} OR r.referrer_cee_id = ${rider_id})
+          WHERE (r.referrer_cee_id = ${rider_id} OR r.referrer_id = ${rider_id})
           AND r.approval_status = 'approved'
           ORDER BY r.created_at DESC
         `;
