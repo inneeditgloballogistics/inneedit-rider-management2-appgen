@@ -16,8 +16,7 @@ export async function POST(request: Request) {
     const weekStart = weekDates[week as keyof typeof weekDates].start;
     const weekEnd = weekDates[week as keyof typeof weekDates].end;
 
-    // Fetch payout entries with final_amount calculated using new formula:
-    // All Additions (Incentives + Referrals) - All Deductions (Advances + Deductions) - Vehicle Rent (day-wise actual from table) = Final Amount
+    // Fetch payout entries with rider details for vehicle rent calculation
     const payouts = await sql`
       SELECT 
         pe.cee_id,
@@ -25,6 +24,10 @@ export async function POST(request: Request) {
         pe.week,
         pe.base_payout,
         r.user_id as rider_id,
+        r.vehicle_ownership,
+        r.ev_daily_rent,
+        r.ev_type,
+        r.join_date,
         COALESCE(
           (
             SELECT SUM(COALESCE(amount, 0))::numeric FROM incentives 
@@ -33,7 +36,7 @@ export async function POST(request: Request) {
             AND incentive_date <= ${weekEnd}::date
           ),
           0
-        ) +
+        ) as total_incentives,
         COALESCE(
           (
             SELECT SUM(COALESCE(amount, 0))::numeric FROM referrals 
@@ -43,7 +46,7 @@ export async function POST(request: Request) {
             AND approval_status = 'approved'
           ),
           0
-        ) -
+        ) as total_referrals,
         COALESCE(
           (
             SELECT SUM(COALESCE(amount, 0))::numeric FROM advances 
@@ -53,7 +56,7 @@ export async function POST(request: Request) {
             AND status = 'approved'
           ),
           0
-        ) -
+        ) as total_advances,
         COALESCE(
           (
             SELECT SUM(COALESCE(amount, 0))::numeric FROM deductions 
@@ -62,32 +65,70 @@ export async function POST(request: Request) {
             AND deduction_date <= ${weekEnd}::date
           ),
           0
-        ) -
-        COALESCE(
-          (
-            SELECT SUM(COALESCE(daily_rent_amount, 0))::numeric FROM vehicle_rent 
-            WHERE rider_id = pe.cee_id
-            AND rent_date >= ${weekStart}::date
-            AND rent_date <= ${weekEnd}::date
-          ),
-          0
-        ) as final_amount
+        ) as total_deductions
       FROM payout_entries pe
       LEFT JOIN riders r ON r.cee_id = pe.cee_id
       WHERE pe.year = ${year} AND pe.month = ${month} AND pe.week = ${week}
       ORDER BY pe.cee_id ASC
     `;
 
-    // Convert to required format
-    const result = payouts.map((entry: any) => ({
-      cee_id: entry.cee_id,
-      rider_name: entry.rider_name,
-      rider_id: entry.rider_id,
-      week: entry.week,
-      base_payout: parseFloat(entry.base_payout) || 0,
-      final_amount: parseFloat(entry.final_amount) || 0,
-      final_payout: parseFloat(entry.base_payout) + parseFloat(entry.final_amount) || 0
-    }));
+    // Convert to required format and calculate vehicle rent dynamically
+    const result = payouts.map((entry: any) => {
+      // Calculate vehicle rent based on rider's vehicle type
+      let vehicleRent = 0;
+      
+      if (entry.vehicle_ownership === 'company_ev') {
+        // Parse dates for comparison
+        const startDate = new Date(`${weekStart}T00:00:00Z`);
+        const endDate = new Date(`${weekEnd}T00:00:00Z`);
+        
+        // Determine daily rent
+        let dailyRent = 0;
+        if (entry.ev_daily_rent && entry.ev_daily_rent > 0) {
+          dailyRent = Number(entry.ev_daily_rent);
+        } else if (entry.ev_type === 'sunmobility_swap') {
+          dailyRent = 243;
+        } else if (entry.ev_type === 'fixed_battery') {
+          dailyRent = 215;
+        }
+
+        if (dailyRent > 0) {
+          // Calculate number of days in the week for which the rider is eligible
+          let daysCount = 0;
+          let currentDate = new Date(startDate);
+          
+          // Parse rider join date if exists
+          let riderJoinDate: Date | null = null;
+          if (entry.join_date) {
+            riderJoinDate = new Date(entry.join_date);
+          }
+
+          while (currentDate <= endDate) {
+            // Only count if rider has joined
+            if (!riderJoinDate || currentDate >= riderJoinDate) {
+              daysCount++;
+            }
+            currentDate.setUTCDate(currentDate.getUTCDate() + 1);
+          }
+
+          vehicleRent = dailyRent * daysCount;
+        }
+      }
+
+      const totalAdditions = parseFloat(entry.total_incentives) + parseFloat(entry.total_referrals);
+      const totalDeductions = parseFloat(entry.total_advances) + parseFloat(entry.total_deductions);
+      const finalAmount = totalAdditions - totalDeductions - vehicleRent;
+      
+      return {
+        cee_id: entry.cee_id,
+        rider_name: entry.rider_name,
+        rider_id: entry.rider_id,
+        week: entry.week,
+        base_payout: parseFloat(entry.base_payout) || 0,
+        final_amount: finalAmount,
+        final_payout: parseFloat(entry.base_payout) + finalAmount
+      };
+    });
 
     return NextResponse.json({ payouts: result }, { status: 200 });
   } catch (error) {
