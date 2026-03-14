@@ -267,6 +267,20 @@ export async function DELETE(request: NextRequest) {
 
     const riderData = rider[0];
 
+    // Check if rider is assigned to a vehicle
+    if (riderData.assigned_vehicle_id) {
+      const vehicle = await sql`
+        SELECT vehicle_number FROM vehicles WHERE id = ${riderData.assigned_vehicle_id}
+      `;
+      
+      if (vehicle.length > 0) {
+        return NextResponse.json({ 
+          error: `Cannot delete rider because they are assigned to vehicle ${vehicle[0].vehicle_number}. Please unassign the vehicle first.`,
+          vehicleNumber: vehicle[0].vehicle_number
+        }, { status: 400 });
+      }
+    }
+
     // Check if rider has related records
     const [orders, advances, referrals, deductions, incentives, payouts] = await Promise.all([
       sql`SELECT COUNT(*) as count FROM orders WHERE rider_id = ${riderData.cee_id}`,
@@ -289,11 +303,6 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ 
         error: 'Cannot delete rider with existing orders, advances, referrals, deductions, incentives, or payouts. Please remove or reassign these records first.' 
       }, { status: 400 });
-    }
-
-    // Free up assigned vehicle if exists
-    if (riderData.assigned_vehicle_id) {
-      await sql`UPDATE vehicles SET assigned_rider_id = NULL, status = 'available' WHERE id = ${riderData.assigned_vehicle_id}`;
     }
 
     // Delete the rider
