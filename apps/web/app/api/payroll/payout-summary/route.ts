@@ -25,51 +25,47 @@ export async function POST(request: Request) {
         pe.week,
         pe.base_payout,
         r.user_id as rider_id,
-        (
-          COALESCE(
-            (
-              SELECT SUM(COALESCE(amount, 0)) FROM incentives 
-              WHERE rider_id = pe.cee_id 
-              AND incentive_date >= ${weekStart}::date
-              AND incentive_date <= ${weekEnd}::date
-            ),
-            0
-          ) +
-          COALESCE(
-            (
-              SELECT SUM(COALESCE(amount, 0)) FROM referrals 
-              WHERE referrer_cee_id = pe.cee_id 
-              AND created_at >= ${weekStart}::date
-              AND created_at <= ${weekEnd}::date
-              AND approval_status = 'approved'
-            ),
-            0
-          )
-        ) -
-        (
-          COALESCE(
-            (
-              SELECT SUM(COALESCE(amount, 0)) FROM advances 
-              WHERE rider_id = pe.cee_id
-              AND requested_at >= ${weekStart}::date
-              AND requested_at <= ${weekEnd}::date
-              AND status = 'approved'
-            ),
-            0
-          ) +
-          COALESCE(
-            (
-              SELECT SUM(COALESCE(amount, 0)) FROM deductions 
-              WHERE rider_id = pe.cee_id 
-              AND deduction_date >= ${weekStart}::date
-              AND deduction_date <= ${weekEnd}::date
-            ),
-            0
-          )
+        COALESCE(
+          (
+            SELECT SUM(COALESCE(amount, 0))::numeric FROM incentives 
+            WHERE rider_id = pe.cee_id 
+            AND incentive_date >= ${weekStart}::date
+            AND incentive_date <= ${weekEnd}::date
+          ),
+          0
+        ) +
+        COALESCE(
+          (
+            SELECT SUM(COALESCE(amount, 0))::numeric FROM referrals 
+            WHERE referrer_cee_id = pe.cee_id 
+            AND created_at >= ${weekStart}::date
+            AND created_at <= ${weekEnd}::date
+            AND approval_status = 'approved'
+          ),
+          0
         ) -
         COALESCE(
           (
-            SELECT SUM(COALESCE(daily_rent_amount, 0)) FROM vehicle_rent 
+            SELECT SUM(COALESCE(amount, 0))::numeric FROM advances 
+            WHERE rider_id = pe.cee_id
+            AND requested_at >= ${weekStart}::date
+            AND requested_at <= ${weekEnd}::date
+            AND status = 'approved'
+          ),
+          0
+        ) -
+        COALESCE(
+          (
+            SELECT SUM(COALESCE(amount, 0))::numeric FROM deductions 
+            WHERE rider_id = pe.cee_id 
+            AND deduction_date >= ${weekStart}::date
+            AND deduction_date <= ${weekEnd}::date
+          ),
+          0
+        ) -
+        COALESCE(
+          (
+            SELECT SUM(COALESCE(daily_rent_amount, 0))::numeric FROM vehicle_rent 
             WHERE rider_id = pe.cee_id
             AND rent_date >= ${weekStart}::date
             AND rent_date <= ${weekEnd}::date
