@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
 
     const result = await sql`
       INSERT INTO advances (cee_id, rider_id, rider_name, store_location, amount, reason, requested_at)
-      VALUES (${resolvedCeeId}, ${riderId}, ${riderName}, ${storeLocation}, ${amount}, ${reason}, CURRENT_TIMESTAMP)
+      VALUES (${resolvedCeeId}, ${riderId}, ${riderName}, ${storeLocation}, ${amount}, ${reason}, CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')
       RETURNING *
     `;
 
@@ -102,7 +102,7 @@ export async function PATCH(request: NextRequest) {
     const result = await sql`
       UPDATE advances 
       SET status = ${status}, 
-          processed_at = CURRENT_TIMESTAMP,
+          processed_at = CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata',
           processed_by = ${processedBy || null},
           admin_notes = ${adminNotes || null}
       WHERE id = ${id}
