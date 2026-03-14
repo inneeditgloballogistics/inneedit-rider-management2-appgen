@@ -62,7 +62,7 @@ export async function POST(request: Request) {
       console.log('Referrals query error (non-critical):', e);
     }
 
-    // Fetch incentives (filter by created_at for week determination)
+    // Fetch incentives (filter by incentive_date for week determination)
     try {
       let incentives: any[] = [];
       if (start_date && end_date) {
@@ -76,13 +76,13 @@ export async function POST(request: Request) {
             COALESCE(i.amount, 0) as amount,
             CONCAT(COALESCE(i.incentive_type, 'Incentive'), ': ', COALESCE(i.description, '')) as description,
             'approved' as status,
-            i.created_at as entry_date,
+            i.incentive_date as entry_date,
             i.created_at
           FROM incentives i
           LEFT JOIN riders r ON i.rider_id = r.user_id OR i.rider_id = r.cee_id
           WHERE (i.rider_id = ${rider_id})
-          AND DATE(i.created_at) BETWEEN ${start_date} AND ${end_date}
-          ORDER BY i.created_at DESC
+          AND DATE(i.incentive_date) BETWEEN ${start_date} AND ${end_date}
+          ORDER BY i.incentive_date DESC
         `;
       } else {
         incentives = await sql`
@@ -95,12 +95,12 @@ export async function POST(request: Request) {
             COALESCE(i.amount, 0) as amount,
             CONCAT(COALESCE(i.incentive_type, 'Incentive'), ': ', COALESCE(i.description, '')) as description,
             'approved' as status,
-            i.created_at as entry_date,
+            i.incentive_date as entry_date,
             i.created_at
           FROM incentives i
           LEFT JOIN riders r ON i.rider_id = r.user_id OR i.rider_id = r.cee_id
           WHERE (i.rider_id = ${rider_id})
-          ORDER BY i.created_at DESC
+          ORDER BY i.incentive_date DESC
         `;
       }
       entries = [...entries, ...incentives];
@@ -338,7 +338,11 @@ export async function POST(request: Request) {
               description: `${evTypeLabel} (${dateStr})`,
               status: 'auto-deducted',
               entry_date: dateStr,
-              created_at: new Date().toISOString(),
+              created_at: (() => {
+                const now = new Date();
+                const istTime = new Date(now.getTime() + 5.5 * 60 * 60 * 1000);
+                return istTime.toISOString();
+              })(),
               is_auto_calculated: true
             };
             

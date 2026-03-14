@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     const weekEnd = weekDates[week as keyof typeof weekDates].end;
 
     // Fetch payout entries with final_amount calculated using new formula:
-    // All Additions (Incentives + Referrals) - All Deductions (Advances + Deductions) - Vehicle Rent (day-wise) = Final Amount
+    // All Additions (Incentives + Referrals) - All Deductions (Advances + Deductions) - Vehicle Rent (day-wise actual from table) = Final Amount
     const payouts = await sql`
       SELECT 
         pe.cee_id,
@@ -39,8 +39,9 @@ export async function POST(request: Request) {
             (
               SELECT SUM(COALESCE(amount, 0)) FROM referrals 
               WHERE referrer_cee_id = pe.cee_id 
-              AND DATE(created_at) >= ${weekStart}::date
-              AND DATE(created_at) <= ${weekEnd}::date
+              AND created_at >= ${weekStart}::date
+              AND created_at <= ${weekEnd}::date
+              AND approval_status = 'approved'
             ),
             0
           )
@@ -50,8 +51,8 @@ export async function POST(request: Request) {
             (
               SELECT SUM(COALESCE(amount, 0)) FROM advances 
               WHERE (rider_id = pe.cee_id OR cee_id = pe.cee_id)
-              AND DATE(requested_at) >= ${weekStart}::date
-              AND DATE(requested_at) <= ${weekEnd}::date
+              AND requested_at >= ${weekStart}::date
+              AND requested_at <= ${weekEnd}::date
               AND status = 'approved'
             ),
             0
@@ -66,7 +67,15 @@ export async function POST(request: Request) {
             0
           )
         ) -
-        COALESCE(r.ev_daily_rent, 0) as final_amount
+        COALESCE(
+          (
+            SELECT SUM(COALESCE(daily_rent_amount, 0)) FROM vehicle_rent 
+            WHERE (rider_id = pe.cee_id OR cee_id = pe.cee_id)
+            AND rent_date >= ${weekStart}::date
+            AND rent_date <= ${weekEnd}::date
+          ),
+          0
+        ) as final_amount
       FROM payout_entries pe
       LEFT JOIN riders r ON r.cee_id = pe.cee_id
       WHERE pe.year = ${year} AND pe.month = ${month} AND pe.week = ${week}
