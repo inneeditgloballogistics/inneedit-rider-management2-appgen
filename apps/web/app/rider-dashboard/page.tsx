@@ -1059,10 +1059,11 @@ export default function RiderDashboard() {
                 <div className="p-4">
                   <p className="text-xs text-gray-600 font-medium">This Week Payout</p>
                   <p className="text-sm font-semibold text-indigo-600 mt-1">
-                    ₹{currentPayrollWeek?.final_payout !== undefined && currentPayrollWeek?.final_payout !== null 
+                    ₹{currentPayrollWeek?.status === 'finalized' && currentPayrollWeek?.final_payout !== undefined && currentPayrollWeek?.final_payout !== null 
                       ? parseFloat(currentPayrollWeek.final_payout).toFixed(2) 
-                      : stats?.netPayout.toFixed(2) || '0.00'}
+                      : (currentPayrollWeek?.status === 'finalized' ? '0.00' : stats?.netPayout.toFixed(2) || '0.00')}
                   </p>
+                  {currentPayrollWeek?.status !== 'finalized' && <p className="text-xs text-gray-500 mt-1">Estimated (Pending Approval)</p>}
                 </div>
               </div>
             </div>
