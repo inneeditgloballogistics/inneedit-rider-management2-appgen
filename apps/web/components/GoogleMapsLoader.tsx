@@ -61,13 +61,33 @@ export function GoogleMapsLoader({ children }: { children: React.ReactNode }) {
     script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places,marker`;
     script.async = true;
     script.defer = true;
+    
     script.onload = () => {
-      isLoading = false;
-      setLoaded(true);
+      // Check if Google Maps is available immediately after load
+      if (window.google && window.google.maps) {
+        isLoading = false;
+        setLoaded(true);
+      } else {
+        // Fallback: check every 50ms up to 5 seconds
+        let attempts = 0;
+        const checkInterval = setInterval(() => {
+          attempts++;
+          if (window.google && window.google.maps) {
+            clearInterval(checkInterval);
+            isLoading = false;
+            setLoaded(true);
+          } else if (attempts > 100) { // 5 seconds
+            clearInterval(checkInterval);
+            isLoading = false;
+            setLoaded(true);
+          }
+        }, 50);
+      }
     };
-    script.onerror = () => {
+    
+    script.onerror = (error) => {
       isLoading = false;
-      console.error('Failed to load Google Maps API');
+      console.error('Failed to load Google Maps API:', error);
       setLoaded(true);
     };
 

@@ -48,23 +48,38 @@ export default function StoreMapView() {
   };
 
   useEffect(() => {
-    if (!mapRef.current || !window.google || stores.length === 0) return;
+    // Wait for Google Maps to be loaded
+    if (!window.google?.maps) {
+      const checkGoogle = setInterval(() => {
+        if (window.google?.maps) {
+          clearInterval(checkGoogle);
+          // Retry initialization
+        }
+      }, 100);
+      return () => clearInterval(checkGoogle);
+    }
+
+    if (!mapRef.current || stores.length === 0) return;
     if (map) return;
 
-    // Initialize map centered on first store or default location
-    const center = stores[0]
-      ? { lat: parseFloat(stores[0].latitude.toString()), lng: parseFloat(stores[0].longitude.toString()) }
-      : { lat: 12.9716, lng: 77.5946 }; // Bangalore default
+    try {
+      // Initialize map centered on first store or default location
+      const center = stores[0]
+        ? { lat: parseFloat(stores[0].latitude.toString()), lng: parseFloat(stores[0].longitude.toString()) }
+        : { lat: 12.9716, lng: 77.5946 }; // Bangalore default
 
-    const newMap = new window.google.maps.Map(mapRef.current, {
-      zoom: 12,
-      center,
-      mapTypeControl: true,
-      streetViewControl: false,
-      fullscreenControl: true,
-    });
+      const newMap = new window.google.maps.Map(mapRef.current, {
+        zoom: 12,
+        center,
+        mapTypeControl: true,
+        streetViewControl: false,
+        fullscreenControl: true,
+      });
 
-    setMap(newMap);
+      setMap(newMap);
+    } catch (error) {
+      console.error('Error initializing map:', error);
+    }
 
     // Create markers for each store
     const markers = stores.map((store) => {

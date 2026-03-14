@@ -173,7 +173,9 @@ export default function RiderDashboard() {
       const data = await response.json();
       console.log('Auth successful, rider data:', data);
       setRider(data.rider);
-      await fetchAllData(data.rider.user_id, data.rider.cee_id);
+      const ceeId = data.rider.ceeId || data.rider.cee_id;
+      console.log('Calling fetchAllData with:', { riderId: data.rider.user_id, ceeId });
+      await fetchAllData(data.rider.user_id, ceeId);
     } catch (error: any) {
       console.error('Auth check failed:', error.message || error);
       setLoading(false);
@@ -267,8 +269,12 @@ export default function RiderDashboard() {
 
       // Fetch payouts (passing ceeId for consistency with database)
       const payoutsRes = await fetch(`/api/payouts?ceeId=${ceeId || ''}`);
+      if (!payoutsRes.ok) {
+        console.error('Payouts fetch error:', await payoutsRes.json());
+      }
       const payoutsData = await payoutsRes.json();
-      setPayouts(payoutsData);
+      console.log('Payouts data fetched:', payoutsData);
+      setPayouts(Array.isArray(payoutsData) ? payoutsData : []);
       
       // Set current week's payout for THIS WEEK ONLY
       if (payoutsData.length > 0) {
