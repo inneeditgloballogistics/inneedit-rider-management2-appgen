@@ -13,16 +13,41 @@ export async function POST(request: NextRequest) {
       deduction_date
     } = body;
 
-    // Ensure we're storing the date as a proper timestamp (at start of day)
-    // deduction_date comes as YYYY-MM-DD string, convert to timestamp
-    const dateToStore = deduction_date 
-      ? new Date(`${deduction_date}T00:00:00`).toISOString()
-      : new Date().toISOString();
+    // Store the date as ISO string in IST timezone
+    // deduction_date comes as YYYY-MM-DD string (in IST)
+    // Parse it properly without timezone shifts
+    let dateToStore: string;
+    if (deduction_date) {
+      const [year, month, day] = deduction_date.split('-').map(Number);
+      // Create UTC date, then convert to IST ISO string
+      const utcDate = new Date(Date.UTC(year, month - 1, day));
+      dateToStore = utcDate.toISOString();
+    } else {
+      // Use IST time - database is configured for IST
+      const now = new Date();
+      const istTime = new Date(now.getTime() + 5.5 * 60 * 60 * 1000);
+      dateToStore = istTime.toISOString();
+    }
+
+    // Resolve rider_id to cee_id first
+    let resolvedCeeId = rider_id;
+    try {
+      const riderInfo = await sql`
+        SELECT cee_id FROM riders 
+        WHERE user_id = ${rider_id} OR cee_id = ${rider_id}
+        LIMIT 1
+      `;
+      if (riderInfo.length > 0) {
+        resolvedCeeId = riderInfo[0].cee_id;
+      }
+    } catch (e) {
+      console.log('Could not resolve cee_id, using rider_id as-is');
+    }
 
     const result = await sql`
       INSERT INTO advances (
-        rider_id,
         cee_id,
+        rider_id,
         rider_name,
         amount,
         reason,
@@ -30,7 +55,7 @@ export async function POST(request: NextRequest) {
         status,
         requested_at
       ) VALUES (
-        ${rider_id},
+        ${resolvedCeeId},
         ${rider_id},
         ${rider_name},
         ${parseFloat(amount)},

@@ -80,7 +80,7 @@ export async function POST(request: Request) {
         // Fetch referral bonuses
         const referralData = await sql`
           SELECT COALESCE(SUM(amount), 0) as total FROM referrals 
-          WHERE referrer_id = ${rider_id}
+          WHERE referrer_cee_id = ${cee_id}
           AND approval_status = 'approved'
           AND created_at >= ${startDateStr}::date
           AND created_at <= ${endDateStr}::date
@@ -89,7 +89,7 @@ export async function POST(request: Request) {
         // Fetch incentives
         const incentiveData = await sql`
           SELECT COALESCE(SUM(amount), 0) as total FROM incentives 
-          WHERE rider_id = ${rider_id}
+          WHERE cee_id = ${cee_id}
           AND incentive_date >= ${startDateStr}::date
           AND incentive_date <= ${endDateStr}::date
         `;
@@ -97,7 +97,7 @@ export async function POST(request: Request) {
         // Fetch approved advances
         const advanceData = await sql`
           SELECT COALESCE(SUM(amount), 0) as total FROM advances 
-          WHERE rider_id = ${rider_id}
+          WHERE cee_id = ${cee_id}
           AND status = 'approved'
           AND requested_at >= ${startDateStr}::date
           AND requested_at <= ${endDateStr}::date
@@ -106,7 +106,7 @@ export async function POST(request: Request) {
         // Fetch deductions
         const deductionData = await sql`
           SELECT COALESCE(SUM(amount), 0) as total FROM deductions 
-          WHERE rider_id = ${rider_id}
+          WHERE cee_id = ${cee_id}
           AND deduction_date >= ${startDateStr}::date
           AND deduction_date <= ${endDateStr}::date
         `;

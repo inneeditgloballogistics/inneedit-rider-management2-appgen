@@ -46,7 +46,7 @@ export async function POST(request: Request) {
           incentive_date as created_at,
           'completed' as status
         FROM incentives
-        WHERE rider_id = ${rider_id}
+        WHERE cee_id = ${rider_id}
         AND incentive_date::date = ${date}::date
         ORDER BY incentive_date DESC
       `,
@@ -60,7 +60,7 @@ export async function POST(request: Request) {
           deduction_date as created_at,
           'completed' as status
         FROM deductions
-        WHERE rider_id = ${rider_id}
+        WHERE cee_id = ${rider_id}
         AND deduction_date::date = ${date}::date
         ORDER BY deduction_date DESC
       `,

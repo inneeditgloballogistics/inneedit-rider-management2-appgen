@@ -69,7 +69,7 @@ export async function POST(request: Request) {
       const referrals = await sql`
         SELECT COALESCE(SUM(amount), 0) as total
         FROM referrals
-        WHERE (referrer_id = ${rider_id} OR referrer_cee_id = ${rider_id})
+        WHERE (referrer_cee_id = ${cee_id} OR referrer_id = ${rider_id})
         AND approval_status = 'approved'
         AND DATE(created_at) BETWEEN ${startDateStr} AND ${endDateStr}
       `;
@@ -83,7 +83,7 @@ export async function POST(request: Request) {
       const incentives = await sql`
         SELECT COALESCE(SUM(amount), 0) as total
         FROM incentives
-        WHERE (rider_id = ${rider_id})
+        WHERE cee_id = ${cee_id}
         AND DATE(incentive_date) BETWEEN ${startDateStr} AND ${endDateStr}
       `;
       allAdditions += parseFloat(incentives[0]?.total || 0);
@@ -96,7 +96,7 @@ export async function POST(request: Request) {
       const advances = await sql`
         SELECT COALESCE(SUM(amount), 0) as total
         FROM advances
-        WHERE (rider_id = ${rider_id} OR cee_id = ${rider_id})
+        WHERE cee_id = ${cee_id}
         AND status = 'approved'
         AND DATE(requested_at) BETWEEN ${startDateStr} AND ${endDateStr}
       `;
@@ -105,13 +105,14 @@ export async function POST(request: Request) {
       console.log('Advances sum error:', e);
     }
 
-    // Fetch other deductions
+    // Fetch other deductions (excluding 'advance' type to avoid double counting)
     try {
       const deductions = await sql`
         SELECT COALESCE(SUM(amount), 0) as total
         FROM deductions
-        WHERE (rider_id = ${rider_id} OR rider_id = ${cee_id})
+        WHERE cee_id = ${cee_id}
         AND DATE(deduction_date) BETWEEN ${startDateStr} AND ${endDateStr}
+        AND deduction_type != 'advance'
       `;
       allDeductions += parseFloat(deductions[0]?.total || 0);
     } catch (e) {
