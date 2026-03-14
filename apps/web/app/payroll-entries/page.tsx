@@ -412,12 +412,12 @@ export default function PayrollEntries() {
                   </div>
                 ) : (
                   <div className="space-y-6">
-                    {/* ADDITIONS BOX */}
+                    {/* ALL ADDITIONS BOX */}
                     <div className="border border-slate-200 rounded-lg overflow-hidden">
                       <div className="bg-green-50 px-4 py-3 border-b border-slate-200">
                         <h4 className="font-semibold text-sm text-slate-900 flex items-center gap-2">
                           <span className="w-2 h-2 rounded-full bg-green-600"></span>
-                          ADDITIONS
+                          ALL ADDITIONS
                         </h4>
                       </div>
                       <div className="overflow-x-auto">
@@ -451,7 +451,7 @@ export default function PayrollEntries() {
                                       ₹{(parseFloat(entry.amount.toString()) || 0).toFixed(2)}
                                     </td>
                                     <td className="px-4 py-3 text-slate-600 text-xs">
-                                      {new Date(entry.entry_date || entry.created_at).toLocaleDateString('en-GB', { 
+                                      {new Date(entry.entry_date || entry.created_at).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', 
                                         day: '2-digit', 
                                         month: 'short', 
                                         year: 'numeric' 
@@ -473,12 +473,12 @@ export default function PayrollEntries() {
                       </div>
                     </div>
 
-                    {/* DEDUCTIONS BOX */}
+                    {/* ALL DEDUCTIONS BOX */}
                     <div className="border border-slate-200 rounded-lg overflow-hidden">
                       <div className="bg-red-50 px-4 py-3 border-b border-slate-200">
                         <h4 className="font-semibold text-sm text-slate-900 flex items-center gap-2">
                           <span className="w-2 h-2 rounded-full bg-red-600"></span>
-                          DEDUCTIONS
+                          ALL DEDUCTIONS
                         </h4>
                       </div>
                       <div className="overflow-x-auto">
@@ -512,7 +512,7 @@ export default function PayrollEntries() {
                                       ₹{(parseFloat(entry.amount.toString()) || 0).toFixed(2)}
                                     </td>
                                     <td className="px-4 py-3 text-slate-600 text-xs">
-                                      {new Date(entry.entry_date || entry.created_at).toLocaleDateString('en-GB', { 
+                                      {new Date(entry.entry_date || entry.created_at).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', 
                                         day: '2-digit', 
                                         month: 'short', 
                                         year: 'numeric' 
@@ -579,7 +579,7 @@ export default function PayrollEntries() {
                                 {vehicleRentEntries.map(entry => (
                                   <tr key={entry.id} className="border-b border-slate-100 hover:bg-slate-50">
                                     <td className="px-4 py-3 text-slate-600 text-xs font-medium">
-                                      {new Date(entry.entry_date || entry.created_at).toLocaleDateString('en-GB', { 
+                                      {new Date(entry.entry_date || entry.created_at).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata',
                                         day: '2-digit', 
                                         month: 'short', 
                                         year: 'numeric' 
@@ -659,9 +659,9 @@ export default function PayrollEntries() {
                             return (
                               <>
                                 <p className="text-slate-700 text-center text-lg font-semibold">
-                                  <span className="text-green-700">Additions (₹{totalAdditions.toFixed(2)})</span>
+                                  <span className="text-green-700">All Additions (₹{totalAdditions.toFixed(2)})</span>
                                   {' '}-{' '}
-                                  <span className="text-red-700">Deductions (₹{totalDeductions.toFixed(2)})</span>
+                                  <span className="text-red-700">All Deductions (₹{totalDeductions.toFixed(2)})</span>
                                   {' '}-{' '}
                                   <span className="text-indigo-700">Vehicle Rent (₹{totalVehicleRent.toFixed(2)})</span>
                                   {' '}={' '}
@@ -670,7 +670,7 @@ export default function PayrollEntries() {
                               </>
                             );
                           })()}
-                          <p className="text-center text-xs text-slate-600 mt-2">Final Amount will be deducted from Base Payout in the Payout view details page</p>
+                          <p className="text-center text-xs text-slate-600 mt-2">final_payout = base_payout + final_amount</p>
                         </div>
                       </div>
                     </div>
