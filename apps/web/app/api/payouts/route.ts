@@ -50,7 +50,9 @@ export async function GET(request: NextRequest) {
         payout.net_payout = payout.final_payout;
       }
       // If final_payout exists, use it
-      else if (payout.final_payout !== undefined && payout.final_payout !== null) {\n        payout.net_payout = payout.final_payout;\n      }
+      else if (payout.final_payout !== undefined && payout.final_payout !== null) {
+        payout.net_payout = payout.final_payout;
+      }
       return payout;
     });
 
