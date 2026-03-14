@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import sql from '../utils/sql';
 
 export async function GET(request: NextRequest) {
-  try {\n    const { searchParams } = new URL(request.url);
+  try {
+    const { searchParams } = new URL(request.url);
     const ceeId = searchParams.get('ceeId') || searchParams.get('riderId'); // Support both ceeId and riderId for backward compatibility
 
     if (!ceeId) {
