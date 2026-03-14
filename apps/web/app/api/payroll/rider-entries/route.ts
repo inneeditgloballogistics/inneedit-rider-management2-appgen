@@ -217,13 +217,10 @@ export async function POST(request: Request) {
       console.log("Looking for deductions with rider_id:", rider_id, "or cee_id:", cee_id, "or resolvedCeeId:", resolvedCeeId);
       
       if (start_date && end_date) {
-        console.log("🔍 Date range query: start_date =", start_date, "end_date =", end_date);
-        console.log("🔍 Query will match deductions WHERE cee_id =", cee_id);
-        
         deductions = await sql`
           SELECT 
             d.id,
-            d.rider_id,
+            ${cee_id} as rider_id,
             ${cee_id} as cee_id,
             ${full_name} as full_name,
             CASE 
@@ -243,14 +240,11 @@ export async function POST(request: Request) {
           AND DATE(d.deduction_date) BETWEEN ${start_date} AND ${end_date}
           ORDER BY d.deduction_date DESC
         `;
-        console.log("✅ Deductions with dates found:", deductions.length);
-        console.log("✅ Deduction details:", JSON.stringify(deductions, null, 2));
       } else {
-        console.log("🔍 No date range - fetching all deductions");
         deductions = await sql`
           SELECT 
             d.id,
-            d.rider_id,
+            ${cee_id} as rider_id,
             ${cee_id} as cee_id,
             ${full_name} as full_name,
             CASE 
@@ -269,7 +263,6 @@ export async function POST(request: Request) {
           WHERE d.cee_id = ${cee_id}
           ORDER BY d.deduction_date DESC
         `;
-        console.log("✅ All deductions found:", deductions.length);
       }
       console.log("=== TOTAL DEDUCTIONS FOUND:", deductions.length);
       entries = [...entries, ...deductions];
