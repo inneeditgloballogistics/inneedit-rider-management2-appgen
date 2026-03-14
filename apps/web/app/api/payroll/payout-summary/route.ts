@@ -31,7 +31,7 @@ export async function POST(request: Request) {
         COALESCE(
           (
             SELECT SUM(COALESCE(amount, 0))::numeric FROM incentives 
-            WHERE rider_id = pe.cee_id 
+            WHERE (rider_id = pe.cee_id OR rider_id = r.user_id)
             AND incentive_date >= ${weekStart}::date
             AND incentive_date <= ${weekEnd}::date
           ),
@@ -41,8 +41,8 @@ export async function POST(request: Request) {
           (
             SELECT SUM(COALESCE(amount, 0))::numeric FROM referrals 
             WHERE referrer_cee_id = pe.cee_id 
-            AND created_at >= ${weekStart}::date
-            AND created_at <= ${weekEnd}::date
+            AND CAST(created_at AS DATE) >= ${weekStart}::date
+            AND CAST(created_at AS DATE) <= ${weekEnd}::date
             AND approval_status = 'approved'
           ),
           0
@@ -50,9 +50,9 @@ export async function POST(request: Request) {
         COALESCE(
           (
             SELECT SUM(COALESCE(amount, 0))::numeric FROM advances 
-            WHERE rider_id = pe.cee_id
-            AND requested_at >= ${weekStart}::date
-            AND requested_at <= ${weekEnd}::date
+            WHERE (rider_id = pe.cee_id OR rider_id = r.user_id OR cee_id = pe.cee_id)
+            AND CAST(requested_at AS DATE) >= ${weekStart}::date
+            AND CAST(requested_at AS DATE) <= ${weekEnd}::date
             AND status = 'approved'
           ),
           0
@@ -60,9 +60,10 @@ export async function POST(request: Request) {
         COALESCE(
           (
             SELECT SUM(COALESCE(amount, 0))::numeric FROM deductions 
-            WHERE rider_id = pe.cee_id 
+            WHERE (rider_id = pe.cee_id OR rider_id = r.user_id)
             AND deduction_date >= ${weekStart}::date
             AND deduction_date <= ${weekEnd}::date
+            AND deduction_type != 'advance'
           ),
           0
         ) as total_deductions
