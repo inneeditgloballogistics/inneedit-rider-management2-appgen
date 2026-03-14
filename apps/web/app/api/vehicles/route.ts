@@ -12,6 +12,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ count: parseInt(result[0].count) });
     }
 
+    // Clean up vehicles where assigned rider no longer exists
+    await sql`
+      UPDATE vehicles 
+      SET assigned_rider_id = NULL, status = 'available'
+      WHERE assigned_rider_id IS NOT NULL 
+      AND assigned_rider_id != ''
+      AND assigned_rider_id NOT IN (SELECT cee_id FROM riders)
+    `;
+
     // Filter by status if provided
     let vehicles;
     if (status === 'available') {

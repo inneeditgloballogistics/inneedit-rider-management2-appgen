@@ -23,13 +23,14 @@ export function VehicleList({ vehicles, onAdd }: { vehicles: any[], onAdd: () =>
                 <th className="px-6 py-4 font-medium">Model</th>
                 <th className="px-6 py-4 font-medium">Year</th>
                 <th className="px-6 py-4 font-medium">Hub</th>
+                <th className="px-6 py-4 font-medium">Assigned Rider</th>
                 <th className="px-6 py-4 font-medium">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-sm">
               {vehicles.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
+                  <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
                     No vehicles found. Click &quot;Add Vehicle&quot; to get started.
                   </td>
                 </tr>
@@ -41,6 +42,13 @@ export function VehicleList({ vehicles, onAdd }: { vehicles: any[], onAdd: () =>
                     <td className="px-6 py-4 text-slate-600">{vehicle.model || '-'}</td>
                     <td className="px-6 py-4 text-slate-600">{vehicle.year || '-'}</td>
                     <td className="px-6 py-4 text-slate-600">Hub #{vehicle.hub_id || '-'}</td>
+                    <td className="px-6 py-4 text-slate-600 font-medium">
+                      {vehicle.assigned_rider_id ? (
+                        <span className="text-slate-900">{vehicle.assigned_rider_id}</span>
+                      ) : (
+                        <span className="text-slate-400 italic">Unassigned</span>
+                      )}
+                    </td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                         vehicle.status === 'available' ? 'bg-green-100 text-green-800' :
