@@ -2,17 +2,25 @@ import { NextRequest, NextResponse } from 'next/server';
 import sql from '../utils/sql';
 
 export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const riderId = searchParams.get('riderId');
+  try {\n    const { searchParams } = new URL(request.url);
+    const ceeId = searchParams.get('ceeId') || searchParams.get('riderId'); // Support both ceeId and riderId for backward compatibility
 
-    if (!riderId) {
-      return NextResponse.json({ error: 'Rider ID is required' }, { status: 400 });
+    if (!ceeId) {
+      return NextResponse.json({ error: 'CEE ID is required' }, { status: 400 });
+    }
+
+    // Get the rider's user_id from cee_id to match with payouts table
+    const rider = await sql`
+      SELECT user_id FROM riders WHERE cee_id = ${ceeId} LIMIT 1
+    `;
+
+    if (rider.length === 0) {
+      return NextResponse.json({ error: 'Rider not found' }, { status: 404 });
     }
 
     const payouts = await sql`
       SELECT * FROM payouts 
-      WHERE rider_id = ${riderId}
+      WHERE rider_id = ${rider[0].user_id}
       ORDER BY year DESC, month DESC, week_number DESC
     `;
 

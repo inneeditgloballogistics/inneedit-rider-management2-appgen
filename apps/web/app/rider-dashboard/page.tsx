@@ -173,7 +173,7 @@ export default function RiderDashboard() {
       const data = await response.json();
       console.log('Auth successful, rider data:', data);
       setRider(data.rider);
-      await fetchAllData(data.rider.user_id);
+      await fetchAllData(data.rider.user_id, data.rider.cee_id);
     } catch (error: any) {
       console.error('Auth check failed:', error.message || error);
       setLoading(false);
@@ -258,15 +258,15 @@ export default function RiderDashboard() {
     return { startDate, endDate };
   };
 
-  const fetchAllData = async (riderId: string) => {
+  const fetchAllData = async (riderId: string, ceeId?: string) => {
     try {
       // Fetch orders
       const ordersRes = await fetch(`/api/orders?riderId=${riderId}`);
       const ordersData = await ordersRes.json();
       setOrderStats(ordersData.stats);
 
-      // Fetch payouts
-      const payoutsRes = await fetch(`/api/payouts?riderId=${riderId}`);
+      // Fetch payouts (passing ceeId for consistency with database)
+      const payoutsRes = await fetch(`/api/payouts?ceeId=${ceeId || ''}`);
       const payoutsData = await payoutsRes.json();
       setPayouts(payoutsData);
       
