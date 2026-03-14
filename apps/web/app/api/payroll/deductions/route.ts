@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
         ${parseFloat(amount)},
         ${description || ''},
         ${dateToStore}::DATE,
-        NOW()
+        CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata'
       )
       RETURNING *
     `;

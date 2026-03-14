@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
         ${reason},
         ${admin_notes},
         'approved',
-        ${dateToStore}
+        ${dateToStore}::timestamp AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata'
       )
       RETURNING *
     `;

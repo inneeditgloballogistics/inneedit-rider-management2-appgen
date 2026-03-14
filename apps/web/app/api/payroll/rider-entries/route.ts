@@ -93,7 +93,7 @@ export async function POST(request: Request) {
             i.created_at
           FROM incentives i
           LEFT JOIN riders r ON i.rider_id = r.user_id OR i.rider_id = r.cee_id
-          WHERE i.cee_id = ${cee_id}
+          WHERE i.cee_id = ${resolvedCeeId}
           AND DATE(i.incentive_date) BETWEEN ${start_date} AND ${end_date}
           ORDER BY i.incentive_date DESC
         `;
@@ -112,7 +112,7 @@ export async function POST(request: Request) {
             i.created_at
           FROM incentives i
           LEFT JOIN riders r ON i.rider_id = r.user_id OR i.rider_id = r.cee_id
-          WHERE i.cee_id = ${cee_id}
+          WHERE i.cee_id = ${resolvedCeeId}
           ORDER BY i.incentive_date DESC
         `;
       }
@@ -139,7 +139,7 @@ export async function POST(request: Request) {
             a.requested_at as entry_date,
             a.requested_at as created_at
           FROM advances a
-          WHERE a.cee_id = ${cee_id}
+          WHERE a.cee_id = ${resolvedCeeId}
           AND a.status = 'approved'
           AND DATE(a.requested_at) BETWEEN ${start_date} AND ${end_date}
           ORDER BY a.requested_at DESC
@@ -158,7 +158,7 @@ export async function POST(request: Request) {
             a.requested_at as entry_date,
             a.requested_at as created_at
           FROM advances a
-          WHERE a.cee_id = ${cee_id}
+          WHERE a.cee_id = ${resolvedCeeId}
           AND a.status = 'approved'
           ORDER BY a.requested_at DESC
         `;
@@ -220,8 +220,8 @@ export async function POST(request: Request) {
         deductions = await sql`
           SELECT 
             d.id,
-            ${cee_id} as rider_id,
-            ${cee_id} as cee_id,
+            ${resolvedCeeId} as rider_id,
+            ${resolvedCeeId} as cee_id,
             ${full_name} as full_name,
             CASE 
               WHEN d.deduction_type ILIKE 'security%' THEN 'security_deposit'
@@ -236,7 +236,7 @@ export async function POST(request: Request) {
             d.deduction_date as entry_date,
             d.created_at
           FROM deductions d
-          WHERE d.cee_id = ${cee_id}
+          WHERE d.cee_id = ${resolvedCeeId}
           AND DATE(d.deduction_date) BETWEEN ${start_date} AND ${end_date}
           ORDER BY d.deduction_date DESC
         `;
@@ -244,8 +244,8 @@ export async function POST(request: Request) {
         deductions = await sql`
           SELECT 
             d.id,
-            ${cee_id} as rider_id,
-            ${cee_id} as cee_id,
+            ${resolvedCeeId} as rider_id,
+            ${resolvedCeeId} as cee_id,
             ${full_name} as full_name,
             CASE 
               WHEN d.deduction_type ILIKE 'security%' THEN 'security_deposit'
@@ -260,7 +260,7 @@ export async function POST(request: Request) {
             d.deduction_date as entry_date,
             d.created_at
           FROM deductions d
-          WHERE d.cee_id = ${cee_id}
+          WHERE d.cee_id = ${resolvedCeeId}
           ORDER BY d.deduction_date DESC
         `;
       }

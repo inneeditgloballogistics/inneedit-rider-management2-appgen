@@ -95,14 +95,14 @@ export async function PATCH(request: NextRequest) {
 
     // If action is 'approve', set approval status and calculate month completion date
     if (action === 'approve') {
-      // Use CURRENT_TIMESTAMP for IST (database server is in IST)
+      // Use IST timezone for all timestamps
       const result = await sql`
         UPDATE referrals 
         SET approval_status = 'approved', 
-            approval_date = CURRENT_TIMESTAMP,
-            month_completion_date = CURRENT_TIMESTAMP + INTERVAL '30 days',
+            approval_date = CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata',
+            month_completion_date = CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata' + INTERVAL '30 days',
             referred_rider_id = ${referred_rider_id || null},
-            processed_at = CURRENT_TIMESTAMP
+            processed_at = CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata'
         WHERE id = ${id}
         RETURNING *
       `;
@@ -126,8 +126,8 @@ export async function PATCH(request: NextRequest) {
       const result = await sql`
         UPDATE referrals 
         SET approval_status = 'rejected', 
-            approval_date = CURRENT_TIMESTAMP,
-            processed_at = CURRENT_TIMESTAMP
+            approval_date = CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata',
+            processed_at = CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata'
         WHERE id = ${id}
         RETURNING *
       `;
@@ -138,7 +138,7 @@ export async function PATCH(request: NextRequest) {
     // Standard status update (for other status changes like 'registered', 'called', etc.)
     const result = await sql`
       UPDATE referrals 
-      SET status = ${status}, processed_at = CURRENT_TIMESTAMP
+      SET status = ${status}, processed_at = CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata'
       WHERE id = ${id}
       RETURNING *
     `;
