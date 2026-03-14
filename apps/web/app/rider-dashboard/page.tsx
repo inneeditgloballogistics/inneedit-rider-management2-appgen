@@ -270,15 +270,28 @@ export default function RiderDashboard() {
       const payoutsData = await payoutsRes.json();
       setPayouts(payoutsData);
       
-      // Set current month's payout (most recent)
+      // Set current week's payout for THIS WEEK ONLY
       if (payoutsData.length > 0) {
-        const currentPayout = payoutsData[0];
-        setCurrentPayrollWeek(currentPayout);
+        const now = new Date();
+        const currentMonth = now.getMonth() + 1;
+        const currentYear = now.getFullYear();
+        
+        // Find payout for current week of current month/year
+        let currentWeekPayout = payoutsData.find(
+          p => p.month === currentMonth && p.year === currentYear
+        );
+        
+        // If no payout for current month, use the most recent one
+        if (!currentWeekPayout) {
+          currentWeekPayout = payoutsData[0];
+        }
+        
+        setCurrentPayrollWeek(currentWeekPayout);
         
         // If payout is finalized, fetch the detailed payout breakdown
-        if (currentPayout.status === 'finalized') {
-          const basePayout = parseFloat(currentPayout.base_payout) || 0;
-          await fetchPayoutDetails(riderId, currentPayout.week_number, currentPayout.month, currentPayout.year, basePayout);
+        if (currentWeekPayout.status === 'finalized') {
+          const basePayout = parseFloat(currentWeekPayout.base_payout) || 0;
+          await fetchPayoutDetails(riderId, currentWeekPayout.week_number, currentWeekPayout.month, currentWeekPayout.year, basePayout);
         }
       }
 
@@ -1027,7 +1040,7 @@ export default function RiderDashboard() {
                   </p>
                 </div>
                 <div className="p-4">
-                  <p className="text-xs text-gray-600 font-medium">This Month Payout</p>
+                  <p className="text-xs text-gray-600 font-medium">This Week Payout</p>
                   <p className="text-sm font-semibold text-indigo-600 mt-1">₹{stats?.netPayout.toFixed(2) || '0.00'}</p>
                 </div>
               </div>
