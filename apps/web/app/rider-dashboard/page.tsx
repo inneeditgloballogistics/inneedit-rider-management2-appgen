@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Bell, LogOut, Package, TrendingUp, Users, Wallet, AlertCircle, Gift, DollarSign, Download, TrendingDown, Target, Trophy, TrendingDownIcon, CheckCircle, ArrowUpRight, User } from 'lucide-react';
+import { Bell, LogOut, Package, TrendingUp, Users, Wallet, AlertCircle, Gift, DollarSign, Download, TrendingDown, CheckCircle, User } from 'lucide-react';
 import WeatherBadge from '@/components/WeatherBadge';
 import RequestAdvanceModal from '@/components/RequestAdvanceModal';
 import ReferRiderModal from '@/components/ReferRiderModal';
@@ -98,38 +98,7 @@ interface PayrollEntry {
   status: string;
 }
 
-interface RiderAnalytics {
-  rank: {
-    position: number;
-    totalRiders: number;
-    percentile: number;
-  };
-  earnings: {
-    current: number;
-    average: number;
-    difference: number;
-    isAboveAverage: boolean;
-  };
-  goals: {
-    dailyTarget: number;
-    weeklyTarget: number;
-    weeklyProgress: number;
-    monthlyEarnings: number;
-    monthlyTarget: number;
-    monthlyProgress: number;
-  };
-  analytics: {
-    totalDaysWorked: number;
-    averageDailyEarnings: number;
-    topEarningDay: { date: string; amount: number } | null;
-    dailyBreakdown: Array<{ date: string; earnings: number }>;
-  };
-  period: {
-    month: number;
-    year: number;
-    monthName: string;
-  };
-}
+
 
 export default function RiderDashboard() {
   const router = useRouter();
@@ -150,8 +119,6 @@ export default function RiderDashboard() {
   const [riderEntries, setRiderEntries] = useState<PayrollEntry[]>([]);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [entriesLoading, setEntriesLoading] = useState(false);
-  const [analytics, setAnalytics] = useState<RiderAnalytics | null>(null);
-  const [analyticsLoading, setAnalyticsLoading] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -323,34 +290,13 @@ export default function RiderDashboard() {
       const advancesData = await advancesRes.json();
       setAdvances(advancesData);
 
-      // Fetch analytics
-      await fetchAnalytics(riderId);
+
     } catch (error) {
       console.error('Error fetching data:', error);
     }
   };
 
-  const fetchAnalytics = async (riderId: string) => {
-    try {
-      setAnalyticsLoading(true);
-      const now = new Date();
-      const analyticsRes = await fetch('/api/payroll/rider-analytics', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          rider_id: riderId,
-          month: now.getMonth() + 1,
-          year: now.getFullYear()
-        })
-      });
-      const analyticsData = await analyticsRes.json();
-      setAnalytics(analyticsData);
-    } catch (error) {
-      console.error('Error fetching analytics:', error);
-    } finally {
-      setAnalyticsLoading(false);
-    }
-  };
+
 
   const handleLogout = async () => {
     try {
@@ -607,169 +553,7 @@ export default function RiderDashboard() {
           </div>
         </div>
 
-        {/* SECTION 1.5: Performance, Goals & Analytics */}
-        {!analyticsLoading && analytics && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-            {/* FEATURE 1: Performance Rank & Comparison */}
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg shadow-sm border border-blue-200 overflow-hidden">
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Performance Rank</h3>
-                  <Trophy className="w-5 h-5 text-yellow-500" />
-                </div>
-                
-                <div className="mb-6">
-                  <div className="flex items-baseline gap-2 mb-2">
-                    <span className="text-4xl font-bold text-indigo-600">#{analytics.rank.position}</span>
-                    <span className="text-sm text-gray-600">of {analytics.rank.totalRiders} riders</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="bg-indigo-600 h-2 rounded-full transition-all duration-500"
-                      style={{ width: `${Math.min((analytics.rank.position / analytics.rank.totalRiders) * 100, 100)}%` }}
-                    ></div>
-                  </div>
-                  <p className="text-xs text-gray-600 mt-2">Top {analytics.rank.percentile}% performer</p>
-                </div>
 
-                <div className="border-t border-blue-200 pt-4">
-                  <p className="text-xs text-gray-600 font-medium mb-3">Monthly Comparison</p>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-700">Your Earnings</span>
-                      <span className="font-semibold text-indigo-600">₹{analytics.earnings.current.toFixed(0)}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-700">Average Earnings</span>
-                      <span className="font-semibold text-gray-900">₹{analytics.earnings.average.toFixed(0)}</span>
-                    </div>
-                    <div className="flex items-center justify-between pt-2 border-t border-blue-200">
-                      <span className="text-sm font-medium text-gray-700">{analytics.earnings.isAboveAverage ? 'Above' : 'Below'} Average</span>
-                      <span className={`text-sm font-bold ${analytics.earnings.isAboveAverage ? 'text-green-600' : 'text-red-600'}`}>
-                        {analytics.earnings.isAboveAverage ? '+' : ''}₹{analytics.earnings.difference.toFixed(0)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* FEATURE 2: Goals & Targets */}
-            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg shadow-sm border border-green-200 overflow-hidden">
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Weekly Goal Progress</h3>
-                  <Target className="w-5 h-5 text-green-600" />
-                </div>
-
-                <div className="mb-6">
-                  <div className="flex items-baseline gap-2 mb-2">
-                    <span className="text-4xl font-bold text-green-600">{parseFloat(analytics.goals.weeklyProgress).toFixed(1)}%</span>
-                    <span className="text-sm text-gray-600">of weekly target</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                    <div 
-                      className={`${parseFloat(analytics.goals.weeklyProgress) >= 100 ? 'bg-green-600' : 'bg-emerald-500'} h-3 rounded-full transition-all duration-500`}
-                      style={{ width: `${Math.min(parseFloat(analytics.goals.weeklyProgress), 100)}%` }}
-                    ></div>
-                  </div>
-                  <p className="text-xs text-gray-600 mt-2">
-                    {parseFloat(analytics.goals.weeklyProgress) >= 100 ? '✓ Target Achieved!' : `Need ₹${(analytics.goals.weeklyTarget - analytics.goals.monthlyEarnings).toFixed(0)} more`}
-                  </p>
-                </div>
-
-                <div className="border-t border-green-200 pt-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-700">Daily Target</span>
-                    <span className="font-semibold text-gray-900">₹{analytics.goals.dailyTarget.toFixed(0)}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-700">Weekly Target</span>
-                    <span className="font-semibold text-gray-900">₹{analytics.goals.weeklyTarget.toFixed(0)}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-700">This Week (So Far)</span>
-                    <span className="font-semibold text-green-600">₹{analytics.goals.monthlyEarnings.toFixed(0)}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* FEATURE 3: Analytics & Earnings Trend */}
-            <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-lg shadow-sm border border-orange-200 overflow-hidden">
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Earnings Analytics</h3>
-                  <ArrowUpRight className="w-5 h-5 text-orange-600" />
-                </div>
-
-                <div className="mb-6">
-                  <p className="text-xs text-gray-600 font-medium mb-2">Average Daily Earnings</p>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-bold text-orange-600">₹{analytics.analytics.averageDailyEarnings.toFixed(0)}</span>
-                    <span className="text-sm text-gray-600">per day</span>
-                  </div>
-                </div>
-
-                <div className="border-t border-orange-200 pt-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-700">Days Worked</span>
-                    <span className="font-semibold text-gray-900">{analytics.analytics.totalDaysWorked}</span>
-                  </div>
-                  {analytics.analytics.topEarningDay && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-700">Best Day</span>
-                      <div className="text-right">
-                        <p className="font-semibold text-orange-600">₹{analytics.analytics.topEarningDay.amount.toFixed(0)}</p>
-                        <p className="text-xs text-gray-500">{new Date(analytics.analytics.topEarningDay.date).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', timeZone: 'Asia/Kolkata' })}</p>
-                      </div>
-                    </div>
-                  )}
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-700">This Month</span>
-                    <span className="font-semibold text-orange-600">₹{analytics.goals.monthlyEarnings.toFixed(0)}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Earnings Trend Chart */}
-        {!analyticsLoading && analytics && analytics.analytics.dailyBreakdown.length > 0 && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-8">
-            <div className="p-6 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">Daily Earnings Trend</h3>
-              <p className="text-sm text-gray-600 mt-1">{analytics.period.monthName} {analytics.period.year}</p>
-            </div>
-            <div className="p-6">
-              <div className="overflow-x-auto">
-                <div className="flex items-end justify-around gap-2 h-64 min-w-full px-4 py-4" style={{ background: 'linear-gradient(180deg, rgba(99, 102, 241, 0.05) 0%, rgba(99, 102, 241, 0) 100%)' }}>
-                  {analytics.analytics.dailyBreakdown.map((day: any, idx: number) => {
-                    const maxEarning = Math.max(...analytics.analytics.dailyBreakdown.map((d: any) => d.earnings), 1);
-                    const heightPercent = (day.earnings / maxEarning) * 100;
-                    const dateObj = new Date(day.date);
-                    const dayName = dateObj.toLocaleDateString('en-IN', { weekday: 'short', timeZone: 'Asia/Kolkata' });
-                    
-                    return (
-                      <div key={idx} className="flex flex-col items-center flex-1">
-                        <div className="w-full flex items-end justify-center mb-2">
-                          <div 
-                            className="w-8 bg-gradient-to-t from-indigo-500 to-indigo-400 rounded-t-md transition-all duration-300 hover:from-indigo-600 hover:to-indigo-500"
-                            style={{ height: `${Math.max(heightPercent, 10)}%` }}
-                            title={`₹${day.earnings.toFixed(0)}`}
-                          ></div>
-                        </div>
-                        <p className="text-xs text-gray-600 text-center">{dayName}</p>
-                        <p className="text-xs font-semibold text-gray-900 mt-1">₹{day.earnings.toFixed(0)}</p>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* SECTION 2: Payroll Overview - Main Card */}
         {stats && currentPayrollWeek && (
