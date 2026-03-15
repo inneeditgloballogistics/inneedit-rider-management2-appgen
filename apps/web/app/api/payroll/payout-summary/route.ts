@@ -26,10 +26,12 @@ export async function POST(request: Request) {
         r.user_id as rider_id,
         r.vehicle_ownership,
         r.ev_daily_rent,
+        r.is_leader,
+        r.leader_discount_percentage,
         r.ev_type,
         r.join_date,
         COALESCE(
-          (\
+          (
             SELECT SUM(COALESCE(amount, 0))::numeric FROM additions 
             WHERE cee_id = pe.cee_id
             AND entry_date >= ${weekStart}::date
@@ -38,7 +40,7 @@ export async function POST(request: Request) {
           0
         ) as total_additions,
         COALESCE(
-          (\
+          (
             SELECT SUM(COALESCE(amount, 0))::numeric FROM deductions 
             WHERE cee_id = pe.cee_id
             AND entry_date >= ${weekStart}::date
@@ -47,14 +49,33 @@ export async function POST(request: Request) {
           0
         ) as total_deductions,
         COALESCE(
-          (\
-            SELECT SUM(COALESCE(daily_rent_amount, 0))::numeric FROM vehicle_rent 
+          (
+            SELECT COUNT(DISTINCT rent_date) FROM vehicle_rent 
             WHERE cee_id = pe.cee_id
             AND rent_date >= ${weekStart}::date
             AND rent_date <= ${weekEnd}::date
           ),
           0
-        ) as vehicle_rent_total
+        ) as vehicle_rent_days,
+        COALESCE(
+          (
+            SELECT AVG(base_daily_rent) FROM vehicle_rent 
+            WHERE cee_id = pe.cee_id
+            AND rent_date >= ${weekStart}::date
+            AND rent_date <= ${weekEnd}::date
+          ),
+          0
+        ) as base_daily_rent,
+        COALESCE(
+          (
+            SELECT COALESCE(discount_percentage, 0) FROM vehicle_rent 
+            WHERE cee_id = pe.cee_id
+            AND rent_date >= ${weekStart}::date
+            AND rent_date <= ${weekEnd}::date
+            LIMIT 1
+          ),
+          0
+        ) as discount_percentage
       FROM payout_entries pe
       LEFT JOIN riders r ON r.cee_id = pe.cee_id
       WHERE pe.year = ${year} AND pe.month = ${month} AND pe.week = ${week}
@@ -65,8 +86,14 @@ export async function POST(request: Request) {
     console.log(`Payout summary query returned ${payouts.length} entries for week ${week}, month ${month}, year ${year}`);
 
     const result = payouts.map((entry: any) => {
-      // Use vehicle_rent from database
-      const vehicleRent = parseFloat(entry.vehicle_rent_total) || 0;
+      // Calculate vehicle rent dynamically from stored parameters
+      let vehicleRent = 0;
+      if (entry.vehicle_rent_days > 0) {
+        const baseDailyRent = parseFloat(entry.base_daily_rent) || 0;
+        const discountPercentage = parseFloat(entry.discount_percentage) || 0;
+        const dailyRentAfterDiscount = baseDailyRent * (1 - discountPercentage / 100);
+        vehicleRent = dailyRentAfterDiscount * entry.vehicle_rent_days;
+      }
 
       const allAdditions = parseFloat(entry.total_additions) || 0;
       const allDeductions = parseFloat(entry.total_deductions) || 0;
