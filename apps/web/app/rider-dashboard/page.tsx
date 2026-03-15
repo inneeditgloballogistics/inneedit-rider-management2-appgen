@@ -311,23 +311,25 @@ export default function RiderDashboard() {
       console.log('Payouts data fetched:', payoutsData);
       setPayouts(Array.isArray(payoutsData) ? payoutsData : []);
       
-      // Set current week's payout for THIS WEEK ONLY
+      // Set current week's payout - prioritize finalized payouts, then most recent
       if (payoutsData.length > 0) {
-        const now = new Date();
-        const currentMonth = now.getMonth() + 1;
-        const currentYear = now.getFullYear();
+        // First, try to find a finalized payout (most recent one)
+        let currentWeekPayout = payoutsData.find(p => p.status === 'finalized');
         
-        // Find payout for current week of current month/year
-        let currentWeekPayout = payoutsData.find(
-          p => p.month === currentMonth && p.year === currentYear
-        );
-        
-        // If no payout for current month, use the most recent one
+        // If no finalized payout, use the most recent one regardless of status
         if (!currentWeekPayout) {
           currentWeekPayout = payoutsData[0];
         }
         
         setCurrentPayrollWeek(currentWeekPayout);
+        console.log('Setting current payout:', { 
+          week: currentWeekPayout.week_number, 
+          month: currentWeekPayout.month,
+          year: currentWeekPayout.year,
+          status: currentWeekPayout.status,
+          final_payout: currentWeekPayout.final_payout,
+          net_payout: currentWeekPayout.net_payout
+        });
         
         // If payout is finalized, fetch the detailed payout breakdown
         if (currentWeekPayout.status === 'finalized') {
@@ -946,7 +948,7 @@ export default function RiderDashboard() {
                 </p>
                 <p className="text-3xl font-bold text-green-600 mt-2">
                   {currentPayrollWeek?.status === 'finalized'
-                    ? `₹${parseFloat((currentPayrollWeek.final_payout || currentPayrollWeek.net_payout || 0).toString()).toFixed(0)}`
+                    ? `₹${(parseFloat(String(currentPayrollWeek.final_payout)) || parseFloat(String(currentPayrollWeek.net_payout)) || 0).toFixed(0)}`
                     : `₹${parseFloat((orderStats?.total_payout || 0).toString()).toFixed(0)}`}
                 </p>
               </div>
@@ -1241,7 +1243,7 @@ export default function RiderDashboard() {
                   <p className="text-xs text-gray-600 font-medium">This Week Payout</p>
                   <p className="text-sm font-semibold text-indigo-600 mt-1">
                     ₹{currentPayrollWeek?.status === 'finalized'
-                      ? parseFloat((currentPayrollWeek.final_payout || currentPayrollWeek.net_payout || 0).toString()).toFixed(2)
+                      ? (parseFloat(String(currentPayrollWeek.final_payout)) || parseFloat(String(currentPayrollWeek.net_payout)) || 0).toFixed(2)
                       : stats?.finalPayout.toFixed(2) || '0.00'}
                   </p>
                   {currentPayrollWeek?.status !== 'finalized' && <p className="text-xs text-gray-500 mt-1">Estimated (Pending Approval)</p>}
