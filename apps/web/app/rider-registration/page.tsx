@@ -4,7 +4,6 @@ import { useRouter } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import BulkUploadModal from '@/components/BulkUploadModal';
-import CongratulatationsPopup from '@/components/CongratulatationsPopup';
 
 function RiderRegistrationContent() {
   const router = useRouter();
@@ -40,8 +39,6 @@ function RiderRegistrationContent() {
   const [hubs, setHubs] = useState<any[]>([]);
   const [stores, setStores] = useState<any[]>([]);
   const [showBulkUploadModal, setShowBulkUploadModal] = useState(false);
-  const [showCongratulations, setShowCongratulations] = useState(false);
-  const [congratulationsData, setCongratulationsData] = useState<any>(null);
   
   const dlInputRef = useRef<HTMLInputElement>(null);
   const aadharInputRef = useRef<HTMLInputElement>(null);
@@ -197,50 +194,8 @@ Details: ${result.details}` : '';
         throw new Error(errorMsg + details);
       }
 
-      // Fetch hub and vehicle details for congratulations popup
-      let hubName = '', hubLocation = '', managerName = '', managerPhone = '', vehicleNumber = '';
-      
-      if (formData.assignedHub) {
-        try {
-          const hubRes = await fetch(`/api/hubs`);
-          const hubsData = await hubRes.json();
-          const selectedHub = hubsData.find((h: any) => h.id === parseInt(formData.assignedHub) || h.id.toString() === formData.assignedHub);
-          if (selectedHub) {
-            hubName = selectedHub.hub_name;
-            hubLocation = selectedHub.location;
-            managerName = selectedHub.manager_name || '';
-            managerPhone = selectedHub.manager_phone || '';
-          }
-        } catch (err) {
-          console.error('Error fetching hub details:', err);
-        }
-      }
-
-      if (formData.vehicle && formData.vehicle !== 'later') {
-        try {
-          const vehicleRes = await fetch(`/api/vehicles`);
-          const vehiclesData = await vehicleRes.json();
-          const selectedVehicle = vehiclesData.find((v: any) => v.id === parseInt(formData.vehicle));
-          if (selectedVehicle) {
-            vehicleNumber = selectedVehicle.vehicle_number;
-          }
-        } catch (err) {
-          console.error('Error fetching vehicle details:', err);
-        }
-      }
-
-      // Show congratulations popup
-      setCongratulationsData({
-        fullName: formData.fullName,
-        ceeId: result.ceeId,
-        client: formData.client,
-        vehicleNumber,
-        hubName,
-        hubLocation,
-        managerName,
-        managerPhone
-      });
-      setShowCongratulations(true);
+      // Show success message and redirect
+      alert(`Rider ${formData.fullName} registered successfully with CEE ID: ${result.ceeId}`);
     } catch (error: any) {
       console.error('Error registering rider:', error);
       const errorMessage = error?.message || 'Failed to register rider. Please try again.';
@@ -251,13 +206,7 @@ Details: ${result.details}` : '';
   };
 
     return (
-      <>
-        <CongratulatationsPopup
-          isOpen={showCongratulations}
-          riderData={congratulationsData || {}}
-          onClose={() => setShowCongratulations(false)}
-        />
-        <div className="mesh-bg text-slate-800 antialiased min-h-screen flex flex-col">
+      <div className="mesh-bg text-slate-800 antialiased min-h-screen flex flex-col">
           {/* Navigation */}
     <header className="fixed top-0 left-0 right-0 z-50 glass-panel">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
@@ -930,7 +879,6 @@ Details: ${result.details}` : '';
         }}
     />
         </div>
-      </>
     );
 }
 

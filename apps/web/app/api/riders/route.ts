@@ -150,7 +150,7 @@ export async function POST(request: Request) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { id, assigned_vehicle_id, ...otherFields } = body;
+    const { id, assigned_vehicle_id, onboarding_completed, ...otherFields } = body;
 
     // Get the current rider data to find previous vehicle assignment
     const currentRider = await sql`
@@ -210,7 +210,8 @@ export async function PUT(request: NextRequest) {
         ev_type = ${otherFields.ev_type || null},
         is_leader = ${otherFields.is_leader || false},
         leader_discount_percentage = ${otherFields.leader_discount_percentage || 0},
-        status = ${otherFields.status || 'active'}
+        status = ${otherFields.status || 'active'},
+        onboarding_completed = ${onboarding_completed !== undefined ? onboarding_completed : null}
       WHERE id = ${id}
       RETURNING *
     `;
