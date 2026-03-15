@@ -98,6 +98,33 @@ export async function POST(request: Request) {
       await sql`UPDATE vehicles SET assigned_rider_id = ${ceeId}, status = 'assigned' WHERE id = ${body.assignedVehicleId}`;
       console.log('Vehicle assigned to rider:', body.assignedVehicleId, ceeId);
     }
+
+    // Create notification for hub manager if hub is assigned
+    if (hubId) {
+      try {
+        // Fetch hub details
+        const hubDetails = await sql`SELECT * FROM hubs WHERE id = ${hubId}`;
+        const hub = hubDetails[0];
+
+        // Create notification for hub manager
+        await sql`
+          INSERT INTO notifications (type, title, message, related_id, is_read, created_at)
+          VALUES (
+            'new_rider_onboarding',
+            'New Rider Registered - On Way to Hub',
+            ${`${body.fullName} (CEE ID: ${ceeId}) assigned to Client: ${body.client} - On the way to collect vehicle`},
+            ${newRider.id},
+            false,
+            NOW()
+          )
+        `;
+
+        console.log('Hub manager notification created for hub:', hubId);
+      } catch (notificationError) {
+        console.error('Error creating notification:', notificationError);
+        // Continue even if notification fails
+      }
+    }
     
     return NextResponse.json({ success: true, rider: newRider, ceeId, userId });
   } catch (error: any) {
