@@ -424,10 +424,9 @@ export default function RiderDashboard() {
 
   const handleWeekChange = async (week: number) => {
     setSelectedWeek(week);
-    // Find payout for selected week
-    const weekPayout = payouts.find(
-      (p) => p.week_number === week && p.month === new Date().getMonth() + 1 && p.year === new Date().getFullYear()
-    ) || currentPayrollWeek;
+    // Find payout for selected week - search across all months/years
+    const weekPayout = payouts.find((p) => p.week_number === week);
+    
     if (weekPayout && rider) {
       setCurrentPayrollWeek(weekPayout);
       // If payout is finalized, fetch detailed breakdown
@@ -975,7 +974,9 @@ export default function RiderDashboard() {
 
 
 
-        {/* SECTION 2: Payroll Overview - Main Card */}
+        {/* WEEK SELECTOR */}
+        {payouts.length > 0 && (
+          <div className="mb-8 bg-white rounded-lg shadow-sm border border-gray-200 p-6\">\n            <div className=\"mb-4\">\n              <h3 className=\"text-sm font-semibold text-gray-900 mb-4\">Select Week</h3>\n              <div className=\"flex flex-wrap gap-3\">\n                {[1, 2, 3, 4].map((week) => {\n                  // Find if there's any payout for this week (any month/year)\n                  const weekPayout = payouts.find(p => p.week_number === week);\n                  const isSelected = selectedWeek === week;\n                  const isFinalized = weekPayout?.status === 'finalized';\n                  \n                  return (\n                    <button\n                      key={week}\n                      onClick={() => handleWeekChange(week)}\n                      disabled={!weekPayout}\n                      className={`px-6 py-3 rounded-lg font-medium transition flex flex-col items-center gap-1 min-w-max ${\n                        !weekPayout\n                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed opacity-50'\n                          : isSelected\n                          ? 'bg-indigo-600 text-white shadow-md'\n                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'\n                      }`}\n                    >\n                      <span>Week {week}</span>\n                      {weekPayout && (\n                        <span className={`text-xs font-semibold ${\n                          isSelected ? 'text-indigo-100' : isFinalized ? 'text-green-600' : 'text-orange-600'\n                        }`}>\n                          {isFinalized ? '✓ Finalized' : 'Pending'}\n                        </span>\n                      )}\n                    </button>\n                  );\n                })}\n              </div>\n              <p className=\"text-xs text-gray-600 mt-4\">Only finalized weeks show detailed breakdown. Click a week to view its payout details.</p>\n            </div>\n          </div>\n        )}\n\n        {/* SECTION 2: Payroll Overview - Main Card */}
         {stats && currentPayrollWeek && (
           <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden mb-8">
             {/* Payslip Header */}
