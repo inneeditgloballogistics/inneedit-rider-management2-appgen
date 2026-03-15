@@ -146,20 +146,19 @@ export async function POST(request: Request) {
               AND rent_date <= ${endDateStr}::date
             `;
             
-            // Insert daily vehicle rent entries with discount info
+            // Insert daily vehicle rent entries with discount info (NO hardcoding - store only parameters)
             while (currentDate <= endDate) {
               if (!riderJoinDate || currentDate >= riderJoinDate) {
                 const dateStr = currentDate.toISOString().split('T')[0];
                 
-                // Insert vehicle rent with base amount, discount percentage, and calculated amount
+                // Store ONLY the parameters (base_daily_rent and discount_percentage)
+                // Calculate the amount dynamically when needed
                 await sql`
                   INSERT INTO vehicle_rent (
                     cee_id,
                     rent_date,
                     base_daily_rent,
                     discount_percentage,
-                    daily_rent_amount,
-                    description,
                     status,
                     created_at
                   ) VALUES (
@@ -167,8 +166,6 @@ export async function POST(request: Request) {
                     ${dateStr}::date,
                     ${baseDailyRent},
                     ${leaderDiscountPercentage || 0},
-                    ${dailyRent},
-                    ${'Vehicle Rent'},
                     'AUTO DEDUCTED',
                     NOW()
                   )

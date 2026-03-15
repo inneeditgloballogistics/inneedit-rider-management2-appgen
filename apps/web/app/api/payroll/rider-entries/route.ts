@@ -204,16 +204,21 @@ export async function POST(request: Request) {
             ORDER BY rent_date DESC
           `;
           console.log('Vehicle rent records found:', vehicleRentRecords.length);
-          // Add vehicle rent entries from database
+          // Add vehicle rent entries from database - CALCULATE amount dynamically from parameters
           for (const record of vehicleRentRecords) {
+            // Calculate the amount dynamically: base * (1 - discount/100)
+            const baseDailyRent = parseFloat(record.base_daily_rent) || 0;
+            const discountPercentage = parseFloat(record.discount_percentage) || 0;
+            const calculatedAmount = baseDailyRent * (1 - discountPercentage / 100);
+            
             const vehicleRentEntry = {
               id: record.id,
               rider_id: rider_id,
               cee_id: resolvedCeeId,
               full_name: full_name,
               entry_type: 'vehicle_rent',
-              amount: parseFloat(record.daily_rent_amount) || 0,
-              description: `Vehicle Rent (${record.rent_date}) - Base: ${record.base_daily_rent}, Discount: ${record.discount_percentage}%`,
+              amount: calculatedAmount,
+              description: `Vehicle Rent (${record.rent_date}) - Base: ₹${baseDailyRent}, Discount: ${discountPercentage}%`,
               status: 'auto-deducted',
               entry_date: record.rent_date,
               created_at: record.created_at,
@@ -221,7 +226,7 @@ export async function POST(request: Request) {
             };
             
             entries.push(vehicleRentEntry);
-            console.log('Added vehicle rent from DB for', record.rent_date, ': Rs', record.daily_rent_amount);
+            console.log('Added vehicle rent from DB for', record.rent_date, ': Rs', calculatedAmount, '(Base:', baseDailyRent, '- Discount:', discountPercentage + '%)');
           }
         } catch (e) {
           console.log('Vehicle rent fetch error (non-critical):', e);
