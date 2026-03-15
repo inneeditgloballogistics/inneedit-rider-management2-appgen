@@ -19,8 +19,7 @@ export async function POST(request: NextRequest) {
       entry_type,
       amount,
       description,
-      entry_date,
-      status = 'pending'
+      entry_date
     } = body;
 
     // Store the date as YYYY-MM-DD (DATE type in database, no timezone conversion)
@@ -48,13 +47,12 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await sql`
-      INSERT INTO deductions (
+      INSERT INTO additions (
         cee_id,
         entry_type,
         amount,
         description,
         entry_date,
-        status,
         created_at
       ) VALUES (
         ${resolvedCeeId},
@@ -62,7 +60,6 @@ export async function POST(request: NextRequest) {
         ${parseFloat(amount)},
         ${description || ''},
         ${dateToStore}::DATE,
-        ${status},
         CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata'
       )
       RETURNING *
@@ -70,12 +67,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      deduction: result[0]
+      addition: result[0]
     });
   } catch (error) {
-    console.error('Error creating deduction:', error);
+    console.error('Error creating addition:', error);
     return NextResponse.json(
-      { error: 'Failed to create deduction', details: String(error) },
+      { error: 'Failed to create addition', details: String(error) },
       { status: 500 }
     );
   }

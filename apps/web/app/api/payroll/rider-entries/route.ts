@@ -28,152 +28,55 @@ export async function POST(request: Request) {
 
     let entries: any[] = [];
 
-    // Fetch referrals - only include approved ones (filter by created_at for week determination)
+    // Fetch additions (referrals, incentives, bonuses, etc.)
     try {
-      let referrals: any[] = [];
+      let additions: any[] = [];
       if (start_date && end_date) {
-        referrals = await sql`
-          SELECT 
-            r.id,
-            r.referrer_cee_id as rider_id,
-            COALESCE(r.referrer_cee_id, 'N/A') as cee_id,
-            COALESCE(r.referrer_name, 'Unknown') as full_name,
-            'referral' as entry_type,
-            COALESCE(r.amount, 0) as amount,
-            CONCAT(r.referred_name, ' (', r.referred_phone, ')') as description,
-            'approved' as status,
-            r.created_at as entry_date,
-            r.created_at as created_at
-          FROM referrals r
-          WHERE r.referrer_cee_id = ${resolvedCeeId}
-          AND r.approval_status = 'approved'
-          AND DATE(r.created_at) BETWEEN ${start_date} AND ${end_date}
-          ORDER BY r.created_at DESC
-        `;
-      } else {
-        referrals = await sql`
-          SELECT 
-            r.id,
-            r.referrer_cee_id as rider_id,
-            COALESCE(r.referrer_cee_id, 'N/A') as cee_id,
-            COALESCE(r.referrer_name, 'Unknown') as full_name,
-            'referral' as entry_type,
-            COALESCE(r.amount, 0) as amount,
-            CONCAT(r.referred_name, ' (', r.referred_phone, ')') as description,
-            'approved' as status,
-            r.created_at as entry_date,
-            r.created_at as created_at
-          FROM referrals r
-          WHERE r.referrer_cee_id = ${resolvedCeeId}
-          AND r.approval_status = 'approved'
-          ORDER BY r.created_at DESC
-        `;
-      }
-      entries = [...entries, ...referrals];
-      console.log("Referrals found:", referrals.length);
-    } catch (e) {
-      console.log('Referrals query error (non-critical):', e);
-    }
-
-    // Fetch incentives (filter by incentive_date for week determination)
-    try {
-      let incentives: any[] = [];
-      if (start_date && end_date) {
-        incentives = await sql`
-          SELECT 
-            i.id,
-            i.rider_id,
-            COALESCE(i.cee_id, 'N/A') as cee_id,
-            COALESCE(r.full_name, 'Unknown') as full_name,
-            'incentive' as entry_type,
-            COALESCE(i.amount, 0) as amount,
-            CONCAT(COALESCE(i.incentive_type, 'Incentive'), ': ', COALESCE(i.description, '')) as description,
-            'approved' as status,
-            i.incentive_date as entry_date,
-            i.created_at
-          FROM incentives i
-          LEFT JOIN riders r ON i.rider_id = r.user_id OR i.rider_id = r.cee_id
-          WHERE i.cee_id = ${resolvedCeeId}
-          AND DATE(i.incentive_date) BETWEEN ${start_date} AND ${end_date}
-          ORDER BY i.incentive_date DESC
-        `;
-      } else {
-        incentives = await sql`
-          SELECT 
-            i.id,
-            i.rider_id,
-            COALESCE(i.cee_id, 'N/A') as cee_id,
-            COALESCE(r.full_name, 'Unknown') as full_name,
-            'incentive' as entry_type,
-            COALESCE(i.amount, 0) as amount,
-            CONCAT(COALESCE(i.incentive_type, 'Incentive'), ': ', COALESCE(i.description, '')) as description,
-            'approved' as status,
-            i.incentive_date as entry_date,
-            i.created_at
-          FROM incentives i
-          LEFT JOIN riders r ON i.rider_id = r.user_id OR i.rider_id = r.cee_id
-          WHERE i.cee_id = ${resolvedCeeId}
-          ORDER BY i.incentive_date DESC
-        `;
-      }
-      entries = [...entries, ...incentives];
-      console.log("Incentives found:", incentives.length);
-    } catch (e) {
-      console.log('Incentives query error (non-critical):', e);
-    }
-
-    // Fetch advances (filter by created_at/requested_at for week determination, only approved ones)
-    try {
-      let advances: any[] = [];
-      if (start_date && end_date) {
-        advances = await sql`
+        additions = await sql`
           SELECT 
             a.id,
-            a.rider_id,
-            COALESCE(a.cee_id, 'N/A') as cee_id,
-            COALESCE(a.rider_name, 'Unknown') as full_name,
-            'advance' as entry_type,
+            ${resolvedCeeId} as rider_id,
+            COALESCE(${resolvedCeeId}, 'N/A') as cee_id,
+            COALESCE((SELECT full_name FROM riders WHERE cee_id = ${resolvedCeeId} LIMIT 1), 'Unknown') as full_name,
+            a.entry_type,
             COALESCE(a.amount, 0) as amount,
-            CONCAT('Reason: ', COALESCE(a.reason, '')) as description,
+            COALESCE(a.description, '') as description,
             'approved' as status,
-            a.requested_at as entry_date,
-            a.requested_at as created_at
-          FROM advances a
+            a.entry_date as entry_date,
+            a.created_at
+          FROM additions a
           WHERE a.cee_id = ${resolvedCeeId}
-          AND a.status = 'approved'
-          AND DATE(a.requested_at) BETWEEN ${start_date} AND ${end_date}
-          ORDER BY a.requested_at DESC
+          AND DATE(a.entry_date) BETWEEN ${start_date} AND ${end_date}
+          ORDER BY a.entry_date DESC
         `;
       } else {
-        advances = await sql`
+        additions = await sql`
           SELECT 
             a.id,
-            a.rider_id,
-            COALESCE(a.cee_id, 'N/A') as cee_id,
-            COALESCE(a.rider_name, 'Unknown') as full_name,
-            'advance' as entry_type,
+            ${resolvedCeeId} as rider_id,
+            COALESCE(${resolvedCeeId}, 'N/A') as cee_id,
+            COALESCE((SELECT full_name FROM riders WHERE cee_id = ${resolvedCeeId} LIMIT 1), 'Unknown') as full_name,
+            a.entry_type,
             COALESCE(a.amount, 0) as amount,
-            CONCAT('Reason: ', COALESCE(a.reason, '')) as description,
+            COALESCE(a.description, '') as description,
             'approved' as status,
-            a.requested_at as entry_date,
-            a.requested_at as created_at
-          FROM advances a
+            a.entry_date as entry_date,
+            a.created_at
+          FROM additions a
           WHERE a.cee_id = ${resolvedCeeId}
-          AND a.status = 'approved'
-          ORDER BY a.requested_at DESC
+          ORDER BY a.entry_date DESC
         `;
       }
-      entries = [...entries, ...advances];
-      console.log("Advances found:", advances.length);
+      entries = [...entries, ...additions];
+      console.log("Additions found:", additions.length);
     } catch (e) {
-      console.log('Advances query error (non-critical):', e);
+      console.log('Additions query error (non-critical):', e);
     }
-
-    // Fetch deductions and vehicle rent - get rider's cee_id first (filter by created_at for week determination)
+    // Fetch deductions and vehicle rent
     try {
       let deductions: any[] = [];
       
-      // First get the rider info to find cee_id and vehicle rent (already resolved above)
+      // First get the rider info to find cee_id and vehicle rent
       const riderInfo = await sql`
         SELECT cee_id, full_name, vehicle_ownership, ev_daily_rent, ev_type, join_date FROM riders 
         WHERE user_id = ${rider_id} OR cee_id = ${rider_id} OR cee_id = ${resolvedCeeId}
@@ -223,22 +126,17 @@ export async function POST(request: Request) {
             ${resolvedCeeId} as rider_id,
             ${resolvedCeeId} as cee_id,
             ${full_name} as full_name,
-            CASE 
-              WHEN d.deduction_type ILIKE 'security%' THEN 'security_deposit'
-              WHEN d.deduction_type ILIKE 'advance%' THEN 'advance'
-              WHEN d.deduction_type ILIKE 'damage%' THEN 'damage'
-              WHEN d.deduction_type ILIKE 'challan%' THEN 'challan'
-              ELSE 'other'
-            END as entry_type,
+            d.entry_type,
             COALESCE(d.amount, 0) as amount,
             COALESCE(d.description, '') as description,
-            'approved' as status,
-            d.deduction_date as entry_date,
+            d.status,
+            d.entry_date as entry_date,
             d.created_at
           FROM deductions d
           WHERE d.cee_id = ${resolvedCeeId}
-          AND DATE(d.deduction_date) BETWEEN ${start_date} AND ${end_date}
-          ORDER BY d.deduction_date DESC
+          AND d.status = 'approved'
+          AND DATE(d.entry_date) BETWEEN ${start_date} AND ${end_date}
+          ORDER BY d.entry_date DESC
         `;
       } else {
         deductions = await sql`
@@ -247,21 +145,16 @@ export async function POST(request: Request) {
             ${resolvedCeeId} as rider_id,
             ${resolvedCeeId} as cee_id,
             ${full_name} as full_name,
-            CASE 
-              WHEN d.deduction_type ILIKE 'security%' THEN 'security_deposit'
-              WHEN d.deduction_type ILIKE 'advance%' THEN 'advance'
-              WHEN d.deduction_type ILIKE 'damage%' THEN 'damage'
-              WHEN d.deduction_type ILIKE 'challan%' THEN 'challan'
-              ELSE 'other'
-            END as entry_type,
+            d.entry_type,
             COALESCE(d.amount, 0) as amount,
             COALESCE(d.description, '') as description,
-            'approved' as status,
-            d.deduction_date as entry_date,
+            d.status,
+            d.entry_date as entry_date,
             d.created_at
           FROM deductions d
           WHERE d.cee_id = ${resolvedCeeId}
-          ORDER BY d.deduction_date DESC
+          AND d.status = 'approved'
+          ORDER BY d.entry_date DESC
         `;
       }
       console.log("=== TOTAL DEDUCTIONS FOUND:", deductions.length);

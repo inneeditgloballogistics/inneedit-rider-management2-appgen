@@ -40,21 +40,20 @@ export async function POST(request: NextRequest) {
       console.log('Could not resolve cee_id, using rider_id as-is');
     }
 
+    // Add to additions table with entry_type = 'incentive'
     const result = await sql`
-      INSERT INTO incentives (
+      INSERT INTO additions (
         cee_id,
-        rider_id,
-        incentive_type,
+        entry_type,
         amount,
         description,
-        incentive_date,
+        entry_date,
         created_at
       ) VALUES (
         ${resolvedCeeId},
-        ${rider_id},
-        ${incentive_type},
+        'incentive',
         ${parseFloat(amount)},
-        ${description},
+        ${description || `${incentive_type}: ${description}`},
         ${dateToStore}::DATE,
         CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata'
       )

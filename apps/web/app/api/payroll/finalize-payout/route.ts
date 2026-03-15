@@ -76,51 +76,25 @@ export async function POST(request: Request) {
 
         const vehicleOwnership = riderInfo[0].vehicle_ownership || null;
 
-        // Fetch referral bonuses
-        const referralData = await sql`
-          SELECT COALESCE(SUM(amount), 0) as total FROM referrals 
-          WHERE referrer_cee_id = ${cee_id}
-          AND approval_status = 'approved'
-          AND created_at >= ${startDateStr}::date
-          AND created_at <= ${endDateStr}::date
-        `;
-
-        // Fetch incentives
-        const incentiveData = await sql`
-          SELECT COALESCE(SUM(amount), 0) as total FROM incentives 
+        // Fetch all additions (referrals, incentives, bonuses, etc.)
+        const additionsData = await sql`
+          SELECT COALESCE(SUM(amount), 0) as total FROM additions 
           WHERE cee_id = ${cee_id}
-          AND incentive_date >= ${startDateStr}::date
-          AND incentive_date <= ${endDateStr}::date
+          AND entry_date >= ${startDateStr}::date
+          AND entry_date <= ${endDateStr}::date
         `;
 
-        // Fetch approved advances
-        const advanceData = await sql`
-          SELECT COALESCE(SUM(amount), 0) as total FROM advances 
-          WHERE cee_id = ${cee_id}
-          AND status = 'approved'
-          AND requested_at >= ${startDateStr}::date
-          AND requested_at <= ${endDateStr}::date
-        `;
-
-        // Fetch deductions
-        const deductionData = await sql`
+        // Fetch all deductions (advances, damages, challans, etc.) - ONLY approved ones
+        const deductionsData = await sql`
           SELECT COALESCE(SUM(amount), 0) as total FROM deductions 
           WHERE cee_id = ${cee_id}
-          AND deduction_date >= ${startDateStr}::date
-          AND deduction_date <= ${endDateStr}::date
+          AND status = 'approved'
+          AND entry_date >= ${startDateStr}::date
+          AND entry_date <= ${endDateStr}::date
         `;
 
-        const totalReferrals = parseFloat(referralData[0]?.total || 0);
-        const totalIncentives = parseFloat(incentiveData[0]?.total || 0);
-        const totalAdvances = parseFloat(advanceData[0]?.total || 0);
-        const totalDeductions = parseFloat(deductionData[0]?.total || 0);
-
-        // NEW FORMULA:
-        // Final Amount = All Additions - All Deductions - Vehicle Rent
-        // Final Payout = Base Payout + Final Amount
-        
-        const allAdditions = totalReferrals + totalIncentives;
-        const allDeductions = totalAdvances + totalDeductions;
+        const allAdditions = parseFloat(additionsData[0]?.total || 0);
+        const allDeductions = parseFloat(deductionsData[0]?.total || 0);
         
         // Calculate vehicle rent dynamically
         let vehicleRent = 0;

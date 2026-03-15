@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import sql from '@/app/api/utils/sql';
 
+// IST timezone offset: UTC+5:30
+const IST_OFFSET = 5.5 * 60 * 60 * 1000;
+
+function getTodayIST(): string {
+  const now = new Date();
+  const istTime = new Date(now.getTime() + IST_OFFSET);
+  return istTime.toISOString().split('T')[0];
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -9,25 +18,13 @@ export async function POST(request: NextRequest) {
       rider_name,
       amount,
       reason,
-      admin_notes,
-      deduction_date
+      status = 'approved',
+      entry_date
     } = body;
 
-    // Store the date as ISO string in IST timezone
-    // deduction_date comes as YYYY-MM-DD string (in IST)
-    // Parse it properly without timezone shifts
-    let dateToStore: string;
-    if (deduction_date) {
-      const [year, month, day] = deduction_date.split('-').map(Number);
-      // Create UTC date, then convert to IST ISO string
-      const utcDate = new Date(Date.UTC(year, month - 1, day));
-      dateToStore = utcDate.toISOString();
-    } else {
-      // Use IST time - database is configured for IST
-      const now = new Date();
-      const istTime = new Date(now.getTime() + 5.5 * 60 * 60 * 1000);
-      dateToStore = istTime.toISOString();
-    }
+    // Store the date as YYYY-MM-DD (DATE type in database, no timezone conversion)
+    // entry_date comes as YYYY-MM-DD in IST
+    const dateToStore = entry_date || getTodayIST();
 
     // Resolve rider_id to cee_id first
     let resolvedCeeId = rider_id;
@@ -44,25 +41,24 @@ export async function POST(request: NextRequest) {
       console.log('Could not resolve cee_id, using rider_id as-is');
     }
 
+    // Store advances as deductions with entry_type = 'advance'
     const result = await sql`
-      INSERT INTO advances (
+      INSERT INTO deductions (
         cee_id,
-        rider_id,
-        rider_name,
+        entry_type,
         amount,
-        reason,
-        admin_notes,
+        description,
+        entry_date,
         status,
-        requested_at
+        created_at
       ) VALUES (
         ${resolvedCeeId},
-        ${rider_id},
-        ${rider_name},
+        'advance',
         ${parseFloat(amount)},
-        ${reason},
-        ${admin_notes},
-        'approved',
-        ${dateToStore}::timestamp AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata'
+        ${reason || `Advance for ${rider_name}`},
+        ${dateToStore}::DATE,
+        ${status},
+        CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata'
       )
       RETURNING *
     `;
