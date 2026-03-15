@@ -1338,7 +1338,7 @@ function AdminDashboardContent() {
                     </div>
                     <div>
                       <label className="block text-sm font-semibold text-slate-900 mb-2">Joining Date</label>
-                      <input type="date" value={editItem.join_date ? (typeof editItem.join_date === 'string' ? editItem.join_date.split('T')[0] : editItem.join_date) : ''} onChange={(e) => setEditItem({...editItem, join_date: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
+                      <input type="date" value={editItem.join_date ? (typeof editItem.join_date === 'string' ? editItem.join_date.split('T')[0] : new Date(editItem.join_date).toISOString().split('T')[0]) : ''} onChange={(e) => setEditItem({...editItem, join_date: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
                     </div>
 
                     <h4 className="font-semibold text-slate-900 border-b pb-2 text-sm uppercase pt-2">Address Information</h4>
