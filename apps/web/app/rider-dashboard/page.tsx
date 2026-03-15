@@ -304,11 +304,11 @@ export default function RiderDashboard() {
 
       // Fetch payouts using ceeId ONLY
       const payoutsRes = await fetch(`/api/payouts?ceeId=${ceeId || ''}`);
-      const payoutsData = await payoutsRes.json();
       if (!payoutsRes.ok) {
-        console.error('Payouts fetch error:', payoutsData);
+        console.error('Payouts fetch error:', payoutsRes.status);
         setPayouts([]);
       } else {
+        const payoutsData = await payoutsRes.json();
         console.log('Payouts data fetched:', payoutsData);
         setPayouts(Array.isArray(payoutsData) ? payoutsData : []);
       }
@@ -416,9 +416,9 @@ export default function RiderDashboard() {
     };
   };
 
-  const pendingReferrals = referrals.filter(r => r.approval_status === 'pending').length;
-  const approvedReferrals = referrals.filter(r => r.approval_status === 'approved').length;
-  const pendingAdvances = advances.filter(a => a.status === 'pending').length;
+  const pendingReferrals = Array.isArray(referrals) ? referrals.filter(r => r.approval_status === 'pending').length : 0;
+  const approvedReferrals = Array.isArray(referrals) ? referrals.filter(r => r.approval_status === 'approved').length : 0;
+  const pendingAdvances = Array.isArray(advances) ? advances.filter(a => a.status === 'pending').length : 0;
 
   const handleWeekChange = async (week: number) => {
     setSelectedWeek(week);
