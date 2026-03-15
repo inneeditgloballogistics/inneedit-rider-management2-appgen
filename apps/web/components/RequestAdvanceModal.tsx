@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { X, AlertCircle } from 'lucide-react';
+import { X, AlertCircle, CheckCircle } from 'lucide-react';
 
 interface RequestAdvanceModalProps {
   isOpen: boolean;
@@ -24,6 +24,7 @@ export default function RequestAdvanceModal({
 }: RequestAdvanceModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
   const [formData, setFormData] = useState({
     amount: '',
     reason: '',
@@ -71,8 +72,14 @@ export default function RequestAdvanceModal({
       }
 
       setFormData({ amount: '', reason: '', storeLocation: rider.client || '' });
+      setSuccess(true);
       onSuccess();
-      onClose();
+      
+      // Show success message for 2 seconds then close
+      setTimeout(() => {
+        setSuccess(false);
+        onClose();
+      }, 2000);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -81,6 +88,26 @@ export default function RequestAdvanceModal({
   };
 
   if (!isOpen) return null;
+
+  // Show success message
+  if (success) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-8 text-center">
+          <div className="mb-4 flex justify-center">
+            <CheckCircle className="w-16 h-16 text-green-600" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Request Submitted!</h2>
+          <p className="text-gray-600 mb-4">Your advance request has been successfully submitted. Your admin will review and respond shortly.</p>
+          <div className="mt-6 p-4 bg-green-50 rounded-lg border border-green-200">
+            <p className="text-sm text-green-800">
+              <strong>Amount:</strong> ₹{formData.amount}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">

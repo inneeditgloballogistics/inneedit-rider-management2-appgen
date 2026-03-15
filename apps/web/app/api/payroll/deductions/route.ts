@@ -17,9 +17,15 @@ export async function GET(request: NextRequest) {
 
     if (type === 'advance') {
       const deductions = await sql`
-        SELECT * FROM deductions 
-        WHERE entry_type = 'advance' 
-        ORDER BY created_at DESC
+        SELECT 
+          d.*,
+          r.full_name as rider_name,
+          s.store_name as store_location
+        FROM deductions d
+        LEFT JOIN riders r ON d.cee_id = r.cee_id
+        LEFT JOIN stores s ON r.store_id = s.id
+        WHERE d.entry_type = 'advance' 
+        ORDER BY d.created_at DESC
       `;
       return NextResponse.json(deductions);
     }
