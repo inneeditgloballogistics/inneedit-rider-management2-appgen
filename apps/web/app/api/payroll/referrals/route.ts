@@ -13,8 +13,12 @@ export async function POST(request: NextRequest) {
       notes,
       amount,
       approval_status,
+      entry_date,
       created_at
     } = body;
+
+    // Use entry_date if provided (IST date as YYYY-MM-DD), otherwise use today
+    const dateToStore = entry_date || created_at || new Date().toISOString().split('T')[0];
 
     const result = await sql`
       INSERT INTO referrals (
@@ -36,7 +40,7 @@ export async function POST(request: NextRequest) {
         ${notes},
         ${amount || 0},
         ${approval_status || 'approved'},
-        (${created_at ? new Date(created_at).toISOString() : new Date().toISOString()})::timestamp AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata'
+        ${dateToStore}::DATE
       )
       RETURNING *
     `;

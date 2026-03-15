@@ -18,12 +18,13 @@ export async function POST(request: NextRequest) {
       incentive_type,
       amount,
       description,
+      entry_date,
       incentive_date
     } = body;
 
     // Store the date as YYYY-MM-DD (DATE type in database, no timezone conversion)
-    // incentive_date comes as YYYY-MM-DD in IST
-    const dateToStore = incentive_date || getTodayIST();
+    // entry_date or incentive_date comes as YYYY-MM-DD in IST
+    const dateToStore = entry_date || incentive_date || getTodayIST();
 
     // Resolve rider_id to cee_id first
     let resolvedCeeId = rider_id;
