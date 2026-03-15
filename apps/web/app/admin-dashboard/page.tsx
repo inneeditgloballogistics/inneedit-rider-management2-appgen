@@ -1426,29 +1426,27 @@ function AdminDashboardContent() {
                           <p className="text-sm text-blue-900 mt-2">{editItem.vehicle_type}, {editItem.model}</p>
                         </div>
 
-                        <div>
-                          <label className="block text-sm font-semibold text-slate-900 mb-3">Choose a rider...</label>
-                          {availableRiders.length === 0 ? (
-                            <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-900 text-sm">
-                              <p className="font-semibold">No unassigned riders available</p>
-                              <p className="text-xs mt-1">All riders currently have vehicles assigned, or no riders exist in the system.</p>
-                            </div>
-                          ) : (
-                            <select
-                              value={selectedRiderId}
-                              onChange={(e) => setSelectedRiderId(e.target.value)}
-                              className="w-full px-4 py-3 border-2 border-orange-400 rounded-full focus:outline-none focus:ring-2 focus:ring-orange-500 text-base font-medium text-slate-900 bg-white hover:border-orange-500 transition-colors"
-                              required
-                            >
-                              <option value="">Choose a rider...</option>
-                              {availableRiders.map((rider: any) => (
-                                <option key={rider.id} value={rider.cee_id || rider.user_id}>
-                                  {rider.full_name} ({rider.cee_id || rider.user_id})
-                                </option>
-                              ))}
-                            </select>
-                          )}
-                        </div>
+                        <label className="block text-sm font-semibold text-slate-900 mb-3">Choose a rider...</label>
+                        {availableRiders.length === 0 ? (
+                          <div className="p-4 bg-yellow-50 border-2 border-yellow-300 rounded-xl text-yellow-900 text-sm">
+                            <p className="font-bold text-base">No unassigned riders available</p>
+                            <p className="text-sm mt-2">All riders currently have vehicles assigned, or no riders exist in the system.</p>
+                          </div>
+                        ) : (
+                          <select
+                            value={selectedRiderId}
+                            onChange={(e) => setSelectedRiderId(e.target.value)}
+                            className="w-full px-4 py-3 border-2 border-orange-400 rounded-full focus:outline-none focus:ring-2 focus:ring-orange-500 text-base font-medium text-slate-900 bg-white hover:border-orange-500 transition-colors"
+                            required
+                          >
+                            <option value="">Choose a rider...</option>
+                            {availableRiders.map((rider: any) => (
+                              <option key={rider.id} value={rider.cee_id || rider.user_id}>
+                                {rider.full_name} ({rider.cee_id || rider.user_id})
+                              </option>
+                            ))}
+                          </select>
+                        )}
 
                         <div className="flex gap-3 justify-end pt-6 border-t border-slate-300 mt-6">
                           <button
