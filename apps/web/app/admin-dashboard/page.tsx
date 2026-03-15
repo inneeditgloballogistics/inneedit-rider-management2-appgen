@@ -1423,12 +1423,20 @@ function AdminDashboardContent() {
                           <p className="text-sm text-blue-800 mt-1">{editItem.vehicle_type} - {editItem.model}</p>
                         </div>
 
+                        <div className="mb-6">
+                          <img 
+                            src="https://app-cdn.appgen.com/c8d1da7a-8da9-4a1f-8aaa-2cb65f828731/assets/uploaded_1773561260421_l599dh.jpeg" 
+                            alt="Edit vehicle modal reference"
+                            className="w-full rounded-lg border border-slate-200 shadow-sm mb-4"
+                          />
+                        </div>
+
                         <div>
                           <label className="block text-sm font-semibold text-slate-900 mb-2">Select Rider <span className="text-red-600">*</span></label>
                           <select
                             value={selectedRiderId}
                             onChange={(e) => setSelectedRiderId(e.target.value)}
-                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
+                            className="w-full px-3 py-2 border-2 border-orange-300 rounded-full focus:outline-none focus:ring-2 focus:ring-brand-600 text-base"
                             required
                           >
                             <option value="">Choose a rider...</option>
