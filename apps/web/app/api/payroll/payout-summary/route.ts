@@ -29,49 +29,25 @@ export async function POST(request: Request) {
         r.ev_type,
         r.join_date,
         COALESCE(
-          (
+          (\
             SELECT SUM(COALESCE(amount, 0))::numeric FROM additions 
             WHERE cee_id = pe.cee_id
-            AND entry_type IN ('incentive')
             AND entry_date >= ${weekStart}::date
             AND entry_date <= ${weekEnd}::date
           ),
           0
-        ) as total_incentives,
+        ) as total_additions,
         COALESCE(
-          (
-            SELECT SUM(COALESCE(amount, 0))::numeric FROM additions 
-            WHERE cee_id = pe.cee_id
-            AND entry_type IN ('referral')
-            AND entry_date >= ${weekStart}::date
-            AND entry_date <= ${weekEnd}::date
-            AND approval_status = 'approved'
-          ),
-          0
-        ) as total_referrals,
-        COALESCE(
-          (
+          (\
             SELECT SUM(COALESCE(amount, 0))::numeric FROM deductions 
             WHERE cee_id = pe.cee_id
-            AND entry_type IN ('advance')
-            AND entry_date >= ${weekStart}::date
-            AND entry_date <= ${weekEnd}::date
-            AND status = 'approved'
-          ),
-          0
-        ) as total_advances,
-        COALESCE(
-          (
-            SELECT SUM(COALESCE(amount, 0))::numeric FROM deductions 
-            WHERE cee_id = pe.cee_id
-            AND entry_type NOT IN ('advance')
             AND entry_date >= ${weekStart}::date
             AND entry_date <= ${weekEnd}::date
           ),
           0
         ) as total_deductions,
         COALESCE(
-          (
+          (\
             SELECT SUM(COALESCE(daily_rent_amount, 0))::numeric FROM vehicle_rent 
             WHERE cee_id = pe.cee_id
             AND rent_date >= ${weekStart}::date
@@ -92,8 +68,8 @@ export async function POST(request: Request) {
       // Use vehicle_rent from database
       const vehicleRent = parseFloat(entry.vehicle_rent_total) || 0;
 
-      const allAdditions = parseFloat(entry.total_incentives) + parseFloat(entry.total_referrals);
-      const allDeductions = parseFloat(entry.total_advances) + parseFloat(entry.total_deductions);
+      const allAdditions = parseFloat(entry.total_additions) || 0;
+      const allDeductions = parseFloat(entry.total_deductions) || 0;
       const finalAmount = allAdditions - allDeductions - vehicleRent;
       const basePayout = parseFloat(entry.base_payout) || 0;
       const finalPayout = basePayout + finalAmount;
