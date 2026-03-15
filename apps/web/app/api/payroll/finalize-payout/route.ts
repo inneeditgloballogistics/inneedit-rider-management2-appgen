@@ -63,7 +63,7 @@ export async function POST(request: Request) {
 
         // Get rider info - ONLY match by cee_id
         const riderInfo = await sql`
-          SELECT vehicle_ownership, ev_daily_rent, ev_type, join_date 
+          SELECT vehicle_ownership, ev_daily_rent, ev_type, join_date, is_leader, leader_discount_percentage
           FROM riders
           WHERE cee_id = ${cee_id}
           LIMIT 1
@@ -96,7 +96,7 @@ export async function POST(request: Request) {
         const allAdditions = parseFloat(additionsData[0]?.total || 0);
         const allDeductions = parseFloat(deductionsData[0]?.total || 0);
         
-        // Calculate vehicle rent dynamically
+        // Calculate vehicle rent and store in database
         let vehicleRent = 0;
         if (vehicleOwnership === 'company_ev') {
           let riderJoinDate: Date | null = null;
@@ -110,32 +110,74 @@ export async function POST(request: Request) {
             }
           }
           
-          let dailyRent = 0;
+          // Get base daily rent before discount
+          let baseDailyRent = 0;
           const evDailyRent = riderInfo[0]?.ev_daily_rent || null;
           const evType = riderInfo[0]?.ev_type;
           
           if (evDailyRent && evDailyRent > 0) {
-            dailyRent = Number(evDailyRent);
+            baseDailyRent = Number(evDailyRent);
           } else if (evType === 'sunmobility_swap') {
-            dailyRent = 243;
+            baseDailyRent = 243;
           } else if (evType === 'fixed_battery') {
-            dailyRent = 215;
+            baseDailyRent = 215;
+          }
+          
+          // Apply leader discount if applicable
+          const isLeader = riderInfo[0]?.is_leader || false;
+          const leaderDiscountPercentage = riderInfo[0]?.leader_discount_percentage || 0;
+          let dailyRent = baseDailyRent;
+          
+          if (isLeader && leaderDiscountPercentage > 0) {
+            const discountAmount = baseDailyRent * (leaderDiscountPercentage / 100);
+            dailyRent = baseDailyRent - discountAmount;
           }
           
           if (dailyRent > 0) {
             const startDate = new Date(`${startDateStr}T00:00:00Z`);
             const endDate = new Date(`${endDateStr}T00:00:00Z`);
             let currentDate = new Date(startDate);
-            let daysCount = 0;
             
+            // Delete existing vehicle rent entries for this week first
+            await sql`
+              DELETE FROM vehicle_rent
+              WHERE cee_id = ${cee_id}
+              AND rent_date >= ${startDateStr}::date
+              AND rent_date <= ${endDateStr}::date
+            `;
+            
+            // Insert daily vehicle rent entries with discount info
             while (currentDate <= endDate) {
               if (!riderJoinDate || currentDate >= riderJoinDate) {
-                daysCount++;
+                const dateStr = currentDate.toISOString().split('T')[0];
+                
+                // Insert vehicle rent with base amount, discount percentage, and calculated amount
+                await sql`
+                  INSERT INTO vehicle_rent (
+                    cee_id,
+                    rent_date,
+                    base_daily_rent,
+                    discount_percentage,
+                    daily_rent_amount,
+                    description,
+                    status,
+                    created_at
+                  ) VALUES (
+                    ${cee_id},
+                    ${dateStr}::date,
+                    ${baseDailyRent},
+                    ${leaderDiscountPercentage || 0},
+                    ${dailyRent},
+                    ${'Vehicle Rent'},
+                    'AUTO DEDUCTED',
+                    NOW()
+                  )
+                `;
+                
+                vehicleRent += dailyRent;
               }
               currentDate.setUTCDate(currentDate.getUTCDate() + 1);
             }
-            
-            vehicleRent = dailyRent * daysCount;
           }
         }
         

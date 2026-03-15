@@ -162,118 +162,69 @@ export async function POST(request: Request) {
       console.log("=== TOTAL DEDUCTIONS FOUND:", deductions.length);
       entries = [...entries, ...deductions];
       
-      // Add daily vehicle rent deduction if it's a company vehicle
+      // Fetch vehicle rent from database instead of calculating dynamically
       if (vehicleOwnership === 'company_ev' && start_date && end_date) {
-        // Parse dates properly - handle both ISO and YYYY-MM-DD formats
-        let startDateObj: Date;
-        let endDateObj: Date;
-        
-        if (typeof start_date === 'string') {
-          const [year, month, day] = start_date.split('-').map(Number);
-          startDateObj = new Date(Date.UTC(year, month - 1, day));
-        } else {
-          startDateObj = start_date instanceof Date ? start_date : new Date(start_date);
-        }
-        
-        if (typeof end_date === 'string') {
-          const [year, month, day] = end_date.split('-').map(Number);
-          endDateObj = new Date(Date.UTC(year, month - 1, day));
-        } else {
-          endDateObj = end_date instanceof Date ? end_date : new Date(end_date);
-        }
-
-        // Determine daily rent: use stored value first, then default based on EV type
-        let baseDailyRent = 0;
-        let evTypeLabel = '';
-        
-        if (storedEvDailyRent && storedEvDailyRent > 0) {
-          baseDailyRent = Number(storedEvDailyRent);
-          evTypeLabel = evType === 'sunmobility_swap' ? 'Sunmobility Swap' : 'Fixed Battery';
-        } else if (evType === 'sunmobility_swap') {
-          baseDailyRent = 243;
-          evTypeLabel = 'Sunmobility Swap';
-        } else if (evType === 'fixed_battery') {
-          baseDailyRent = 215;
-          evTypeLabel = 'Fixed Battery';
-        } else {
-          // Don't generate entries if we can't determine daily rent
-          console.log('Cannot determine daily rent for rider:', { evType, storedEvDailyRent });
-          baseDailyRent = 0;
-        }
-        
-        // Apply leader discount if applicable
-        let dailyRent = baseDailyRent;
-        if (isLeader && leaderDiscountPercentage > 0) {
-          const discountAmount = baseDailyRent * (leaderDiscountPercentage / 100);
-          dailyRent = baseDailyRent - discountAmount;
-          console.log('Leader Discount Applied: Rs' + baseDailyRent + ' - ' + leaderDiscountPercentage + '% = Rs' + dailyRent.toFixed(2));
-        }
-
-        console.log('Vehicle Rent Debug:', {
-          rider_id,
-          cee_id,
-          vehicleOwnership,
-          evType,
-          storedEvDailyRent,
-          baseDailyRent,
-          evTypeLabel,
-          isLeader,
-          leaderDiscountPercentage,
-          dailyRent,
-          willGenerate: dailyRent > 0,
-          riderJoinDate: riderJoinDate?.toISOString().split('T')[0],
-          weekStart: startDateObj.toISOString().split('T')[0],
-          weekEnd: endDateObj.toISOString().split('T')[0],
-          dateComparison: {
-            riderJoinDateMs: riderJoinDate?.getTime(),
-            weekStartMs: startDateObj.getTime(),
-            riderJoinedBeforeWeek: riderJoinDate && startDateObj ? riderJoinDate.getTime() <= startDateObj.getTime() : 'no join date'
-          }
-        });
-
-        // Only generate if dailyRent > 0
-        if (dailyRent > 0) {
-          // Generate daily vehicle rent entries
-          let currentDate = new Date(startDateObj);
-          let daysAdded = 0;
+        try {
+          // Parse dates properly - handle both ISO and YYYY-MM-DD formats
+          let startDateStr: string;
+          let endDateStr: string;
           
-          while (currentDate <= endDateObj) {
-            // Skip if rider hasn't joined yet
-            if (riderJoinDate && currentDate < riderJoinDate) {
-              console.log('Skipping ' + currentDate.toISOString().split('T')[0] + ' - rider has not joined yet (join_date: ' + riderJoinDate.toISOString().split('T')[0] + ')');
-              currentDate.setUTCDate(currentDate.getUTCDate() + 1);
-              continue;
-            }
-
-            // Create daily vehicle rent entry
-            const dateStr = currentDate.toISOString().split('T')[0];
+          if (typeof start_date === 'string') {
+            startDateStr = start_date;
+          } else {
+            const d = start_date instanceof Date ? start_date : new Date(start_date);
+            startDateStr = d.toISOString().split('T')[0];
+          }
+          
+          if (typeof end_date === 'string') {
+            endDateStr = end_date;
+          } else {
+            const d = end_date instanceof Date ? end_date : new Date(end_date);
+            endDateStr = d.toISOString().split('T')[0];
+          }
+          
+          console.log('Fetching vehicle rent from database for', {cee_id, startDateStr, endDateStr});
+          
+          // Fetch vehicle rent records from database
+          const vehicleRentRecords = await sql`
+            SELECT 
+              id,
+              cee_id,
+              rent_date,
+              base_daily_rent,
+              discount_percentage,
+              daily_rent_amount,
+              description,
+              status,
+              created_at
+            FROM vehicle_rent
+            WHERE cee_id = ${resolvedCeeId}
+            AND rent_date >= ${startDateStr}::date
+            AND rent_date <= ${endDateStr}::date
+            ORDER BY rent_date DESC
+          `;
+          console.log('Vehicle rent records found:', vehicleRentRecords.length);
+          // Add vehicle rent entries from database
+          for (const record of vehicleRentRecords) {
             const vehicleRentEntry = {
-              id: `vehicle-rent-${rider_id}-${dateStr}`,
+              id: record.id,
               rider_id: rider_id,
-              cee_id: cee_id,
+              cee_id: resolvedCeeId,
               full_name: full_name,
               entry_type: 'vehicle_rent',
-              amount: dailyRent,
-              description: `${evTypeLabel} (${dateStr})`,
+              amount: parseFloat(record.daily_rent_amount) || 0,
+              description: `Vehicle Rent (${record.rent_date}) - Base: ${record.base_daily_rent}, Discount: ${record.discount_percentage}%`,
               status: 'auto-deducted',
-              entry_date: dateStr,
-              created_at: (() => {
-                const now = new Date();
-                const istTime = new Date(now.getTime() + 5.5 * 60 * 60 * 1000);
-                return istTime.toISOString();
-              })(),
-              is_auto_calculated: true
+              entry_date: record.rent_date,
+              created_at: record.created_at,
+              is_from_database: true
             };
             
             entries.push(vehicleRentEntry);
-            daysAdded++;
-            console.log('Added vehicle rent for ' + dateStr + ': Rs' + dailyRent);
-            
-            // Move to next day
-            currentDate.setUTCDate(currentDate.getUTCDate() + 1);
+            console.log('Added vehicle rent from DB for', record.rent_date, ': Rs', record.daily_rent_amount);
           }
-          
-          console.log('Total vehicle rent days added for ' + cee_id + ': ' + daysAdded + ' days');
+        } catch (e) {
+          console.log('Vehicle rent fetch error (non-critical):', e);
         }
       }
     } catch (e) {
