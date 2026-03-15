@@ -121,7 +121,7 @@ export function VehicleList({ vehicles, onAdd, onRefresh }: { vehicles: any[], o
                 <th className="px-6 py-4 font-medium">Hub</th>
                 <th className="px-6 py-4 font-medium">Assigned Rider</th>
                 <th className="px-6 py-4 font-medium">Status</th>
-                <th className="px-6 py-4 font-medium">Action</th>
+                <th className="px-6 py-4 font-medium">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-sm">
@@ -155,13 +155,13 @@ export function VehicleList({ vehicles, onAdd, onRefresh }: { vehicles: any[], o
                         {vehicle.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4 flex gap-2 items-center">
                       {vehicle.status === 'available' && !vehicle.assigned_rider_id && (
                         <button
                           onClick={() => openAssignModal(vehicle.id, vehicle.vehicle_number)}
-                          className="px-3 py-1 bg-brand-500 text-white text-xs font-medium rounded hover:bg-brand-600 transition-all"
+                          className="px-4 py-2 bg-green-500 text-white text-sm font-bold rounded-lg hover:bg-green-600 transition-all whitespace-nowrap"
                         >
-                          Assign Rider
+                          ✓ Assign Rider
                         </button>
                       )}
                     </td>
