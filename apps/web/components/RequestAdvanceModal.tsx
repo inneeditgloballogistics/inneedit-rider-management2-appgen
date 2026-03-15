@@ -52,21 +52,22 @@ export default function RequestAdvanceModal({
         throw new Error('Rider CEE ID not found. Please refresh and try again.');
       }
 
-      const response = await fetch('/api/advances', {
+      const response = await fetch('/api/payroll/deductions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          riderId: rider.user_id,
-          ceeId: ceeId,
-          riderName: rider.full_name,
-          storeLocation: formData.storeLocation,
+          cee_id: ceeId,
+          entry_type: 'advance',
           amount: amount,
-          reason: formData.reason,
+          description: formData.reason,
+          status: 'pending',
         }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error('Failed to submit advance request');
+        throw new Error(data.error || 'Failed to submit advance request');
       }
 
       setFormData({ amount: '', reason: '', storeLocation: rider.client || '' });
