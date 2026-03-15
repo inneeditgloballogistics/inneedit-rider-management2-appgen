@@ -515,7 +515,75 @@ function AdminDashboardContent() {
                     <i className="ph-bold ph-plus"></i>Add Vehicle
                   </button>
                 </div>
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden\">\n                  <table className=\"w-full\">\n                    <thead className=\"bg-slate-50 border-b border-slate-200\">\n                      <tr>\n                        <th className=\"px-6 py-4 text-left text-sm font-semibold text-slate-900\">Vehicle Number</th>\n                        <th className=\"px-6 py-4 text-left text-sm font-semibold text-slate-900\">Type</th>\n                        <th className=\"px-6 py-4 text-left text-sm font-semibold text-slate-900\">Model</th>\n                        <th className=\"px-6 py-4 text-left text-sm font-semibold text-slate-900\">Status</th>\n                        <th className=\"px-6 py-4 text-right text-sm font-semibold text-slate-900\">Actions</th>\n                      </tr>\n                    </thead>\n                    <tbody>\n                      {vehicles.map((vehicle: any) => (\n                        <tr key={vehicle.id} className=\"border-b border-slate-200 hover:bg-slate-50\">\n                          <td className=\"px-6 py-4 text-sm font-medium text-slate-900\">{vehicle.vehicle_number}</td>\n                          <td className=\"px-6 py-4 text-sm text-slate-600\">{vehicle.vehicle_type}</td>\n                          <td className=\"px-6 py-4 text-sm text-slate-600\">{vehicle.model}</td>\n                          <td className=\"px-6 py-4 text-sm\">\n                            <span className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${\n                              vehicle.status === 'available' ? 'bg-green-100 text-green-700' :\n                              vehicle.status === 'assigned' ? 'bg-blue-100 text-blue-700' :\n                              'bg-slate-100 text-slate-700'\n                            }`}>\n                              {vehicle.status}\n                            </span>\n                          </td>\n                          <td className=\"px-6 py-4 text-right\">\n                            <div className=\"flex gap-2 justify-end\">\n                              {vehicle.status === 'available' && !vehicle.assigned_rider_id && (\n                                <button\n                                  onClick={() => {\n                                    setEditItem({ ...vehicle, type: 'vehicle', showAssignModal: true });\n                                    setShowEditModal(true);\n                                  }}\n                                  className=\"p-2 text-green-600 hover:bg-green-50 rounded-lg transition-all\" title=\"Assign Rider\"\n                                >\n                                  <i className=\"ph-bold ph-check text-xl\"></i>\n                                </button>\n                              )}\n                              <button\n                                onClick={() => handleView(vehicle, 'vehicle')}\n                                className=\"p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all\" title=\"View\"\n                              >\n                                <i className=\"ph-bold ph-eye text-xl\"></i>\n                              </button>\n                              <button\n                                onClick={() => {\n                                  setEditItem({ ...vehicle, type: 'vehicle' });\n                                  setShowEditModal(true);\n                                }}\n                                className=\"p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition-all\" title=\"Edit\"\n                              >\n                                <i className=\"ph-bold ph-pencil text-xl\"></i>\n                              </button>\n                              <button\n                                onClick={() => handleDelete(vehicle.id, 'vehicle')}\n                                className=\"p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all\" title=\"Delete\"\n                              >\n                                <i className=\"ph-bold ph-trash text-xl\"></i>\n                              </button>\n                            </div>\n                          </td>\n                        </tr>\n                      ))}\n                    </tbody>\n                  </table>\n                </div>\n              </>\n            )}
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                  <table className="w-full">
+                    <thead className="bg-slate-50 border-b border-slate-200">
+                      <tr>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Vehicle Number</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Type</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Model</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Status</th>
+                        <th className="px-6 py-4 text-right text-sm font-semibold text-slate-900">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {vehicles.map((vehicle: any) => (
+                        <tr key={vehicle.id} className="border-b border-slate-200 hover:bg-slate-50">
+                          <td className="px-6 py-4 text-sm font-medium text-slate-900">{vehicle.vehicle_number}</td>
+                          <td className="px-6 py-4 text-sm text-slate-600">{vehicle.vehicle_type}</td>
+                          <td className="px-6 py-4 text-sm text-slate-600">{vehicle.model}</td>
+                          <td className="px-6 py-4 text-sm">
+                            <span className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
+                              vehicle.status === 'available' ? 'bg-green-100 text-green-700' :
+                              vehicle.status === 'assigned' ? 'bg-blue-100 text-blue-700' :
+                              'bg-slate-100 text-slate-700'
+                            }`}>
+                              {vehicle.status}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <div className="flex gap-2 justify-end">
+                              {vehicle.status === 'available' && !vehicle.assigned_rider_id && (
+                                <button
+                                  onClick={() => {
+                                    setEditItem({ ...vehicle, type: 'vehicle', showAssignModal: true });
+                                    setShowEditModal(true);
+                                  }}
+                                  className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-all" title="Assign Rider"
+                                >
+                                  <i className="ph-bold ph-check text-xl"></i>
+                                </button>
+                              )}
+                              <button
+                                onClick={() => handleView(vehicle, 'vehicle')}
+                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="View"
+                              >
+                                <i className="ph-bold ph-eye text-xl"></i>
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setEditItem({ ...vehicle, type: 'vehicle' });
+                                  setShowEditModal(true);
+                                }}
+                                className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition-all" title="Edit"
+                              >
+                                <i className="ph-bold ph-pencil text-xl"></i>
+                              </button>
+                              <button
+                                onClick={() => handleDelete(vehicle.id, 'vehicle')}
+                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all" title="Delete"
+                              >
+                                <i className="ph-bold ph-trash text-xl"></i>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
 
 
 
@@ -1030,7 +1098,7 @@ function AdminDashboardContent() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-slate-900 mb-2\">Status</label>
+                  <label className="block text-sm font-semibold text-slate-900 mb-2">Status</label>
                   <select
                     value={formData.status || 'available'}
                     onChange={(e) => setFormData({...formData, status: e.target.value})}
@@ -1073,7 +1141,7 @@ function AdminDashboardContent() {
                       if (parts.length >= 2) {
                         city = parts[parts.length - 3] || '';
                         state = parts[parts.length - 2] || '';
-                        pincode = parts[parts.length - 1]?.match(/\\d{6}/) ? parts[parts.length - 1] : '';
+                        pincode = parts[parts.length - 1]?.match(/\d{6}/) ? parts[parts.length - 1] : '';
                       }
                       
                       setFormData({
@@ -1389,7 +1457,7 @@ function AdminDashboardContent() {
                             onClick={() => handleAssignRider(editItem.id, selectedRiderId)}
                             className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium flex items-center gap-2"
                           >
-                            <i className="ph-bold ph-check text-lg\"></i>
+                            <i className="ph-bold ph-check text-lg"></i>
                             Assign Rider
                           </button>
                         </div>
@@ -1499,7 +1567,7 @@ function AdminDashboardContent() {
                         if (parts.length >= 2) {
                           city = parts[parts.length - 3] || '';
                           state = parts[parts.length - 2] || '';
-                          pincode = parts[parts.length - 1]?.match(/\\d{6}/) ? parts[parts.length - 1] : '';
+                          pincode = parts[parts.length - 1]?.match(/\d{6}/) ? parts[parts.length - 1] : '';
                         }
                         setEditItem({...editItem, location, latitude: lat, longitude: lng, city: city || editItem.city, state: state || editItem.state, pincode: pincode || editItem.pincode});
                       }}
