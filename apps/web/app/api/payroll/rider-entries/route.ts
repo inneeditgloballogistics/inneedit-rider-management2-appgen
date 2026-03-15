@@ -177,8 +177,89 @@ export async function POST(request: Request) {
             endDateStr = d.toISOString().split('T')[0];
           }
           
-          console.log('Calculating vehicle rent dynamically for', {cee_id: resolvedCeeId, startDateStr, endDateStr, riderJoinDate: riderJoinDate?.toISOString().split('T')[0]});\n          
-          // Fetch latest rider settings for vehicle rent calculation\n          const riderSettings = await sql`\n            SELECT \n              ev_daily_rent,\n              ev_type,\n              is_leader,\n              leader_discount_percentage,\n              join_date\n            FROM riders\n            WHERE cee_id = ${resolvedCeeId}\n            LIMIT 1\n          `;\n          \n          if (riderSettings && riderSettings.length > 0) {\n            const settings = riderSettings[0];\n            const startDate = new Date(`${startDateStr}T00:00:00Z`);\n            const endDate = new Date(`${endDateStr}T00:00:00Z`);\n            \n            // Generate vehicle rent entries for each day from start to end\n            let currentDate = new Date(startDate);\n            const vehicleRentEntries: any[] = [];\n            \n            while (currentDate <= endDate) {\n              const dateStr = currentDate.toISOString().split('T')[0];\n              \n              // Check if rider was active on this date (on or after join_date)\n              let shouldInclude = true;\n              if (riderJoinDate) {\n                shouldInclude = currentDate >= riderJoinDate;\n              }\n              \n              if (shouldInclude) {\n                // Calculate base daily rent\n                let baseDailyRent = 0;\n                if (settings.ev_daily_rent && settings.ev_daily_rent > 0) {\n                  baseDailyRent = Number(settings.ev_daily_rent);\n                } else if (settings.ev_type === 'sunmobility_swap') {\n                  baseDailyRent = 243;\n                } else if (settings.ev_type === 'fixed_battery') {\n                  baseDailyRent = 215;\n                }\n                \n                // Apply leader discount if applicable\n                let dailyVehicleRentAmount = baseDailyRent;\n                const isLeader = settings.is_leader || false;\n                const leaderDiscountPercentage = settings.leader_discount_percentage || 0;\n                \n                if (isLeader && leaderDiscountPercentage > 0) {\n                  const discountAmount = baseDailyRent * (leaderDiscountPercentage / 100);\n                  dailyVehicleRentAmount = baseDailyRent - discountAmount;\n                }\n                \n                const vehicleRentEntry = {\n                  id: `vr_${dateStr.replace(/-/g, '')}_${resolvedCeeId}`.substring(0, 50),\n                  rider_id: rider_id,\n                  cee_id: resolvedCeeId,\n                  full_name: full_name,\n                  entry_type: 'vehicle_rent',\n                  amount: dailyVehicleRentAmount,\n                  description: `${settings.ev_type === 'sunmobility_swap' ? 'Sunmobility Swap' : 'Fixed Battery'} (${dateStr})`,\n                  status: 'auto-deducted',\n                  entry_date: dateStr,\n                  created_at: new Date().toISOString(),\n                  is_calculated: true\n                };\n                \n                vehicleRentEntries.push(vehicleRentEntry);\n                console.log(`Added vehicle rent for ${dateStr}: ₹${dailyVehicleRentAmount}`);\n              }\n              \n              // Move to next day\n              currentDate.setUTCDate(currentDate.getUTCDate() + 1);\n            }\n            \n            entries = [...entries, ...vehicleRentEntries];\n            console.log(`Total vehicle rent entries calculated: ${vehicleRentEntries.length}`);\n          }\n        } catch (e) {\n          console.log('Vehicle rent calculation error (non-critical):', e);\n        }\n      }
+          console.log('Calculating vehicle rent dynamically for', {cee_id: resolvedCeeId, startDateStr, endDateStr, riderJoinDate: riderJoinDate?.toISOString().split('T')[0]});
+          
+          // Fetch latest rider settings for vehicle rent calculation
+          const riderSettings = await sql`
+            SELECT 
+              ev_daily_rent,
+              ev_type,
+              is_leader,
+              leader_discount_percentage,
+              join_date
+            FROM riders
+            WHERE cee_id = ${resolvedCeeId}
+            LIMIT 1
+          `;
+          
+          if (riderSettings && riderSettings.length > 0) {
+            const settings = riderSettings[0];
+            const startDate = new Date(`${startDateStr}T00:00:00Z`);
+            const endDate = new Date(`${endDateStr}T00:00:00Z`);
+            
+            // Generate vehicle rent entries for each day from start to end
+            let currentDate = new Date(startDate);
+            const vehicleRentEntries: any[] = [];
+            
+            while (currentDate <= endDate) {
+              const dateStr = currentDate.toISOString().split('T')[0];
+              
+              // Check if rider was active on this date (on or after join_date)
+              let shouldInclude = true;
+              if (riderJoinDate) {
+                shouldInclude = currentDate >= riderJoinDate;
+              }
+              
+              if (shouldInclude) {
+                // Calculate base daily rent
+                let baseDailyRent = 0;
+                if (settings.ev_daily_rent && settings.ev_daily_rent > 0) {
+                  baseDailyRent = Number(settings.ev_daily_rent);
+                } else if (settings.ev_type === 'sunmobility_swap') {
+                  baseDailyRent = 243;
+                } else if (settings.ev_type === 'fixed_battery') {
+                  baseDailyRent = 215;
+                }
+                
+                // Apply leader discount if applicable
+                let dailyVehicleRentAmount = baseDailyRent;
+                const isLeader = settings.is_leader || false;
+                const leaderDiscountPercentage = settings.leader_discount_percentage || 0;
+                
+                if (isLeader && leaderDiscountPercentage > 0) {
+                  const discountAmount = baseDailyRent * (leaderDiscountPercentage / 100);
+                  dailyVehicleRentAmount = baseDailyRent - discountAmount;
+                }
+                
+                const vehicleRentEntry = {
+                  id: `vr_${dateStr.replace(/-/g, '')}_${resolvedCeeId}`.substring(0, 50),
+                  rider_id: rider_id,
+                  cee_id: resolvedCeeId,
+                  full_name: full_name,
+                  entry_type: 'vehicle_rent',
+                  amount: dailyVehicleRentAmount,
+                  description: `${settings.ev_type === 'sunmobility_swap' ? 'Sunmobility Swap' : 'Fixed Battery'} (${dateStr})`,
+                  status: 'auto-deducted',
+                  entry_date: dateStr,
+                  created_at: new Date().toISOString(),
+                  is_calculated: true
+                };
+                
+                vehicleRentEntries.push(vehicleRentEntry);
+                console.log(`Added vehicle rent for ${dateStr}: ₹${dailyVehicleRentAmount}`);
+              }
+              
+              // Move to next day
+              currentDate.setUTCDate(currentDate.getUTCDate() + 1);
+            }
+            
+            entries = [...entries, ...vehicleRentEntries];
+            console.log(`Total vehicle rent entries calculated: ${vehicleRentEntries.length}`);
+          }
+        } catch (e) {
+          console.log('Vehicle rent calculation error (non-critical):', e);
+        }
+      }
     } catch (e) {
       console.log('Deductions query error (non-critical):', e);
     }

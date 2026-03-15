@@ -27,12 +27,10 @@ export async function GET(request: NextRequest) {
     console.log('Payouts GET - Looking up payouts with cee_id:', ceeId);
 
     // Query payouts that belong to this rider
-    // Since payouts table doesn't have cee_id column, we need to fetch from rider-specific summary
-    // For now, get all payouts and filter by rider logic (this should be calculated from orders/entries)
-    // The rider's payouts are calculated from their weekly entries
     const payouts = await sql`
       SELECT DISTINCT 
         p.id,
+        p.cee_id,
         p.week_number,
         p.week_period,
         p.month,
@@ -48,8 +46,8 @@ export async function GET(request: NextRequest) {
         p.final_amount,
         p.final_payout
       FROM payouts p
+      WHERE p.cee_id = ${ceeId}
       ORDER BY p.year DESC, p.month DESC, p.week_number DESC
-      LIMIT 12
     `;
 
     console.log('Payouts GET - Payouts found:', payouts.length);
