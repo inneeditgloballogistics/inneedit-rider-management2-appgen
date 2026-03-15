@@ -51,6 +51,8 @@ function AdminDashboardContent() {
   const [editItem, setEditItem] = useState<any>(null);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [availableRiders, setAvailableRiders] = useState<any[]>([]);
+  const [selectedRiderId, setSelectedRiderId] = useState<string>('');
 
   const [storesForRider, setStoresForRider] = useState<any[]>([]);
   const [vehiclesForRider, setVehiclesForRider] = useState<any[]>([]);
@@ -211,9 +213,54 @@ function AdminDashboardContent() {
   const handleEdit = async (item: any, type: string) => {
     setEditItem({ ...item, type });
     if (type === 'vehicle') {
-
+      // Fetch available riders if assigning
+      if (item.showAssignModal) {
+        try {
+          const res = await fetch('/api/riders?status=active');
+          const data = await res.json();
+          setAvailableRiders(data.riders || []);
+          setSelectedRiderId('');
+        } catch (error) {
+          console.error('Error fetching riders:', error);
+        }
+      }
     }
     setShowEditModal(true);
+  };
+
+  const handleAssignRider = async (vehicleId: number, riderId: string) => {
+    if (!riderId) {
+      alert('Please select a rider');
+      return;
+    }
+    
+    try {
+      const response = await fetch('/api/vehicles', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: vehicleId,
+          assigned_rider_id: riderId,
+          status: 'assigned'
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        alert(data.error || 'Failed to assign vehicle');
+        return;
+      }
+      
+      alert('Vehicle assigned successfully!');
+      setShowEditModal(false);
+      setEditItem(null);
+      setSelectedRiderId('');
+      fetchVehicles();
+    } catch (error) {
+      console.error('Error assigning vehicle:', error);
+      alert('Failed to assign vehicle');
+    }
   };
 
   const handleDelete = async (id: number, type: string) => {
@@ -464,42 +511,11 @@ function AdminDashboardContent() {
               <>
                 <div className="flex justify-between items-center">
                   <h2 className="font-display text-3xl font-bold text-slate-900">Vehicle Management ({vehiclesCount})</h2>
-                  <button onClick={() => handleAddNew('vehicle')} className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700">Add Vehicle</button>
+                  <button onClick={() => handleAddNew('vehicle')} className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium flex items-center gap-2">
+                    <i className="ph-bold ph-plus"></i>Add Vehicle
+                  </button>
                 </div>
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                  <table className="w-full">
-                    <thead className="bg-slate-50 border-b border-slate-200">
-                      <tr>
-                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Vehicle Number</th>
-                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Type</th>
-                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Model</th>
-                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Status</th>
-                        <th className="px-6 py-4 text-right text-sm font-semibold text-slate-900">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {vehicles.map((vehicle: any) => (
-                        <tr key={vehicle.id} className="border-b border-slate-200 hover:bg-slate-50">
-                          <td className="px-6 py-4 text-sm text-slate-900">{vehicle.vehicle_number}</td>
-                          <td className="px-6 py-4 text-sm text-slate-600">{vehicle.vehicle_type}</td>
-                          <td className="px-6 py-4 text-sm text-slate-600">{vehicle.model}</td>
-                          <td className="px-6 py-4 text-sm">
-                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${vehicle.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-700'}`}>
-                              {vehicle.status}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 text-right flex gap-2 justify-end">
-                            <button onClick={() => handleView(vehicle, 'vehicle')} className="px-3 py-1 text-blue-600 text-sm font-medium border border-blue-200 rounded hover:bg-blue-50">View</button>
-                            <button onClick={() => handleEdit(vehicle, 'vehicle')} className="px-3 py-1 text-amber-600 text-sm font-medium border border-amber-200 rounded hover:bg-amber-50">Edit</button>
-                            <button onClick={() => handleDelete(vehicle.id, 'vehicle')} className="px-3 py-1 text-red-600 text-sm font-medium border border-red-200 rounded hover:bg-red-50">Delete</button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </>
-            )}
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden\">\n                  <table className=\"w-full\">\n                    <thead className=\"bg-slate-50 border-b border-slate-200\">\n                      <tr>\n                        <th className=\"px-6 py-4 text-left text-sm font-semibold text-slate-900\">Vehicle Number</th>\n                        <th className=\"px-6 py-4 text-left text-sm font-semibold text-slate-900\">Type</th>\n                        <th className=\"px-6 py-4 text-left text-sm font-semibold text-slate-900\">Model</th>\n                        <th className=\"px-6 py-4 text-left text-sm font-semibold text-slate-900\">Status</th>\n                        <th className=\"px-6 py-4 text-right text-sm font-semibold text-slate-900\">Actions</th>\n                      </tr>\n                    </thead>\n                    <tbody>\n                      {vehicles.map((vehicle: any) => (\n                        <tr key={vehicle.id} className=\"border-b border-slate-200 hover:bg-slate-50\">\n                          <td className=\"px-6 py-4 text-sm font-medium text-slate-900\">{vehicle.vehicle_number}</td>\n                          <td className=\"px-6 py-4 text-sm text-slate-600\">{vehicle.vehicle_type}</td>\n                          <td className=\"px-6 py-4 text-sm text-slate-600\">{vehicle.model}</td>\n                          <td className=\"px-6 py-4 text-sm\">\n                            <span className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${\n                              vehicle.status === 'available' ? 'bg-green-100 text-green-700' :\n                              vehicle.status === 'assigned' ? 'bg-blue-100 text-blue-700' :\n                              'bg-slate-100 text-slate-700'\n                            }`}>\n                              {vehicle.status}\n                            </span>\n                          </td>\n                          <td className=\"px-6 py-4 text-right\">\n                            <div className=\"flex gap-2 justify-end\">\n                              {vehicle.status === 'available' && !vehicle.assigned_rider_id && (\n                                <button\n                                  onClick={() => {\n                                    setEditItem({ ...vehicle, type: 'vehicle', showAssignModal: true });\n                                    setShowEditModal(true);\n                                  }}\n                                  className=\"p-2 text-green-600 hover:bg-green-50 rounded-lg transition-all\" title=\"Assign Rider\"\n                                >\n                                  <i className=\"ph-bold ph-check text-xl\"></i>\n                                </button>\n                              )}\n                              <button\n                                onClick={() => handleView(vehicle, 'vehicle')}\n                                className=\"p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all\" title=\"View\"\n                              >\n                                <i className=\"ph-bold ph-eye text-xl\"></i>\n                              </button>\n                              <button\n                                onClick={() => {\n                                  setEditItem({ ...vehicle, type: 'vehicle' });\n                                  setShowEditModal(true);\n                                }}\n                                className=\"p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition-all\" title=\"Edit\"\n                              >\n                                <i className=\"ph-bold ph-pencil text-xl\"></i>\n                              </button>\n                              <button\n                                onClick={() => handleDelete(vehicle.id, 'vehicle')}\n                                className=\"p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all\" title=\"Delete\"\n                              >\n                                <i className=\"ph-bold ph-trash text-xl\"></i>\n                              </button>\n                            </div>\n                          </td>\n                        </tr>\n                      ))}\n                    </tbody>\n                  </table>\n                </div>\n              </>\n            )}
 
 
 
@@ -1332,86 +1348,142 @@ function AdminDashboardContent() {
                 )}
                 {editItem.type === 'vehicle' && (
                   <>
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-900 mb-2">Vehicle Number <span className="text-red-600">*</span></label>
-                      <input 
-                        value={editItem.vehicle_number || ''} 
-                        onChange={(e) => setEditItem({...editItem, vehicle_number: e.target.value})} 
-                        placeholder="Vehicle Number" 
-                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                        required
-                      />
-                    </div>
+                    {editItem.showAssignModal ? (
+                      <>
+                        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg mb-4">
+                          <p className="text-sm font-semibold text-blue-900">Vehicle: <span className="font-bold">{editItem.vehicle_number}</span></p>
+                          <p className="text-sm text-blue-800 mt-1">{editItem.vehicle_type} - {editItem.model}</p>
+                        </div>
 
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-900 mb-2">Vehicle Type <span className="text-red-600">*</span></label>
-                      <select 
-                        value={editItem.vehicle_type || ''} 
-                        onChange={(e) => setEditItem({...editItem, vehicle_type: e.target.value})} 
-                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                        required
-                      >
-                        <option value="">Select Vehicle Type</option>
-                        <option value="EV Two Wheeler">EV Two Wheeler</option>
-                      </select>
-                    </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-slate-900 mb-2">Select Rider <span className="text-red-600">*</span></label>
+                          <select
+                            value={selectedRiderId}
+                            onChange={(e) => setSelectedRiderId(e.target.value)}
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
+                            required
+                          >
+                            <option value="">Choose a rider...</option>
+                            {availableRiders.map((rider: any) => (
+                              <option key={rider.id} value={rider.cee_id || rider.user_id}>
+                                {rider.full_name} ({rider.cee_id || rider.user_id})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
 
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-900 mb-2">Model <span className="text-red-600">*</span></label>
-                      <select 
-                        value={editItem.model || ''} 
-                        onChange={(e) => setEditItem({...editItem, model: e.target.value})} 
-                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                        required
-                      >
-                        <option value="">Select Model</option>
-                        <option value="E-Sprinto">E-Sprinto</option>
-                        <option value="Quantum Bziness XS">Quantum Bziness XS</option>
-                        <option value="Motovolt M7">Motovolt M7</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-900 mb-2">Year</label>
-                      <input 
-                        type="number"
-                        value={editItem.year || ''} 
-                        onChange={(e) => setEditItem({...editItem, year: e.target.value ? parseInt(e.target.value) : null})} 
-                        placeholder="Year" 
-                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-900 mb-2">Status</label>
-                      <select 
-                        value={editItem.status || 'available'} 
-                        onChange={(e) => setEditItem({...editItem, status: e.target.value})} 
-                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                      >
-                        <option value="available">Available</option>
-                        <option value="maintenance">Maintenance</option>
-                        <option value="inactive">Inactive</option>
-                      </select>
-                    </div>
-
-                    {editItem.assigned_rider_id && (
-                      <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-sm font-semibold text-amber-900">Assigned to Rider</p>
-                            <p className="text-sm text-amber-800 mt-1">{editItem.assigned_rider_id}</p>
-                          </div>
+                        <div className="flex gap-3 justify-end pt-4 border-t border-slate-200 sticky bottom-0 bg-white">
                           <button
                             type="button"
-                            onClick={() => setEditItem({...editItem, assigned_rider_id: null, status: 'available'})}
-                            className="px-3 py-1.5 bg-amber-600 text-white text-sm font-medium rounded hover:bg-amber-700 transition-all flex items-center gap-2"
+                            onClick={() => {
+                              setShowEditModal(false);
+                              setEditItem(null);
+                              setSelectedRiderId('');
+                            }}
+                            className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 font-medium"
                           >
-                            <i className="ph ph-trash text-sm"></i>
-                            Unassign
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleAssignRider(editItem.id, selectedRiderId)}
+                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium flex items-center gap-2"
+                          >
+                            <i className="ph-bold ph-check text-lg\"></i>
+                            Assign Rider
                           </button>
                         </div>
-                      </div>
+                      </>
+                    ) : (
+                      <>
+                        <div>
+                          <label className="block text-sm font-semibold text-slate-900 mb-2">Vehicle Number <span className="text-red-600">*</span></label>
+                          <input 
+                            value={editItem.vehicle_number || ''} 
+                            onChange={(e) => setEditItem({...editItem, vehicle_number: e.target.value})} 
+                            placeholder="Vehicle Number" 
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
+                            required
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-semibold text-slate-900 mb-2">Vehicle Type <span className="text-red-600">*</span></label>
+                          <select 
+                            value={editItem.vehicle_type || ''} 
+                            onChange={(e) => setEditItem({...editItem, vehicle_type: e.target.value})} 
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
+                            required
+                          >
+                            <option value="">Select Vehicle Type</option>
+                            <option value="EV Two Wheeler">EV Two Wheeler</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-semibold text-slate-900 mb-2">Model <span className="text-red-600">*</span></label>
+                          <select 
+                            value={editItem.model || ''} 
+                            onChange={(e) => setEditItem({...editItem, model: e.target.value})} 
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
+                            required
+                          >
+                            <option value="">Select Model</option>
+                            <option value="E-Sprinto">E-Sprinto</option>
+                            <option value="Quantum Bziness XS">Quantum Bziness XS</option>
+                            <option value="Motovolt M7">Motovolt M7</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-semibold text-slate-900 mb-2">Year</label>
+                          <input 
+                            type="number"
+                            value={editItem.year || ''} 
+                            onChange={(e) => setEditItem({...editItem, year: e.target.value ? parseInt(e.target.value) : null})} 
+                            placeholder="Year" 
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-semibold text-slate-900 mb-2">Status</label>
+                          <select 
+                            value={editItem.status || 'available'} 
+                            onChange={(e) => setEditItem({...editItem, status: e.target.value})} 
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
+                          >
+                            <option value="available">Available</option>
+                            <option value="assigned">Assigned</option>
+                            <option value="maintenance">Maintenance</option>
+                            <option value="inactive">Inactive</option>
+                          </select>
+                        </div>
+
+                        {editItem.assigned_rider_id && (
+                          <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-sm font-semibold text-amber-900">Assigned to Rider</p>
+                                <p className="text-sm text-amber-800 mt-1">{editItem.assigned_rider_id}</p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setEditItem({...editItem, assigned_rider_id: null, status: 'available'})}
+                                className="px-3 py-1.5 bg-amber-600 text-white text-sm font-medium rounded hover:bg-amber-700 transition-all flex items-center gap-2"
+                              >
+                                <i className="ph ph-trash text-sm"></i>
+                                Unassign
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="flex gap-3 justify-end pt-4 border-t border-slate-200 sticky bottom-0 bg-white">
+                          <button type="button" onClick={() => setShowEditModal(false)} className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 font-medium">Cancel</button>
+                          <button type="submit" className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium">Save</button>
+                        </div>
+                      </>
                     )}
                   </>
                 )}
