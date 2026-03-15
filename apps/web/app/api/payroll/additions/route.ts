@@ -10,6 +10,31 @@ function getTodayIST(): string {
   return istTime.toISOString().split('T')[0];
 }
 
+export async function GET(request: NextRequest) {
+  try {
+    const searchParams = request.nextUrl.searchParams;
+    const type = searchParams.get('type');
+
+    if (type === 'referral') {
+      const additions = await sql`
+        SELECT * FROM additions 
+        WHERE entry_type = 'referral' 
+        ORDER BY created_at DESC
+      `;
+      return NextResponse.json(additions);
+    }
+
+    const additions = await sql`SELECT * FROM additions ORDER BY created_at DESC`;
+    return NextResponse.json(additions);
+  } catch (error) {
+    console.error('Error fetching additions:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch additions', details: String(error) },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -73,6 +98,38 @@ export async function POST(request: NextRequest) {
     console.error('Error creating addition:', error);
     return NextResponse.json(
       { error: 'Failed to create addition', details: String(error) },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { id, approval_status } = body;
+
+    const result = await sql`
+      UPDATE additions 
+      SET approval_status = ${approval_status}
+      WHERE id = ${id}
+      RETURNING *
+    `;
+
+    if (result.length === 0) {
+      return NextResponse.json(
+        { error: 'Addition not found' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      addition: result[0]
+    });
+  } catch (error) {
+    console.error('Error updating addition:', error);
+    return NextResponse.json(
+      { error: 'Failed to update addition', details: String(error) },
       { status: 500 }
     );
   }

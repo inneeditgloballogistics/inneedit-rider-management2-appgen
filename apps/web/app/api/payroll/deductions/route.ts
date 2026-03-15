@@ -10,6 +10,31 @@ function getTodayIST(): string {
   return istTime.toISOString().split('T')[0];
 }
 
+export async function GET(request: NextRequest) {
+  try {
+    const searchParams = request.nextUrl.searchParams;
+    const type = searchParams.get('type');
+
+    if (type === 'advance') {
+      const deductions = await sql`
+        SELECT * FROM deductions 
+        WHERE entry_type = 'advance' 
+        ORDER BY created_at DESC
+      `;
+      return NextResponse.json(deductions);
+    }
+
+    const deductions = await sql`SELECT * FROM deductions ORDER BY created_at DESC`;
+    return NextResponse.json(deductions);
+  } catch (error) {
+    console.error('Error fetching deductions:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch deductions', details: String(error) },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -76,6 +101,38 @@ export async function POST(request: NextRequest) {
     console.error('Error creating deduction:', error);
     return NextResponse.json(
       { error: 'Failed to create deduction', details: String(error) },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { id, status } = body;
+
+    const result = await sql`
+      UPDATE deductions 
+      SET status = ${status}
+      WHERE id = ${id}
+      RETURNING *
+    `;
+
+    if (result.length === 0) {
+      return NextResponse.json(
+        { error: 'Deduction not found' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      deduction: result[0]
+    });
+  } catch (error) {
+    console.error('Error updating deduction:', error);
+    return NextResponse.json(
+      { error: 'Failed to update deduction', details: String(error) },
       { status: 500 }
     );
   }

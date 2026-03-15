@@ -92,8 +92,8 @@ function AdminDashboardContent() {
         fetch('/api/vehicles?action=count'),
         fetch('/api/hubs?action=count'),
         fetch('/api/stores?action=count'),
-        fetch('/api/advances?action=count'),
-        fetch('/api/referrals?action=count')
+        fetch('/api/payroll/deductions?type=advance'),
+        fetch('/api/payroll/additions?type=referral')
       ]);
       
       const ridersData = await ridersRes.json();
@@ -107,8 +107,13 @@ function AdminDashboardContent() {
       setVehiclesCount(vehiclesData.count || 0);
       setHubsCount(hubsData.count || 0);
       setStoresCount(storesData.count || 0);
-      setPendingAdvancesCount(advancesData.pendingCount || 0);
-      setPendingReferralsCount(referralsData.pendingCount || 0);
+      
+      // Count pending advances and referrals
+      const pendingAdvances = Array.isArray(advancesData) ? advancesData.filter((a: any) => a.status === 'pending').length : 0;
+      const pendingReferrals = Array.isArray(referralsData) ? referralsData.filter((r: any) => r.approval_status === 'pending').length : 0;
+      
+      setPendingAdvancesCount(pendingAdvances);
+      setPendingReferralsCount(pendingReferrals);
     } catch (error) {
       console.error('Error fetching counts:', error);
     }
@@ -136,21 +141,23 @@ function AdminDashboardContent() {
 
   const fetchAdvances = async () => {
     try {
-      const res = await fetch('/api/advances');
+      const res = await fetch('/api/payroll/deductions?type=advance');
       const data = await res.json();
-      setAdvances(data);
+      setAdvances(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching advances:', error);
+      setAdvances([]);
     }
   };
 
   const fetchReferrals = async () => {
     try {
-      const res = await fetch('/api/referrals');
+      const res = await fetch('/api/payroll/additions?type=referral');
       const data = await res.json();
-      setReferrals(data);
+      setReferrals(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching referrals:', error);
+      setReferrals([]);
     }
   };
 
@@ -310,10 +317,10 @@ function AdminDashboardContent() {
 
   const handleAdvanceAction = async (id: number, status: string) => {
     try {
-      await fetch('/api/advances', {
+      await fetch('/api/payroll/deductions', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, status, processedBy: 'admin' })
+        body: JSON.stringify({ id, status })
       });
       fetchAdvances();
       fetchCounts();
@@ -324,12 +331,12 @@ function AdminDashboardContent() {
     }
   };
 
-  const handleReferralApproval = async (id: number, referred_rider_id: string, action: 'approve' | 'reject') => {
+  const handleReferralApproval = async (id: number, cee_id: string, action: 'approve' | 'reject') => {
     try {
-      const response = await fetch('/api/referrals', {
+      const response = await fetch('/api/payroll/additions', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, action, referred_rider_id })
+        body: JSON.stringify({ id, approval_status: action === 'approve' ? 'approved' : 'rejected' })
       });
       
       const data = await response.json();
@@ -730,8 +737,8 @@ function AdminDashboardContent() {
                             <button onClick={() => handleEdit(referral, 'referral')} className="px-3 py-1 text-amber-600 text-sm font-medium border border-amber-200 rounded hover:bg-amber-50">Edit</button>
                             {referral.approval_status === 'pending' && (
                               <>
-                                <button onClick={() => handleReferralApproval(referral.id, referral.referrer_id, 'approve')} className="px-3 py-1 text-green-600 text-sm font-medium border border-green-200 rounded hover:bg-green-50">Approve</button>
-                                <button onClick={() => handleReferralApproval(referral.id, referral.referrer_id, 'reject')} className="px-3 py-1 text-red-600 text-sm font-medium border border-red-200 rounded hover:bg-red-50">Reject</button>
+                                <button onClick={() => handleReferralApproval(referral.id, referral.cee_id, 'approve')} className="px-3 py-1 text-green-600 text-sm font-medium border border-green-200 rounded hover:bg-green-50">Approve</button>
+                                <button onClick={() => handleReferralApproval(referral.id, referral.cee_id, 'reject')} className="px-3 py-1 text-red-600 text-sm font-medium border border-red-200 rounded hover:bg-red-50">Reject</button>
                               </>
                             )}
                           </td>
