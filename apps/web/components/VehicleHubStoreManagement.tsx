@@ -4,14 +4,16 @@ import { useState } from 'react';
 
 export function VehicleList({ vehicles, onAdd, onRefresh }: { vehicles: any[], onAdd: () => void, onRefresh?: () => void }) {
   const [selectedVehicleId, setSelectedVehicleId] = useState<number | null>(null);
+  const [selectedVehicleNumber, setSelectedVehicleNumber] = useState<string>('');
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [riders, setRiders] = useState<any[]>([]);
   const [selectedRiderId, setSelectedRiderId] = useState<string>('');
   const [isLoadingRiders, setIsLoadingRiders] = useState(false);
   const [isAssigning, setIsAssigning] = useState(false);
 
-  const openAssignModal = async (vehicleId: number) => {
+  const openAssignModal = async (vehicleId: number, vehicleNumber: string) => {
     setSelectedVehicleId(vehicleId);
+    setSelectedVehicleNumber(vehicleNumber);
     setSelectedRiderId('');
     setShowAssignModal(true);
     
@@ -20,8 +22,10 @@ export function VehicleList({ vehicles, onAdd, onRefresh }: { vehicles: any[], o
     try {
       const response = await fetch('/api/riders');
       const data = await response.json();
+      console.log('Fetched riders:', data.riders);
       // Filter only unassigned riders (those without a vehicle)
       const unassignedRiders = data.riders.filter((rider: any) => !rider.assigned_vehicle_id);
+      console.log('Unassigned riders:', unassignedRiders);
       setRiders(unassignedRiders);
     } catch (error) {
       console.error('Error fetching riders:', error);
@@ -154,7 +158,7 @@ export function VehicleList({ vehicles, onAdd, onRefresh }: { vehicles: any[], o
                     <td className="px-6 py-4">
                       {vehicle.status === 'available' && !vehicle.assigned_rider_id && (
                         <button
-                          onClick={() => openAssignModal(vehicle.id)}
+                          onClick={() => openAssignModal(vehicle.id, vehicle.vehicle_number)}
                           className="px-3 py-1 bg-brand-500 text-white text-xs font-medium rounded hover:bg-brand-600 transition-all"
                         >
                           Assign Rider
@@ -186,7 +190,7 @@ export function VehicleList({ vehicles, onAdd, onRefresh }: { vehicles: any[], o
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Vehicle: {vehicles.find(v => v.id === selectedVehicleId)?.vehicle_number}
+                  Vehicle: <span className="font-bold text-slate-900">{selectedVehicleNumber}</span>
                 </label>
               </div>
 
