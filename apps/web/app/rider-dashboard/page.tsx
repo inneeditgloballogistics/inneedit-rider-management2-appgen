@@ -189,19 +189,7 @@ export default function RiderDashboard() {
         managerPhone
       });
       
-      // Mark onboarding complete in memory BEFORE showing popup
-      // This prevents the popup from showing again on page reload
-      if (rider) {
-        setRider({
-          ...rider,
-          onboarding_completed: true
-        } as RiderData & { onboarding_completed: boolean });
-      }
-      
       setShowCongratulations(true);
-      
-      // Mark in database
-      await markOnboardingComplete(riderData.user_id);
     } catch (error) {
       console.error('Error preparing onboarding popup:', error);
     }
@@ -231,10 +219,15 @@ export default function RiderDashboard() {
       
       // Check if this is rider's first login (onboarding not completed)
       if (data.rider && data.rider.onboarding_completed === false) {
-        // Show congratulations popup
-        await showOnboardingPopup(data.rider, ceeId);
-        // Mark onboarding as completed immediately
+        // Mark onboarding as completed in database FIRST
         await markOnboardingComplete(data.rider.user_id);
+        // Update local state
+        setRider({
+          ...data.rider,
+          onboarding_completed: true
+        });
+        // Then show congratulations popup
+        await showOnboardingPopup(data.rider, ceeId);
       }
       
       await fetchAllData(data.rider.user_id, ceeId);
