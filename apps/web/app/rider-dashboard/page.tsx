@@ -25,6 +25,7 @@ interface RiderData {
   longitude?: number;
   bank_name?: string;
   account_number?: string;
+  onboarding_completed?: boolean;
 }
 
 interface OrderStats {
@@ -187,7 +188,20 @@ export default function RiderDashboard() {
         managerName,
         managerPhone
       });
+      
+      // Mark onboarding complete in memory BEFORE showing popup
+      // This prevents the popup from showing again on page reload
+      if (rider) {
+        setRider({
+          ...rider,
+          onboarding_completed: true
+        } as RiderData & { onboarding_completed: boolean });
+      }
+      
       setShowCongratulations(true);
+      
+      // Mark in database
+      await markOnboardingComplete(riderData.user_id);
     } catch (error) {
       console.error('Error preparing onboarding popup:', error);
     }
