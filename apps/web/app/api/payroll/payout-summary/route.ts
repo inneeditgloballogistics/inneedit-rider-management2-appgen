@@ -54,6 +54,7 @@ export async function POST(request: Request) {
             WHERE cee_id = pe.cee_id
             AND rent_date >= ${weekStart}::date
             AND rent_date <= ${weekEnd}::date
+            AND (r.join_date IS NULL OR rent_date >= CAST(r.join_date AS date))
           ),
           0
         ) as vehicle_rent_days,
@@ -63,6 +64,7 @@ export async function POST(request: Request) {
             WHERE cee_id = pe.cee_id
             AND rent_date >= ${weekStart}::date
             AND rent_date <= ${weekEnd}::date
+            AND (r.join_date IS NULL OR rent_date >= CAST(r.join_date AS date))
           ),
           0
         ) as base_daily_rent,
@@ -72,6 +74,7 @@ export async function POST(request: Request) {
             WHERE cee_id = pe.cee_id
             AND rent_date >= ${weekStart}::date
             AND rent_date <= ${weekEnd}::date
+            AND (r.join_date IS NULL OR rent_date >= CAST(r.join_date AS date))
             LIMIT 1
           ),
           0

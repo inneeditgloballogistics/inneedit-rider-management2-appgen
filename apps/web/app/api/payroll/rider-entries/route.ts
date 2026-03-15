@@ -183,9 +183,9 @@ export async function POST(request: Request) {
             endDateStr = d.toISOString().split('T')[0];
           }
           
-          console.log('Fetching vehicle rent from database for', {cee_id, startDateStr, endDateStr});
+          console.log('Fetching vehicle rent from database for', {cee_id, startDateStr, endDateStr, riderJoinDate: riderJoinDate?.toISOString().split('T')[0]});
           
-          // Fetch vehicle rent records from database
+          // Fetch vehicle rent records from database - ONLY if rent_date >= rider's join_date
           const vehicleRentRecords = await sql`
             SELECT 
               id,
@@ -201,6 +201,7 @@ export async function POST(request: Request) {
             WHERE cee_id = ${resolvedCeeId}
             AND rent_date >= ${startDateStr}::date
             AND rent_date <= ${endDateStr}::date
+            AND (${riderJoinDate ? riderJoinDate.toISOString().split('T')[0] : '1900-01-01'}::date IS NULL OR rent_date >= ${riderJoinDate ? riderJoinDate.toISOString().split('T')[0] : '1900-01-01'}::date)
             ORDER BY rent_date DESC
           `;
           console.log('Vehicle rent records found:', vehicleRentRecords.length);
