@@ -213,16 +213,16 @@ function AdminDashboardContent() {
   const handleEdit = async (item: any, type: string) => {
     setEditItem({ ...item, type });
     if (type === 'vehicle') {
-      // Fetch available riders if assigning
+      // Fetch all riders for assigning
       if (item.showAssignModal) {
         try {
           const res = await fetch('/api/riders');
           const data = await res.json();
-          // Filter riders who don't have a vehicle assigned
-          const unassignedRiders = (data.riders || []).filter((rider: any) => !rider.assigned_vehicle_id);
-          setAvailableRiders(unassignedRiders);
+          // Show ALL riders - both with and without vehicles so admin can reassign
+          const allRiders = data.riders || [];
+          setAvailableRiders(allRiders);
           setSelectedRiderId('');
-          console.log('Available riders:', unassignedRiders);
+          console.log('Available riders:', allRiders);
         } catch (error) {
           console.error('Error fetching riders:', error);
         }
@@ -1429,8 +1429,8 @@ function AdminDashboardContent() {
                         <label className="block text-sm font-semibold text-slate-900 mb-3">Choose a rider...</label>
                         {availableRiders.length === 0 ? (
                           <div className="p-4 bg-yellow-50 border-2 border-yellow-300 rounded-xl text-yellow-900 text-sm">
-                            <p className="font-bold text-base">No unassigned riders available</p>
-                            <p className="text-sm mt-2">All riders currently have vehicles assigned, or no riders exist in the system.</p>
+                            <p className="font-bold text-base">No riders available</p>
+                            <p className="text-sm mt-2">No riders exist in the system.</p>
                           </div>
                         ) : (
                           <select
