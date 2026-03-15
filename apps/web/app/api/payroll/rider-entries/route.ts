@@ -206,7 +206,7 @@ export async function POST(request: Request) {
         if (isLeader && leaderDiscountPercentage > 0) {
           const discountAmount = baseDailyRent * (leaderDiscountPercentage / 100);
           dailyRent = baseDailyRent - discountAmount;
-          console.log(`💰 Leader Discount Applied: ₹${baseDailyRent} - ${leaderDiscountPercentage}% = ₹${dailyRent.toFixed(2)}`);
+          console.log(`💰 Leader Discount Applied: ₹${baseDailyRent} - ${leaderDiscountPercentage}% = ₹${dailyRent.toFixed(2)}`);\n        }
 
         console.log('🚗 Vehicle Rent Debug:', {
           rider_id,
