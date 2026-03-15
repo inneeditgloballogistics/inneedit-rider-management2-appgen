@@ -304,12 +304,14 @@ export default function RiderDashboard() {
 
       // Fetch payouts using ceeId ONLY
       const payoutsRes = await fetch(`/api/payouts?ceeId=${ceeId || ''}`);
-      if (!payoutsRes.ok) {
-        console.error('Payouts fetch error:', await payoutsRes.json());
-      }
       const payoutsData = await payoutsRes.json();
-      console.log('Payouts data fetched:', payoutsData);
-      setPayouts(Array.isArray(payoutsData) ? payoutsData : []);
+      if (!payoutsRes.ok) {
+        console.error('Payouts fetch error:', payoutsData);
+        setPayouts([]);
+      } else {
+        console.log('Payouts data fetched:', payoutsData);
+        setPayouts(Array.isArray(payoutsData) ? payoutsData : []);
+      }
       
       // Set current week's payout - prioritize finalized payouts, then most recent
       if (payoutsData.length > 0) {
