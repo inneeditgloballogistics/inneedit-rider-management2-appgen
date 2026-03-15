@@ -13,6 +13,7 @@ export async function POST(request: Request) {
     }
 
     // Fetch all additions (referrals and incentives) for this rider on this date
+    // Use DATE() to ensure proper date comparison without timezone issues
     const additions = await sql`
       SELECT 
         COALESCE(
@@ -24,11 +25,12 @@ export async function POST(request: Request) {
         entry_date
       FROM additions
       WHERE cee_id = ${rider_id} 
-        AND entry_date = ${date}
+        AND DATE(entry_date) = ${date}::DATE
       ORDER BY created_at DESC
     `;
 
     // Fetch all deductions for this rider on this date
+    // Use DATE() to ensure proper date comparison without timezone issues
     const deductions = await sql`
       SELECT 
         CASE 
@@ -40,7 +42,7 @@ export async function POST(request: Request) {
         entry_date
       FROM deductions
       WHERE cee_id = ${rider_id} 
-        AND entry_date = ${date}
+        AND DATE(entry_date) = ${date}::DATE
       ORDER BY created_at DESC
     `;
 
