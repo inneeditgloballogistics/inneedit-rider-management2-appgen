@@ -945,8 +945,8 @@ export default function RiderDashboard() {
                     : 'Total Earnings'}
                 </p>
                 <p className="text-3xl font-bold text-green-600 mt-2">
-                  {currentPayrollWeek?.status === 'finalized' && currentPayrollWeek?.final_payout !== undefined && currentPayrollWeek?.final_payout !== null
-                    ? `₹${parseFloat(currentPayrollWeek.final_payout).toFixed(0)}`
+                  {currentPayrollWeek?.status === 'finalized'
+                    ? `₹${parseFloat(String(currentPayrollWeek.final_payout || currentPayrollWeek.net_payout || '0')).toFixed(0)}`
                     : `₹${parseFloat(orderStats?.total_payout || '0').toFixed(0)}`}
                 </p>
               </div>
@@ -1240,9 +1240,9 @@ export default function RiderDashboard() {
                 <div className="p-4">
                   <p className="text-xs text-gray-600 font-medium">This Week Payout</p>
                   <p className="text-sm font-semibold text-indigo-600 mt-1">
-                    ₹{currentPayrollWeek?.status === 'finalized' && currentPayrollWeek?.final_payout !== undefined && currentPayrollWeek?.final_payout !== null 
-                      ? parseFloat(currentPayrollWeek.final_payout).toFixed(2) 
-                      : (currentPayrollWeek?.status === 'finalized' ? '0.00' : stats?.finalPayout.toFixed(2) || '0.00')}
+                    ₹{currentPayrollWeek?.status === 'finalized'
+                      ? parseFloat(String(currentPayrollWeek.final_payout || currentPayrollWeek.net_payout || '0')).toFixed(2)
+                      : stats?.finalPayout.toFixed(2) || '0.00'}
                   </p>
                   {currentPayrollWeek?.status !== 'finalized' && <p className="text-xs text-gray-500 mt-1">Estimated (Pending Approval)</p>}
                 </div>
