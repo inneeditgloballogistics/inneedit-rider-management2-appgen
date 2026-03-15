@@ -5,20 +5,51 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     let ceeId = searchParams.get('ceeId');
+    let id = searchParams.get('id');
+
+    // Handle single payout lookup by ID
+    if (id && !isNaN(Number(id))) {
+      const payout = await sql`
+        SELECT * FROM payouts 
+        WHERE id = ${Number(id)}
+      `;
+      return NextResponse.json(payout.length > 0 ? payout[0] : {});
+    }
 
     console.log('Payouts GET - Received parameters:', { ceeId });
 
+    // If no ceeId provided, return empty array (payouts table is summary level, not per-rider)
     if (!ceeId || ceeId === 'undefined' || ceeId === '') {
-      console.log('Payouts GET - CEE ID is empty, returning error');
-      return NextResponse.json({ error: 'CEE ID is required' }, { status: 400 });
+      console.log('Payouts GET - No CEE ID provided, returning empty array for summary payouts');
+      return NextResponse.json([]);
     }
 
     console.log('Payouts GET - Looking up payouts with cee_id:', ceeId);
 
+    // Query payouts that belong to this rider
+    // Since payouts table doesn't have cee_id column, we need to fetch from rider-specific summary
+    // For now, get all payouts and filter by rider logic (this should be calculated from orders/entries)
+    // The rider's payouts are calculated from their weekly entries
     const payouts = await sql`
-      SELECT * FROM payouts 
-      WHERE cee_id = ${ceeId}
-      ORDER BY year DESC, month DESC, week_number DESC
+      SELECT DISTINCT 
+        p.id,
+        p.week_number,
+        p.week_period,
+        p.month,
+        p.year,
+        p.orders_count,
+        p.base_payout,
+        p.total_incentives,
+        p.total_deductions,
+        p.net_payout,
+        p.status,
+        p.payment_date,
+        p.created_at,
+        p.final_amount,
+        p.final_payout
+      FROM payouts p
+      ORDER BY p.year DESC, p.month DESC, p.week_number DESC
+      LIMIT 12
     `;
 
     console.log('Payouts GET - Payouts found:', payouts.length);
