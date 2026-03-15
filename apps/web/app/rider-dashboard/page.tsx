@@ -939,9 +939,15 @@ export default function RiderDashboard() {
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 font-medium">Total Earnings</p>
+                <p className="text-sm text-gray-600 font-medium">
+                  {currentPayrollWeek?.status === 'finalized' && currentPayrollWeek?.week_number 
+                    ? `Total Earnings (Week ${currentPayrollWeek.week_number}) Final Payout` 
+                    : 'Total Earnings'}
+                </p>
                 <p className="text-3xl font-bold text-green-600 mt-2">
-                  ₹{parseFloat(orderStats?.total_payout || '0').toFixed(0)}
+                  {currentPayrollWeek?.status === 'finalized' && currentPayrollWeek?.final_payout !== undefined && currentPayrollWeek?.final_payout !== null
+                    ? `₹${parseFloat(currentPayrollWeek.final_payout).toFixed(0)}`
+                    : `₹${parseFloat(orderStats?.total_payout || '0').toFixed(0)}`}
                 </p>
               </div>
               <Wallet className="w-12 h-12 text-green-100" />
