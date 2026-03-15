@@ -35,7 +35,6 @@ export default function CongratulatationsPopup({ isOpen, riderData, onClose }: C
 
   const handleClose = () => {
     onClose();
-    router.push('/rider-login');
   };
 
   return (
