@@ -7,104 +7,67 @@ export async function POST(request: Request) {
 
     if (!rider_id || !date) {
       return NextResponse.json(
-        { error: "Missing rider_id or date" },
+        { error: "rider_id and date are required" },
         { status: 400 }
       );
     }
 
-    console.log("=== ENTRIES-BY-DATE API ===");
-    console.log("Received rider_id:", rider_id);
-    console.log("Received date:", date);
-    console.log("Date type:", typeof date);
+    // Fetch all additions (referrals and incentives) for this rider on this date
+    const additions = await sql`
+      SELECT 
+        COALESCE(
+          CASE WHEN entry_type = 'referral' THEN 'Referral' ELSE 'Incentive' END,
+          'Addition'
+        ) as type,
+        description,
+        amount,
+        entry_date
+      FROM additions
+      WHERE cee_id = ${rider_id} 
+        AND entry_date = ${date}
+      ORDER BY created_at DESC
+    `;
 
-    // Convert date string to proper format for comparison
-    const dateStr = date + '%'; // Add % for LIKE matching to handle timezone
+    // Fetch all deductions for this rider on this date
+    const deductions = await sql`
+      SELECT 
+        CASE 
+          WHEN entry_type = 'advance' THEN 'Advance'
+          ELSE 'Deduction'
+        END as type,
+        description,
+        amount,
+        entry_date
+      FROM deductions
+      WHERE cee_id = ${rider_id} 
+        AND entry_date = ${date}
+      ORDER BY created_at DESC
+    `;
 
-    // Fetch entries from all tables for the specified date
-    const [referrals, incentives, deductions, advances] = await Promise.all([
-      // Fetch referrals
-      sql`
-        SELECT 
-          'Referral' as type,
-          id,
-          referred_name as description,
-          amount,
-          created_at,
-          status
-        FROM referrals
-        WHERE referrer_cee_id = ${rider_id}
-        AND created_at::date = ${date}::date
-        ORDER BY created_at DESC
-      `,
-      // Fetch incentives
-      sql`
-        SELECT 
-          'Incentive' as type,
-          id,
-          CONCAT(incentive_type, ' - ', description) as description,
-          amount,
-          incentive_date as created_at,
-          'completed' as status
-        FROM incentives
-        WHERE cee_id = ${rider_id}
-        AND incentive_date::date = ${date}::date
-        ORDER BY incentive_date DESC
-      `,
-      // Fetch deductions
-      sql`
-        SELECT 
-          'Deduction' as type,
-          id,
-          CONCAT(deduction_type, ' - ', description) as description,
-          amount,
-          deduction_date as created_at,
-          'completed' as status
-        FROM deductions
-        WHERE cee_id = ${rider_id}
-        AND deduction_date::date = ${date}::date
-        ORDER BY deduction_date DESC
-      `,
-      // Fetch advances
-      sql`
-        SELECT 
-          'Advance' as type,
-          id,
-          CONCAT(reason, ' - ', COALESCE(admin_notes, '')) as description,
-          amount,
-          requested_at as created_at,
-          status
-        FROM advances
-        WHERE cee_id = ${rider_id}
-        AND requested_at::date = ${date}::date
-        ORDER BY requested_at DESC
-      `
-    ]);
+    // Combine and sort by created_at
+    const entries = [
+      ...additions.map((a: any) => ({
+        type: a.type,
+        description: a.description,
+        amount: a.amount,
+        date: a.entry_date
+      })),
+      ...deductions.map((d: any) => ({
+        type: d.type,
+        description: d.description,
+        amount: d.amount,
+        date: d.entry_date
+      }))
+    ];
 
-    console.log("Referrals count:", referrals.length);
-    console.log("Incentives count:", incentives.length);
-    console.log("Deductions count:", deductions.length);
-    console.log("Advances count:", advances.length);
-
-    // Combine and sort all entries by created_at
-    const allEntries = [
-      ...referrals,
-      ...incentives,
-      ...deductions,
-      ...advances
-    ].sort((a, b) => {
-      const dateA = new Date(a.created_at).getTime();
-      const dateB = new Date(b.created_at).getTime();
-      return dateB - dateA; // Latest first
+    return NextResponse.json({ 
+      entries,
+      success: true 
     });
-
-    return NextResponse.json({
-      entries: allEntries,
-      total: allEntries.length
-    });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error fetching entries by date:", error);
     return NextResponse.json(
-      { error: "Failed to fetch entries" },
+      { error: error.message || "Failed to fetch entries" },
       { status: 500 }
     );
   }
