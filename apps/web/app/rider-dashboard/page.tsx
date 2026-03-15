@@ -735,7 +735,7 @@ export default function RiderDashboard() {
                         <div>
                           <p className="text-sm text-gray-600 mb-1">Coordinates</p>
                           <p className="text-base font-medium text-gray-900">
-                            {hub.latitude && hub.longitude ? `${hub.latitude.toFixed(4)}, ${hub.longitude.toFixed(4)}` : 'N/A'}
+                            {hub.latitude && hub.longitude ? `${(parseFloat(String(hub.latitude))).toFixed(4)}, ${(parseFloat(String(hub.longitude))).toFixed(4)}` : 'N/A'}
                           </p>
                         </div>
                       </div>
@@ -841,7 +841,7 @@ export default function RiderDashboard() {
                         <div>
                           <p className="text-sm text-gray-600 mb-1">Coordinates</p>
                           <p className="text-base font-medium text-gray-900">
-                            {store.latitude && store.longitude ? `${store.latitude.toFixed(4)}, ${store.longitude.toFixed(4)}` : 'N/A'}
+                            {store.latitude && store.longitude ? `${(parseFloat(String(store.latitude))).toFixed(4)}, ${(parseFloat(String(store.longitude))).toFixed(4)}` : 'N/A'}
                           </p>
                         </div>
                       </div>
