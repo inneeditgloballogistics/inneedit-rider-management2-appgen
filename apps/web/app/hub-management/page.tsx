@@ -111,7 +111,7 @@ function HubManagementContent() {
         <div className="max-w-7xl mx-auto space-y-8">
             
             {/* Vehicles Tab */}
-            <VehicleList vehicles={vehicles} onAdd={() => handleAddNew()} />
+            <VehicleList vehicles={vehicles} onAdd={() => handleAddNew()} onRefresh={() => fetchVehicles()} />
 
             {/* Add Modal */}
             <AddModal 

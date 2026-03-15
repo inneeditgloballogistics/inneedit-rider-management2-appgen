@@ -1,6 +1,98 @@
 'use client';
 
-export function VehicleList({ vehicles, onAdd }: { vehicles: any[], onAdd: () => void }) {
+import { useState } from 'react';
+
+export function VehicleList({ vehicles, onAdd, onRefresh }: { vehicles: any[], onAdd: () => void, onRefresh?: () => void }) {
+  const [selectedVehicleId, setSelectedVehicleId] = useState<number | null>(null);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [riders, setRiders] = useState<any[]>([]);
+  const [selectedRiderId, setSelectedRiderId] = useState<string>('');
+  const [isLoadingRiders, setIsLoadingRiders] = useState(false);
+  const [isAssigning, setIsAssigning] = useState(false);
+
+  const openAssignModal = async (vehicleId: number) => {
+    setSelectedVehicleId(vehicleId);
+    setSelectedRiderId('');
+    setShowAssignModal(true);
+    
+    // Fetch available riders
+    setIsLoadingRiders(true);
+    try {
+      const response = await fetch('/api/riders');
+      const data = await response.json();
+      // Filter only unassigned riders (those without a vehicle)
+      const unassignedRiders = data.riders.filter((rider: any) => !rider.assigned_vehicle_id);
+      setRiders(unassignedRiders);
+    } catch (error) {
+      console.error('Error fetching riders:', error);
+      alert('Failed to load riders');
+    }
+    setIsLoadingRiders(false);
+  };
+
+  const handleAssignRider = async () => {
+    if (!selectedVehicleId || !selectedRiderId) {
+      alert('Please select a rider');
+      return;
+    }
+
+    setIsAssigning(true);
+    try {
+      // Get the selected rider's details
+      const rider = riders.find((r: any) => r.id === parseInt(selectedRiderId));
+      if (!rider) {
+        alert('Rider not found');
+        return;
+      }
+
+      // Update the vehicle with the rider assignment
+      const response = await fetch('/api/vehicles', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: selectedVehicleId,
+          assigned_rider_id: rider.cee_id,
+          status: 'assigned',
+          vehicle_number: vehicles.find(v => v.id === selectedVehicleId)?.vehicle_number,
+          vehicle_type: vehicles.find(v => v.id === selectedVehicleId)?.vehicle_type,
+          model: vehicles.find(v => v.id === selectedVehicleId)?.model,
+          year: vehicles.find(v => v.id === selectedVehicleId)?.year,
+          hub_id: vehicles.find(v => v.id === selectedVehicleId)?.hub_id
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        alert('Error: ' + (error.error || 'Failed to assign vehicle'));
+        return;
+      }
+
+      // Update the rider's assigned_vehicle_id
+      const updateRiderResponse = await fetch('/api/riders', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: rider.id,
+          assigned_vehicle_id: selectedVehicleId
+        })
+      });
+
+      if (!updateRiderResponse.ok) {
+        console.error('Failed to update rider vehicle assignment');
+      }
+
+      alert(`Vehicle assigned successfully to ${rider.full_name}`);
+      setShowAssignModal(false);
+      setSelectedVehicleId(null);
+      setSelectedRiderId('');
+      if (onRefresh) onRefresh();
+    } catch (error) {
+      console.error('Error assigning vehicle:', error);
+      alert('Error: ' + (error instanceof Error ? error.message : 'Failed to assign vehicle'));
+    }
+    setIsAssigning(false);
+  };
+
   return (
     <>
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-2 border-b border-slate-200/60">
@@ -25,12 +117,13 @@ export function VehicleList({ vehicles, onAdd }: { vehicles: any[], onAdd: () =>
                 <th className="px-6 py-4 font-medium">Hub</th>
                 <th className="px-6 py-4 font-medium">Assigned Rider</th>
                 <th className="px-6 py-4 font-medium">Status</th>
+                <th className="px-6 py-4 font-medium">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-sm">
               {vehicles.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
+                  <td colSpan={8} className="px-6 py-12 text-center text-slate-500">
                     No vehicles found. Click &quot;Add Vehicle&quot; to get started.
                   </td>
                 </tr>
@@ -58,6 +151,16 @@ export function VehicleList({ vehicles, onAdd }: { vehicles: any[], onAdd: () =>
                         {vehicle.status}
                       </span>
                     </td>
+                    <td className="px-6 py-4">
+                      {vehicle.status === 'available' && !vehicle.assigned_rider_id && (
+                        <button
+                          onClick={() => openAssignModal(vehicle.id)}
+                          className="px-3 py-1 bg-brand-500 text-white text-xs font-medium rounded hover:bg-brand-600 transition-all"
+                        >
+                          Assign Rider
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 ))
               )}
@@ -65,6 +168,71 @@ export function VehicleList({ vehicles, onAdd }: { vehicles: any[], onAdd: () =>
           </table>
         </div>
       </div>
+
+      {/* Assign Rider Modal */}
+      {showAssignModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-slate-900">Assign Vehicle to Rider</h3>
+              <button
+                onClick={() => setShowAssignModal(false)}
+                className="text-slate-500 hover:text-slate-700 text-2xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Vehicle: {vehicles.find(v => v.id === selectedVehicleId)?.vehicle_number}
+                </label>
+              </div>
+
+              <div>
+                <label htmlFor="rider-select" className="block text-sm font-medium text-slate-700 mb-2">
+                  Select Rider
+                </label>
+                <select
+                  id="rider-select"
+                  value={selectedRiderId}
+                  onChange={(e) => setSelectedRiderId(e.target.value)}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900"
+                  disabled={isLoadingRiders}
+                >
+                  <option value="">{isLoadingRiders ? 'Loading riders...' : 'Choose a rider'}</option>
+                  {riders.map((rider) => (
+                    <option key={rider.id} value={rider.id}>
+                      {rider.full_name} ({rider.cee_id})
+                    </option>
+                  ))}
+                </select>
+                {riders.length === 0 && !isLoadingRiders && (
+                  <p className="text-sm text-slate-500 mt-2">No unassigned riders available</p>
+                )}
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={() => setShowAssignModal(false)}
+                  className="flex-1 px-4 py-2 border border-slate-300 rounded-lg font-medium text-slate-700 hover:bg-slate-50 transition-all"
+                  disabled={isAssigning}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAssignRider}
+                  className="flex-1 px-4 py-2 bg-brand-500 text-white rounded-lg font-medium hover:bg-brand-600 transition-all disabled:opacity-50"
+                  disabled={!selectedRiderId || isAssigning}
+                >
+                  {isAssigning ? 'Assigning...' : 'Assign'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
