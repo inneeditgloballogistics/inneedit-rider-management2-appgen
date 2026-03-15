@@ -396,7 +396,7 @@ export default function RiderDashboard() {
       basePayout: parseFloat(currentPayrollWeek.base_payout),
       totalIncentives: parseFloat(currentPayrollWeek.total_incentives),
       totalDeductions: parseFloat(currentPayrollWeek.total_deductions),
-      netPayout: parseFloat(currentPayrollWeek.net_payout),
+      finalPayout: parseFloat(currentPayrollWeek.final_payout || currentPayrollWeek.net_payout),
     };
   };
 
@@ -1044,7 +1044,7 @@ export default function RiderDashboard() {
                   <p className="text-sm font-semibold text-indigo-600 mt-1">
                     ₹{currentPayrollWeek?.status === 'finalized' && currentPayrollWeek?.final_payout !== undefined && currentPayrollWeek?.final_payout !== null 
                       ? parseFloat(currentPayrollWeek.final_payout).toFixed(2) 
-                      : (currentPayrollWeek?.status === 'finalized' ? '0.00' : stats?.netPayout.toFixed(2) || '0.00')}
+                      : (currentPayrollWeek?.status === 'finalized' ? '0.00' : stats?.finalPayout.toFixed(2) || '0.00')}
                   </p>
                   {currentPayrollWeek?.status !== 'finalized' && <p className="text-xs text-gray-500 mt-1">Estimated (Pending Approval)</p>}
                 </div>
