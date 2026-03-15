@@ -5,6 +5,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const action = searchParams.get('action');
+    const id = searchParams.get('id');
 
     if (action === 'count') {
       const result = await sql`SELECT COUNT(*) as count FROM stores`;
@@ -38,6 +39,11 @@ export async function GET(request: NextRequest) {
                  s.pincode, s.status, s.latitude, s.longitude, s.store_manager_name, s.store_manager_phone
         ORDER BY s.created_at DESC
       `;
+      return NextResponse.json(stores);
+    }
+
+    if (id) {
+      const stores = await sql`SELECT * FROM stores WHERE id = ${parseInt(id)}`;
       return NextResponse.json(stores);
     }
 
