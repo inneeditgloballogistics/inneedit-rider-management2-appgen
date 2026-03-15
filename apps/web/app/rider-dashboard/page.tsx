@@ -6,7 +6,7 @@ import { Bell, LogOut, Package, TrendingUp, Users, Wallet, AlertCircle, Gift, Do
 import WeatherBadge from '@/components/WeatherBadge';
 import RequestAdvanceModal from '@/components/RequestAdvanceModal';
 import ReferRiderModal from '@/components/ReferRiderModal';
-import CongratulatationsPopup from '@/components/CongratulatationsPopup';
+
 import html2canvas from 'html2canvas';
 
 interface RiderData {
@@ -121,8 +121,6 @@ export default function RiderDashboard() {
   const [riderEntries, setRiderEntries] = useState<PayrollEntry[]>([]);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [entriesLoading, setEntriesLoading] = useState(false);
-  const [showCongratulations, setShowCongratulations] = useState(false);
-  const [congratulationsData, setCongratulationsData] = useState<any>(null);
 
   useEffect(() => {
     checkAuth();
@@ -143,57 +141,7 @@ export default function RiderDashboard() {
     }
   };
 
-  const showOnboardingPopup = async (riderData: any, ceeId: string) => {
-    try {
-      // Fetch hub and vehicle details
-      let hubName = '', hubLocation = '', managerName = '', managerPhone = '', vehicleNumber = '';
-      
-      if (riderData.assigned_hub_id) {
-        try {
-          const hubRes = await fetch(`/api/hubs`);
-          const hubsData = await hubRes.json();
-          const selectedHub = hubsData.find((h: any) => h.id === riderData.assigned_hub_id);
-          if (selectedHub) {
-            hubName = selectedHub.hub_name;
-            hubLocation = selectedHub.location;
-            managerName = selectedHub.manager_name || '';
-            managerPhone = selectedHub.manager_phone || '';
-          }
-        } catch (err) {
-          console.error('Error fetching hub details:', err);
-        }
-      }
 
-      if (riderData.assigned_vehicle_id) {
-        try {
-          const vehicleRes = await fetch(`/api/vehicles`);
-          const vehiclesData = await vehicleRes.json();
-          const selectedVehicle = vehiclesData.find((v: any) => v.id === riderData.assigned_vehicle_id);
-          if (selectedVehicle) {
-            vehicleNumber = selectedVehicle.vehicle_number;
-          }
-        } catch (err) {
-          console.error('Error fetching vehicle details:', err);
-        }
-      }
-
-      // Set congratulations data and show popup
-      setCongratulationsData({
-        fullName: riderData.full_name,
-        ceeId: ceeId,
-        client: riderData.client || 'BigBasket',
-        vehicleNumber,
-        hubName,
-        hubLocation,
-        managerName,
-        managerPhone
-      });
-      
-      setShowCongratulations(true);
-    } catch (error) {
-      console.error('Error preparing onboarding popup:', error);
-    }
-  };
 
   const checkAuth = async () => {
     try {
@@ -219,15 +167,13 @@ export default function RiderDashboard() {
       
       // Check if this is rider's first login (onboarding not completed)
       if (data.rider && data.rider.onboarding_completed === false) {
-        // Mark onboarding as completed in database FIRST
+        // Mark onboarding as completed in database
         await markOnboardingComplete(data.rider.user_id);
         // Update local state
         setRider({
           ...data.rider,
           onboarding_completed: true
         });
-        // Then show congratulations popup
-        await showOnboardingPopup(data.rider, ceeId);
       }
       
       await fetchAllData(data.rider.user_id, ceeId);
@@ -569,13 +515,6 @@ export default function RiderDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100">
-      {/* Congratulations Popup */}
-      <CongratulatationsPopup
-        isOpen={showCongratulations}
-        riderData={congratulationsData || {}}
-        onClose={() => setShowCongratulations(false)}
-      />
-
       {/* Header */}
       <header className="sticky top-0 z-40 bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
