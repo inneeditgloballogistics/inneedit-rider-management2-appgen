@@ -210,15 +210,16 @@ export default function RiderDashboard() {
 
       const data = await response.json();
       console.log('Auth successful, rider data:', data);
+      console.log('Onboarding completed:', data.rider.onboarding_completed);
       setRider(data.rider);
       const ceeId = data.rider.ceeId || data.rider.cee_id;
       console.log('Calling fetchAllData with:', { riderId: data.rider.user_id, ceeId });
       
       // Check if this is rider's first login (onboarding not completed)
-      if (data.rider && !data.rider.onboarding_completed) {
+      if (data.rider && data.rider.onboarding_completed === false) {
         // Show congratulations popup
         await showOnboardingPopup(data.rider, ceeId);
-        // Mark onboarding as completed
+        // Mark onboarding as completed immediately
         await markOnboardingComplete(data.rider.user_id);
       }
       

@@ -77,7 +77,8 @@ export async function GET(request: NextRequest) {
           assigned_vehicle_id,
           status,
           phone_verified,
-          created_at
+          created_at,
+          onboarding_completed
         FROM riders
         WHERE user_id = ${session.userId}
         LIMIT 1
@@ -128,6 +129,7 @@ export async function GET(request: NextRequest) {
         status: rider.status,
         phone_verified: rider.phone_verified,
         created_at: rider.created_at,
+        onboarding_completed: rider.onboarding_completed,
       },
     });
   } catch (error: any) {

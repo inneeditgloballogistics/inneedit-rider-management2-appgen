@@ -39,7 +39,7 @@ export default function CongratulatationsPopup({ isOpen, riderData, onClose }: C
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-bounce-in">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[60vh] overflow-hidden animate-bounce-in flex flex-col">
         {/* Header with gradient */}
         <div className="bg-gradient-to-r from-green-500 to-emerald-600 px-6 pt-8 pb-6 text-center relative">
           <button
@@ -64,7 +64,7 @@ export default function CongratulatationsPopup({ isOpen, riderData, onClose }: C
         </div>
 
         {/* Content */}
-        <div className="px-6 py-8 space-y-6">
+        <div className="px-6 py-6 space-y-4 overflow-y-auto flex-1">
           {/* Success Message */}
           <div className="bg-green-50 border border-green-200 rounded-xl p-4">
             <p className="text-green-900 font-semibold text-center text-sm">
