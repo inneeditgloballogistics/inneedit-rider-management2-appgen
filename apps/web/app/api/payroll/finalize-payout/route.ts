@@ -55,15 +55,15 @@ export async function POST(request: Request) {
     let finalizedCount = 0;
     let errors: string[] = [];
 
-    // Process each rider
+    // Process each rider using ONLY cee_id
     for (const entry of payoutEntries) {
       try {
         const cee_id = entry.cee_id;
         const basePayout = parseFloat(entry.base_payout) || 0;
 
-        // Get rider info - ONLY match by cee_id, no fallback to name
+        // Get rider info - ONLY match by cee_id
         const riderInfo = await sql`
-          SELECT user_id, vehicle_ownership, ev_daily_rent, ev_type, join_date 
+          SELECT vehicle_ownership, ev_daily_rent, ev_type, join_date 
           FROM riders
           WHERE cee_id = ${cee_id}
           LIMIT 1
@@ -74,7 +74,6 @@ export async function POST(request: Request) {
           continue;
         }
 
-        const rider_id = riderInfo[0].user_id;
         const vehicleOwnership = riderInfo[0].vehicle_ownership || null;
 
         // Fetch referral bonuses
@@ -172,7 +171,7 @@ export async function POST(request: Request) {
         // Check if payout exists
         const existingPayout = await sql`
           SELECT id FROM payouts
-          WHERE rider_id = ${rider_id}
+          WHERE cee_id = ${cee_id}
           AND week_number = ${week}
           AND month = ${month}
           AND year = ${year}
@@ -197,7 +196,7 @@ export async function POST(request: Request) {
           // Insert new with new formula
           await sql`
             INSERT INTO payouts (
-              rider_id,
+              cee_id,
               week_number,
               week_period,
               month,
@@ -212,7 +211,7 @@ export async function POST(request: Request) {
               created_at
             )
             VALUES (
-              ${rider_id},
+              ${cee_id},
               ${week},
               ${'Week ' + week},
               ${month},

@@ -220,7 +220,7 @@ export default function RiderDashboard() {
     }
   };
 
-  const fetchPayoutDetails = async (riderId: string, weekNumber: number, month: number, year: number, basePayout: number = 0) => {
+  const fetchPayoutDetails = async (ceeId: string, weekNumber: number, month: number, year: number, basePayout: number = 0) => {
     try {
       setEntriesLoading(true);
       
@@ -229,7 +229,7 @@ export default function RiderDashboard() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          rider_id: riderId,
+          rider_id: ceeId,
           week_number: weekNumber,
           month: month,
           year: year
@@ -250,7 +250,7 @@ export default function RiderDashboard() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          rider_id: riderId,
+          rider_id: ceeId,
           start_date: formatDate(startDate),
           end_date: formatDate(endDate)
         })
@@ -297,12 +297,12 @@ export default function RiderDashboard() {
 
   const fetchAllData = async (riderId: string, ceeId?: string) => {
     try {
-      // Fetch orders
-      const ordersRes = await fetch(`/api/orders?riderId=${riderId}`);
+      // Fetch orders using ceeId ONLY
+      const ordersRes = await fetch(`/api/orders?ceeId=${ceeId || ''}`);
       const ordersData = await ordersRes.json();
       setOrderStats(ordersData.stats);
 
-      // Fetch payouts (passing ceeId for consistency with database)
+      // Fetch payouts using ceeId ONLY
       const payoutsRes = await fetch(`/api/payouts?ceeId=${ceeId || ''}`);
       if (!payoutsRes.ok) {
         console.error('Payouts fetch error:', await payoutsRes.json());
@@ -334,27 +334,27 @@ export default function RiderDashboard() {
         // If payout is finalized, fetch the detailed payout breakdown
         if (currentWeekPayout.status === 'finalized') {
           const basePayout = parseFloat(currentWeekPayout.base_payout) || 0;
-          await fetchPayoutDetails(riderId, currentWeekPayout.week_number, currentWeekPayout.month, currentWeekPayout.year, basePayout);
+          await fetchPayoutDetails(ceeId || '', currentWeekPayout.week_number, currentWeekPayout.month, currentWeekPayout.year, basePayout);
         }
       }
 
-      // Fetch referrals
-      const referralsRes = await fetch(`/api/referrals?riderId=${riderId}`);
+      // Fetch referrals using ceeId ONLY
+      const referralsRes = await fetch(`/api/referrals?ceeId=${ceeId || ''}`);
       const referralsData = await referralsRes.json();
       setReferrals(referralsData);
 
-      // Fetch deductions
-      const deductionsRes = await fetch(`/api/deductions?riderId=${riderId}`);
+      // Fetch deductions using ceeId ONLY
+      const deductionsRes = await fetch(`/api/deductions?ceeId=${ceeId || ''}`);
       const deductionsData = await deductionsRes.json();
       setDeductions(deductionsData.deductions);
 
-      // Fetch incentives
-      const incentivesRes = await fetch(`/api/incentives?riderId=${riderId}`);
+      // Fetch incentives using ceeId ONLY
+      const incentivesRes = await fetch(`/api/incentives?ceeId=${ceeId || ''}`);
       const incentivesData = await incentivesRes.json();
       setIncentives(incentivesData.incentives);
 
-      // Fetch advances
-      const advancesRes = await fetch(`/api/advances?riderId=${riderId}`);
+      // Fetch advances using ceeId ONLY
+      const advancesRes = await fetch(`/api/advances?ceeId=${ceeId || ''}`);
       const advancesData = await advancesRes.json();
       setAdvances(advancesData);
 
@@ -429,7 +429,7 @@ export default function RiderDashboard() {
       // If payout is finalized, fetch detailed breakdown
       if (weekPayout.status === 'finalized') {
         const basePayout = parseFloat(weekPayout.base_payout) || 0;
-        await fetchPayoutDetails(rider.user_id, weekPayout.week_number, weekPayout.month, weekPayout.year, basePayout);
+        await fetchPayoutDetails(rider.ceeId, weekPayout.week_number, weekPayout.month, weekPayout.year, basePayout);
       } else {
         setPayoutDetails(null);
       }
@@ -1330,13 +1330,13 @@ export default function RiderDashboard() {
             isOpen={showAdvanceModal}
             onClose={() => setShowAdvanceModal(false)}
             rider={rider}
-            onSuccess={() => fetchAllData(rider.user_id)}
+            onSuccess={() => fetchAllData(rider.user_id, rider.ceeId)}
           />
           <ReferRiderModal
             isOpen={showReferralModal}
             onClose={() => setShowReferralModal(false)}
             rider={rider}
-            onSuccess={() => fetchAllData(rider.user_id)}
+            onSuccess={() => fetchAllData(rider.user_id, rider.ceeId)}
           />
         </>
       )}

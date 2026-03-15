@@ -4,7 +4,7 @@ import sql from '../utils/sql';
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const riderId = searchParams.get('riderId');
+    const ceeId = searchParams.get('ceeId');
     const status = searchParams.get('status');
     const action = searchParams.get('action');
 
@@ -18,16 +18,7 @@ export async function GET(request: NextRequest) {
     }
 
     let query;
-    if (riderId) {
-      // Resolve riderId to cee_id first
-      const riderInfo = await sql`
-        SELECT cee_id FROM riders 
-        WHERE user_id = ${riderId} OR cee_id = ${riderId}
-        LIMIT 1
-      `;
-      
-      const ceeId = riderInfo.length > 0 ? riderInfo[0].cee_id : riderId;
-
+    if (ceeId) {
       query = sql`
         SELECT * FROM advances 
         WHERE cee_id = ${ceeId}
@@ -57,22 +48,15 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { riderId, ceeId, riderName, storeLocation, amount, reason } = body;
+    const { ceeId, riderName, storeLocation, amount, reason } = body;
 
-    // Resolve to cee_id if not provided
-    let resolvedCeeId = ceeId;
-    if (!resolvedCeeId) {
-      const riderInfo = await sql`
-        SELECT cee_id FROM riders 
-        WHERE user_id = ${riderId} OR cee_id = ${riderId}
-        LIMIT 1
-      `;
-      resolvedCeeId = riderInfo.length > 0 ? riderInfo[0].cee_id : riderId;
+    if (!ceeId) {
+      return NextResponse.json({ error: 'CEE ID is required' }, { status: 400 });
     }
 
     const result = await sql`
-      INSERT INTO advances (cee_id, rider_id, rider_name, store_location, amount, reason, requested_at)
-      VALUES (${resolvedCeeId}, ${riderId}, ${riderName}, ${storeLocation}, ${amount}, ${reason}, CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')
+      INSERT INTO advances (cee_id, rider_name, store_location, amount, reason, requested_at)
+      VALUES (${ceeId}, ${riderName}, ${storeLocation}, ${amount}, ${reason}, CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')
       RETURNING *
     `;
 
@@ -82,7 +66,7 @@ export async function POST(request: NextRequest) {
       VALUES (
         'advance',
         'New Advance Request',
-        ${`${riderName} (${resolvedCeeId}) from ${storeLocation} requested ₹${amount}`},
+        ${`${riderName} (${ceeId}) from ${storeLocation} requested ₹${amount}`},
         ${result[0].id}
       )
     `;

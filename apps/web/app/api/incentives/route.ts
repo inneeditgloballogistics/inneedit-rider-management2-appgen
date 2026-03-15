@@ -4,20 +4,11 @@ import sql from '../utils/sql';
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const riderId = searchParams.get('riderId');
+    const ceeId = searchParams.get('ceeId');
 
-    if (!riderId) {
-      return NextResponse.json({ error: 'Rider ID is required' }, { status: 400 });
+    if (!ceeId) {
+      return NextResponse.json({ error: 'CEE ID is required' }, { status: 400 });
     }
-
-    // Resolve riderId to cee_id first
-    const riderInfo = await sql`
-      SELECT cee_id FROM riders 
-      WHERE user_id = ${riderId} OR cee_id = ${riderId}
-      LIMIT 1
-    `;
-    
-    const ceeId = riderInfo.length > 0 ? riderInfo[0].cee_id : riderId;
 
     const incentives = await sql`
       SELECT * FROM incentives 
@@ -47,22 +38,15 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { riderId, ceeId, incentiveType, amount, description, incentiveDate } = body;
+    const { ceeId, incentiveType, amount, description, incentiveDate } = body;
 
-    // Resolve to cee_id if not provided
-    let resolvedCeeId = ceeId;
-    if (!resolvedCeeId) {
-      const riderInfo = await sql`
-        SELECT cee_id FROM riders 
-        WHERE user_id = ${riderId} OR cee_id = ${riderId}
-        LIMIT 1
-      `;
-      resolvedCeeId = riderInfo.length > 0 ? riderInfo[0].cee_id : riderId;
+    if (!ceeId) {
+      return NextResponse.json({ error: 'CEE ID is required' }, { status: 400 });
     }
 
     const result = await sql`
-      INSERT INTO incentives (cee_id, rider_id, incentive_type, amount, description, incentive_date)
-      VALUES (${resolvedCeeId}, ${riderId}, ${incentiveType}, ${amount}, ${description}, ${incentiveDate})
+      INSERT INTO incentives (cee_id, incentive_type, amount, description, incentive_date)
+      VALUES (${ceeId}, ${incentiveType}, ${amount}, ${description}, ${incentiveDate})
       RETURNING *
     `;
 
