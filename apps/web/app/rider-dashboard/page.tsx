@@ -26,6 +26,36 @@ interface RiderData {
   bank_name?: string;
   account_number?: string;
   onboarding_completed?: boolean;
+  assigned_hub_id?: number;
+  store_id?: number;
+}
+
+interface Hub {
+  id: number;
+  hub_name: string;
+  location: string;
+  city: string;
+  state: string;
+  pincode: string;
+  manager_name: string;
+  manager_phone: string;
+  latitude?: number;
+  longitude?: number;
+}
+
+interface Store {
+  id: number;
+  store_name: string;
+  location: string;
+  city: string;
+  state: string;
+  pincode: string;
+  contact_person: string;
+  contact_phone: string;
+  store_manager_name?: string;
+  store_manager_phone?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 interface OrderStats {
@@ -121,6 +151,10 @@ export default function RiderDashboard() {
   const [riderEntries, setRiderEntries] = useState<PayrollEntry[]>([]);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [entriesLoading, setEntriesLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'hub' | 'store'>('dashboard');
+  const [hub, setHub] = useState<Hub | null>(null);
+  const [store, setStore] = useState<Store | null>(null);
+  const [tabLoading, setTabLoading] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -419,6 +453,62 @@ export default function RiderDashboard() {
 
   const stats = getPayrollStats();
 
+  const fetchHubDetails = async () => {
+    if (!rider?.assigned_hub_id) {
+      setHub(null);
+      return;
+    }
+    try {
+      setTabLoading(true);
+      const response = await fetch(`/api/hubs?id=${rider.assigned_hub_id}`);
+      const data = await response.json();
+      if (data.length > 0) {
+        setHub(data[0]);
+      }
+    } catch (error) {
+      console.error('Error fetching hub details:', error);
+    } finally {
+      setTabLoading(false);
+    }
+  };
+
+  const fetchStoreDetails = async () => {
+    if (!rider?.store_id) {
+      setStore(null);
+      return;
+    }
+    try {
+      setTabLoading(true);
+      const response = await fetch(`/api/stores?id=${rider.store_id}`);
+      const data = await response.json();
+      if (data.length > 0) {
+        setStore(data[0]);
+      }
+    } catch (error) {
+      console.error('Error fetching store details:', error);
+    } finally {
+      setTabLoading(false);
+    }
+  };
+
+  const handleTabChange = async (tab: 'dashboard' | 'hub' | 'store') => {
+    setActiveTab(tab);
+    if (tab === 'hub' && !hub && rider?.assigned_hub_id) {
+      await fetchHubDetails();
+    } else if (tab === 'store' && !store && rider?.store_id) {
+      await fetchStoreDetails();
+    }
+  };
+
+  const navigateToLocation = (latitude: number | undefined, longitude: number | undefined, name: string) => {
+    if (!latitude || !longitude) {
+      alert('Location coordinates not available');
+      return;
+    }
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`;
+    window.open(url, '_blank');
+  };
+
   const getEntriesByType = (type: string): PayrollEntry[] => {
     console.log(`Filtering entries for type: ${type}, total entries:`, riderEntries.length);
     const filtered = riderEntries.filter(e => {
@@ -517,11 +607,12 @@ export default function RiderDashboard() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">My Dashboard</h1>
-            <p className="text-sm text-gray-600 mt-1">CEE ID: {rider.ceeId}</p>
-          </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">My Dashboard</h1>
+              <p className="text-sm text-gray-600 mt-1">CEE ID: {rider.ceeId}</p>
+            </div>
           <div className="flex items-center gap-4">
             {rider.latitude && rider.longitude && (
               <WeatherBadge
@@ -553,11 +644,296 @@ export default function RiderDashboard() {
               <LogOut className="w-5 h-5" />
             </button>
           </div>
+          </div>
+
+          {/* Tab Navigation */}
+          <div className="flex gap-4 border-t pt-4">
+            <button
+              onClick={() => handleTabChange('dashboard')}
+              className={`px-4 py-2 text-sm font-medium rounded-lg transition ${
+                activeTab === 'dashboard'
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              My Dashboard
+            </button>
+            <button
+              onClick={() => handleTabChange('hub')}
+              className={`px-4 py-2 text-sm font-medium rounded-lg transition ${
+                activeTab === 'hub'
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Hub
+            </button>
+            <button
+              onClick={() => handleTabChange('store')}
+              className={`px-4 py-2 text-sm font-medium rounded-lg transition ${
+                activeTab === 'store'
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Store
+            </button>
+          </div>
         </div>
       </header>
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        {/* HUB TAB */}
+        {activeTab === 'hub' && (
+          <div className="space-y-6">
+            {tabLoading ? (
+              <div className="text-center py-12">
+                <div className="inline-block">
+                  <div className="w-8 h-8 border-3 border-gray-300 border-t-indigo-600 rounded-full animate-spin"></div>
+                </div>
+                <p className="mt-4 text-gray-600">Loading Hub Details...</p>
+              </div>
+            ) : hub ? (
+              <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
+                {/* Hub Header */}
+                <div className="bg-gradient-to-r from-indigo-600 to-indigo-700 p-6 text-white">
+                  <h2 className="text-3xl font-bold mb-2">{hub.hub_name}</h2>
+                  <p className="text-indigo-100">Hub ID: {hub.id}</p>
+                </div>
+
+                {/* Hub Details */}
+                <div className="p-6 space-y-6">
+                  {/* Location Section */}
+                  <div className="border-l-4 border-indigo-600 pl-4">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-3">Location Details</h3>
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-sm text-gray-600 mb-1">Full Address</p>
+                        <p className="text-base font-medium text-gray-900">{hub.location}</p>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                        <div>
+                          <p className="text-sm text-gray-600 mb-1">City</p>
+                          <p className="text-base font-medium text-gray-900">{hub.city}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-600 mb-1">State</p>
+                          <p className="text-base font-medium text-gray-900">{hub.state}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-600 mb-1">Pincode</p>
+                          <p className="text-base font-medium text-gray-900">{hub.pincode}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-600 mb-1">Coordinates</p>
+                          <p className="text-base font-medium text-gray-900">
+                            {hub.latitude && hub.longitude ? `${hub.latitude.toFixed(4)}, ${hub.longitude.toFixed(4)}` : 'N/A'}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => navigateToLocation(hub.latitude, hub.longitude, hub.hub_name)}
+                        className="mt-4 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition flex items-center justify-center gap-2"
+                      >
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                        </svg>
+                        Navigate to Hub on Google Maps
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Hub Manager Section */}
+                  <div className="border-l-4 border-blue-600 pl-4">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-3">Hub Manager Details</h3>
+                    <div className="bg-blue-50 rounded-lg p-4 space-y-3">
+                      <div>
+                        <p className="text-sm text-gray-600 mb-1">Manager Name</p>
+                        <p className="text-base font-medium text-gray-900">{hub.manager_name}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600 mb-1">Contact Number</p>
+                        <div className="flex items-center gap-2">
+                          <a
+                            href={`tel:${hub.manager_phone}`}
+                            className="text-base font-medium text-indigo-600 hover:text-indigo-700 flex items-center gap-2"
+                          >
+                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773c.58 1.694 2.133 3.247 3.827 3.827l.773-1.548a1 1 0 011.06-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 4 14.18 4 9.5V5a1 1 0 011-1h2.153z" />
+                            </svg>
+                            {hub.manager_phone}
+                          </a>
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(hub.manager_phone);
+                              alert('Phone number copied!');
+                            }}
+                            className="text-gray-500 hover:text-gray-700"
+                            title="Copy phone number"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-white rounded-lg shadow-md border border-gray-200 p-8 text-center">
+                <p className="text-gray-600">No hub assigned to your account</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* STORE TAB */}
+        {activeTab === 'store' && (
+          <div className="space-y-6">
+            {tabLoading ? (
+              <div className="text-center py-12">
+                <div className="inline-block">
+                  <div className="w-8 h-8 border-3 border-gray-300 border-t-indigo-600 rounded-full animate-spin"></div>
+                </div>
+                <p className="mt-4 text-gray-600">Loading Store Details...</p>
+              </div>
+            ) : store ? (
+              <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
+                {/* Store Header */}
+                <div className="bg-gradient-to-r from-green-600 to-green-700 p-6 text-white">
+                  <h2 className="text-3xl font-bold mb-2">{store.store_name}</h2>
+                  <p className="text-green-100">Store ID: {store.id}</p>
+                </div>
+
+                {/* Store Details */}
+                <div className="p-6 space-y-6">
+                  {/* Location Section */}
+                  <div className="border-l-4 border-green-600 pl-4">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-3">Location Details</h3>
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-sm text-gray-600 mb-1">Full Address</p>
+                        <p className="text-base font-medium text-gray-900">{store.location}</p>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                        <div>
+                          <p className="text-sm text-gray-600 mb-1">City</p>
+                          <p className="text-base font-medium text-gray-900">{store.city}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-600 mb-1">State</p>
+                          <p className="text-base font-medium text-gray-900">{store.state}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-600 mb-1">Pincode</p>
+                          <p className="text-base font-medium text-gray-900">{store.pincode}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-600 mb-1">Coordinates</p>
+                          <p className="text-base font-medium text-gray-900">
+                            {store.latitude && store.longitude ? `${store.latitude.toFixed(4)}, ${store.longitude.toFixed(4)}` : 'N/A'}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => navigateToLocation(store.latitude, store.longitude, store.store_name)}
+                        className="mt-4 w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition flex items-center justify-center gap-2"
+                      >
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                        </svg>
+                        Navigate to Store on Google Maps
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Store Contact Section */}
+                  <div className="border-l-4 border-blue-600 pl-4">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-3">Store Contact Details</h3>
+                    <div className="bg-blue-50 rounded-lg p-4 space-y-4">
+                      <div>
+                        <p className="text-sm text-gray-600 mb-1">Contact Person</p>
+                        <p className="text-base font-medium text-gray-900">{store.contact_person}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600 mb-1">Contact Number</p>
+                        <div className="flex items-center gap-2">
+                          <a
+                            href={`tel:${store.contact_phone}`}
+                            className="text-base font-medium text-indigo-600 hover:text-indigo-700 flex items-center gap-2"
+                          >
+                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773c.58 1.694 2.133 3.247 3.827 3.827l.773-1.548a1 1 0 011.06-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 4 14.18 4 9.5V5a1 1 0 011-1h2.153z" />
+                            </svg>
+                            {store.contact_phone}
+                          </a>
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(store.contact_phone);
+                              alert('Phone number copied!');
+                            }}
+                            className="text-gray-500 hover:text-gray-700"
+                            title="Copy phone number"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                      {store.store_manager_name && (
+                        <div>
+                          <p className="text-sm text-gray-600 mb-1">Store Manager</p>
+                          <p className="text-base font-medium text-gray-900">{store.store_manager_name}</p>
+                        </div>
+                      )}
+                      {store.store_manager_phone && (
+                        <div>
+                          <p className="text-sm text-gray-600 mb-1">Store Manager Phone</p>
+                          <div className="flex items-center gap-2">
+                            <a
+                              href={`tel:${store.store_manager_phone}`}
+                              className="text-base font-medium text-indigo-600 hover:text-indigo-700 flex items-center gap-2"
+                            >
+                              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773c.58 1.694 2.133 3.247 3.827 3.827l.773-1.548a1 1 0 011.06-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 4 14.18 4 9.5V5a1 1 0 011-1h2.153z" />
+                              </svg>
+                              {store.store_manager_phone}
+                            </a>
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(store.store_manager_phone);
+                                alert('Phone number copied!');
+                              }}
+                              className="text-gray-500 hover:text-gray-700"
+                              title="Copy phone number"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-white rounded-lg shadow-md border border-gray-200 p-8 text-center">
+                <p className="text-gray-600">No store assigned to your account</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* DASHBOARD TAB */}
+        {activeTab === 'dashboard' && (
+          <>
         {/* SECTION 1: Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
@@ -934,6 +1310,8 @@ export default function RiderDashboard() {
               </table>
             </div>
           </div>
+        )}
+          </>
         )}
       </div>
 
