@@ -52,15 +52,15 @@ export default function RequestAdvanceModal({
         throw new Error('Rider CEE ID not found. Please refresh and try again.');
       }
 
-      const response = await fetch('/api/payroll/deductions', {
+      const response = await fetch('/api/advances', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          cee_id: ceeId,
-          entry_type: 'advance',
+          ceeId: ceeId,
+          riderName: rider.full_name,
+          storeLocation: formData.storeLocation,
           amount: amount,
-          description: formData.reason,
-          status: 'pending',
+          reason: formData.reason,
         }),
       });
 

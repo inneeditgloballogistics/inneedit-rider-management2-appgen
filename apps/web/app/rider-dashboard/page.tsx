@@ -303,14 +303,16 @@ export default function RiderDashboard() {
       setOrderStats(ordersData.stats);
 
       // Fetch payouts using ceeId ONLY
+      let payoutsData: Payout[] = [];
       const payoutsRes = await fetch(`/api/payouts?ceeId=${ceeId || ''}`);
       if (!payoutsRes.ok) {
         console.error('Payouts fetch error:', payoutsRes.status);
         setPayouts([]);
       } else {
-        const payoutsData = await payoutsRes.json();
-        console.log('Payouts data fetched:', payoutsData);
-        setPayouts(Array.isArray(payoutsData) ? payoutsData : []);
+        const response = await payoutsRes.json();
+        console.log('Payouts data fetched:', response);
+        payoutsData = Array.isArray(response) ? response : [];
+        setPayouts(payoutsData);
       }
       
       // Set current week's payout - prioritize finalized payouts, then most recent
@@ -340,25 +342,25 @@ export default function RiderDashboard() {
         }
       }
 
-      // Fetch referrals using ceeId ONLY
-      const referralsRes = await fetch(`/api/referrals?ceeId=${ceeId || ''}`);
+      // Fetch referrals using ceeId
+      const referralsRes = await fetch(`/api/referrals?riderId=${ceeId || ''}`);
       const referralsData = await referralsRes.json();
-      setReferrals(referralsData);
+      setReferrals(Array.isArray(referralsData) ? referralsData : []);
 
       // Fetch deductions using ceeId ONLY
       const deductionsRes = await fetch(`/api/deductions?ceeId=${ceeId || ''}`);
       const deductionsData = await deductionsRes.json();
-      setDeductions(deductionsData.deductions);
+      setDeductions(Array.isArray(deductionsData.deductions) ? deductionsData.deductions : []);
 
       // Fetch incentives using ceeId ONLY
       const incentivesRes = await fetch(`/api/incentives?ceeId=${ceeId || ''}`);
       const incentivesData = await incentivesRes.json();
-      setIncentives(incentivesData.incentives);
+      setIncentives(Array.isArray(incentivesData.incentives) ? incentivesData.incentives : []);
 
       // Fetch advances using ceeId ONLY
       const advancesRes = await fetch(`/api/advances?ceeId=${ceeId || ''}`);
       const advancesData = await advancesRes.json();
-      setAdvances(advancesData);
+      setAdvances(Array.isArray(advancesData) ? advancesData : []);
 
 
     } catch (error) {

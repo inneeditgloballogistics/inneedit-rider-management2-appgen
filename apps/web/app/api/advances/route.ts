@@ -11,8 +11,8 @@ export async function GET(request: NextRequest) {
     // If action is count, return only pending advances count
     if (action === 'count') {
       const countResult = await sql`
-        SELECT COUNT(*) as count FROM advances 
-        WHERE status = 'pending'
+        SELECT COUNT(*) as count FROM deductions 
+        WHERE status = 'pending' AND entry_type = 'advance'
       `;
       return NextResponse.json({ pendingCount: parseInt(countResult[0].count) });
     }
@@ -20,20 +20,21 @@ export async function GET(request: NextRequest) {
     let query;
     if (ceeId) {
       query = sql`
-        SELECT * FROM advances 
-        WHERE cee_id = ${ceeId}
-        ORDER BY requested_at DESC
+        SELECT * FROM deductions 
+        WHERE cee_id = ${ceeId} AND entry_type = 'advance'
+        ORDER BY created_at DESC
       `;
     } else if (status) {
       query = sql`
-        SELECT * FROM advances 
-        WHERE status = ${status}
-        ORDER BY requested_at DESC
+        SELECT * FROM deductions 
+        WHERE status = ${status} AND entry_type = 'advance'
+        ORDER BY created_at DESC
       `;
     } else {
       query = sql`
-        SELECT * FROM advances 
-        ORDER BY requested_at DESC
+        SELECT * FROM deductions 
+        WHERE entry_type = 'advance'
+        ORDER BY created_at DESC
       `;
     }
 
@@ -54,9 +55,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'CEE ID is required' }, { status: 400 });
     }
 
+    const description = `Advance request: ${reason} - Store: ${storeLocation}`;
+
     const result = await sql`
-      INSERT INTO advances (cee_id, rider_name, store_location, amount, reason, requested_at)
-      VALUES (${ceeId}, ${riderName}, ${storeLocation}, ${amount}, ${reason}, CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')
+      INSERT INTO deductions (cee_id, amount, description, entry_date, entry_type, status)
+      VALUES (${ceeId}, ${amount}, ${description}, CURRENT_DATE, 'advance', 'pending')
       RETURNING *
     `;
 
@@ -81,15 +84,12 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json();
-    const { id, status, processedBy, adminNotes } = body;
+    const { id, status } = body;
 
     const result = await sql`
-      UPDATE advances 
-      SET status = ${status}, 
-          processed_at = CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata',
-          processed_by = ${processedBy || null},
-          admin_notes = ${adminNotes || null}
-      WHERE id = ${id}
+      UPDATE deductions 
+      SET status = ${status}
+      WHERE id = ${id} AND entry_type = 'advance'
       RETURNING *
     `;
 
