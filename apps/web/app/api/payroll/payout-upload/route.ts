@@ -30,17 +30,31 @@ export async function POST(request: Request) {
           continue; // Skip if rider doesn't exist
         }
 
-        // Insert into a payout entries table (we'll create this)
-        await sql`
-          INSERT INTO payout_entries (year, month, week, cee_id, rider_name, orders_delivered, attendance, base_payout, cod, created_at)
-          VALUES (${year}, ${month}, ${week}, ${cee_id}, ${rider_name}, ${orders_delivered}, ${attendance}, ${base_payout}, ${cod || 0}, NOW())
-          ON CONFLICT (year, month, week, cee_id) DO UPDATE SET
-            orders_delivered = EXCLUDED.orders_delivered,
-            attendance = EXCLUDED.attendance,
-            base_payout = EXCLUDED.base_payout,
-            cod = EXCLUDED.cod,
-            created_at = NOW()
+        // Check if entry already exists for this week
+        const existingEntry = await sql`
+          SELECT id FROM payout_entries 
+          WHERE year = ${year} AND month = ${month} AND week = ${week} AND cee_id = ${cee_id}
         `;
+
+        if (existingEntry.length > 0) {
+          // Update existing entry
+          await sql`
+            UPDATE payout_entries
+            SET rider_name = ${rider_name},
+                orders_delivered = ${orders_delivered || 0},
+                attendance = ${attendance || 0},
+                base_payout = ${base_payout},
+                cod = ${cod || 0},
+                updated_at = NOW()
+            WHERE year = ${year} AND month = ${month} AND week = ${week} AND cee_id = ${cee_id}
+          `;
+        } else {
+          // Insert new entry
+          await sql`
+            INSERT INTO payout_entries (year, month, week, cee_id, rider_name, orders_delivered, attendance, base_payout, cod, created_at, updated_at)
+            VALUES (${year}, ${month}, ${week}, ${cee_id}, ${rider_name}, ${orders_delivered || 0}, ${attendance || 0}, ${base_payout}, ${cod || 0}, NOW(), NOW())
+          `;
+        }
 
         uploadCount++;
       } catch (error) {
