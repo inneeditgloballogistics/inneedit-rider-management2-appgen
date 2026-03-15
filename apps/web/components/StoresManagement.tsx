@@ -353,7 +353,7 @@ export default function StoresManagement() {
               <div><strong>Manager Phone:</strong> {viewItem.store_manager_phone}</div>
               <div><strong>Status:</strong> {viewItem.status}</div>
               {viewItem.latitude && viewItem.longitude && (
-                <div><strong>Coordinates:</strong> Lat: {viewItem.latitude.toFixed(4)}, Lng: {viewItem.longitude.toFixed(4)}</div>
+                <div><strong>Coordinates:</strong> Lat: {(typeof viewItem.latitude === 'number' ? viewItem.latitude : parseFloat(viewItem.latitude)).toFixed(4)}, Lng: {(typeof viewItem.longitude === 'number' ? viewItem.longitude : parseFloat(viewItem.longitude)).toFixed(4)}</div>
               )}
               {viewItem.latitude && viewItem.longitude && (
                 <div className="pt-4 border-t border-slate-200">

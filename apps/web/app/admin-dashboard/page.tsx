@@ -56,6 +56,9 @@ function AdminDashboardContent() {
 
   const [storesForRider, setStoresForRider] = useState<any[]>([]);
   const [vehiclesForRider, setVehiclesForRider] = useState<any[]>([]);
+  const [hubsList, setHubsList] = useState<any[]>([]);
+  const [storesList, setStoresList] = useState<any[]>([]);
+  const [vehiclesList, setVehiclesList] = useState<any[]>([]);
   
   const [ridersCount, setRidersCount] = useState(0);
   const [vehiclesCount, setVehiclesCount] = useState(0);
@@ -233,6 +236,25 @@ function AdminDashboardContent() {
         } catch (error) {
           console.error('Error fetching riders:', error);
         }
+      }
+    }
+    if (type === 'rider') {
+      // Fetch hubs, stores, and vehicles for assignment
+      try {
+        const [hubsRes, storesRes, vehiclesRes] = await Promise.all([
+          fetch('/api/hubs'),
+          fetch('/api/stores'),
+          fetch('/api/vehicles')
+        ]);
+        const hubsData = await hubsRes.json();
+        const storesData = await storesRes.json();
+        const vehiclesData = await vehiclesRes.json();
+        
+        setHubsList(hubsData || []);
+        setStoresList(storesData || []);
+        setVehiclesList(vehiclesData || []);
+      } catch (error) {
+        console.error('Error fetching hubs/stores/vehicles:', error);
       }
     }
     setShowEditModal(true);
@@ -1377,7 +1399,36 @@ function AdminDashboardContent() {
                       <input value={editItem.ifsc_code || ''} onChange={(e) => setEditItem({...editItem, ifsc_code: e.target.value})} placeholder="IFSC Code" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
                     </div>
 
-                    <h4 className="font-semibold text-slate-900 border-b pb-2 text-sm uppercase pt-2">Assignment & Vehicle</h4>
+                    <h4 className="font-semibold text-slate-900 border-b pb-2 text-sm uppercase pt-2">Assignment</h4>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-900 mb-2">Assign Hub</label>
+                      <select value={editItem.assigned_hub_id || ''} onChange={(e) => setEditItem({...editItem, assigned_hub_id: e.target.value ? parseInt(e.target.value) : null})} className="w-full px-3 py-2 border border-slate-300 rounded-lg">
+                        <option value="">Select Hub</option>
+                        {hubsList.map((hub: any) => (
+                          <option key={hub.id} value={hub.id}>{hub.hub_name} ({hub.hub_code})</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-900 mb-2">Assign Store</label>
+                      <select value={editItem.store_id || ''} onChange={(e) => setEditItem({...editItem, store_id: e.target.value ? parseInt(e.target.value) : null})} className="w-full px-3 py-2 border border-slate-300 rounded-lg">
+                        <option value="">Select Store</option>
+                        {storesList.map((store: any) => (
+                          <option key={store.id} value={store.id}>{store.store_name} ({store.store_code})</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-900 mb-2">Assign Vehicle</label>
+                      <select value={editItem.assigned_vehicle_id || ''} onChange={(e) => setEditItem({...editItem, assigned_vehicle_id: e.target.value ? parseInt(e.target.value) : null})} className="w-full px-3 py-2 border border-slate-300 rounded-lg">
+                        <option value="">Select Vehicle</option>
+                        {vehiclesList.map((vehicle: any) => (
+                          <option key={vehicle.id} value={vehicle.id}>{vehicle.vehicle_number} ({vehicle.vehicle_type})</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <h4 className="font-semibold text-slate-900 border-b pb-2 text-sm uppercase pt-2">Vehicle Details</h4>
                     <div>
                       <label className="block text-sm font-semibold text-slate-900 mb-2">Vehicle Ownership</label>
                       <select value={editItem.vehicle_ownership || ''} onChange={(e) => setEditItem({...editItem, vehicle_ownership: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg">
