@@ -83,8 +83,8 @@ export async function POST(request: Request) {
         LIMIT 1
       `;
       
-      console.log('🔍 Rider Info Query - Searching for rider_id:', rider_id, 'and cee_id:', resolvedCeeId);
-      console.log('🔍 Rider Info Found:', riderInfo);
+      console.log('Rider Info Query - Searching for rider_id:', rider_id, 'and cee_id:', resolvedCeeId);
+      console.log('Rider Info Found:', riderInfo);
       
       const cee_id = riderInfo?.[0]?.cee_id || rider_id;
       const full_name = riderInfo?.[0]?.full_name || 'Unknown';
@@ -94,13 +94,13 @@ export async function POST(request: Request) {
       const isLeader = riderInfo?.[0]?.is_leader || false; // Check if rider is a leader
       const leaderDiscountPercentage = riderInfo?.[0]?.leader_discount_percentage || 0; // Get leader discount percentage
       
-      console.log('🔍 Rider Details:', { cee_id, full_name, vehicleOwnership, evType, storedEvDailyRent });
+      console.log('Rider Details:', { cee_id, full_name, vehicleOwnership, evType, storedEvDailyRent });
       
       // Parse and normalize join_date to midnight UTC for proper date comparison
       let riderJoinDate: Date | null = null;
       if (riderInfo?.[0]?.join_date) {
         const joinDateStr = riderInfo[0].join_date;
-        console.log('🔍 Parsing join_date:', joinDateStr);
+        console.log('Parsing join_date:', joinDateStr);
         
         // Handle ISO string format "2026-03-01T00:00:00.000Z"
         const dateObj = new Date(joinDateStr);
@@ -110,15 +110,15 @@ export async function POST(request: Request) {
           const month = dateObj.getUTCMonth() + 1;
           const day = dateObj.getUTCDate();
           riderJoinDate = new Date(Date.UTC(year, month - 1, day));
-          console.log('✅ Parsed join_date to:', riderJoinDate.toISOString().split('T')[0]);
+          console.log('Parsed join_date to:', riderJoinDate.toISOString().split('T')[0]);
         } else {
-          console.warn('⚠️ Invalid join_date format:', joinDateStr);
+          console.warn('Invalid join_date format:', joinDateStr);
         }
       }
       
-      console.log("🔍 Deductions Query Debug - Looking for rider_id:", rider_id, "or cee_id:", cee_id);
+      console.log("Deductions Query Debug - Looking for rider_id:", rider_id, "or cee_id:", cee_id);
       
-      console.log("🔍 === DEDUCTIONS QUERY DEBUG ===");
+      console.log("=== DEDUCTIONS QUERY DEBUG ===");
       console.log("Looking for deductions with rider_id:", rider_id, "or cee_id:", cee_id, "or resolvedCeeId:", resolvedCeeId);
       
       if (start_date && end_date) {
@@ -197,7 +197,7 @@ export async function POST(request: Request) {
           evTypeLabel = 'Fixed Battery';
         } else {
           // Don't generate entries if we can't determine daily rent
-          console.log('⚠️ Cannot determine daily rent for rider:', { evType, storedEvDailyRent });
+          console.log('Cannot determine daily rent for rider:', { evType, storedEvDailyRent });
           baseDailyRent = 0;
         }
         
@@ -206,9 +206,10 @@ export async function POST(request: Request) {
         if (isLeader && leaderDiscountPercentage > 0) {
           const discountAmount = baseDailyRent * (leaderDiscountPercentage / 100);
           dailyRent = baseDailyRent - discountAmount;
-          console.log(`💰 Leader Discount Applied: ₹${baseDailyRent} - ${leaderDiscountPercentage}% = ₹${dailyRent.toFixed(2)}`);\n        }
+          console.log('Leader Discount Applied: Rs' + baseDailyRent + ' - ' + leaderDiscountPercentage + '% = Rs' + dailyRent.toFixed(2));
+        }
 
-        console.log('🚗 Vehicle Rent Debug:', {
+        console.log('Vehicle Rent Debug:', {
           rider_id,
           cee_id,
           vehicleOwnership,
@@ -239,7 +240,7 @@ export async function POST(request: Request) {
           while (currentDate <= endDateObj) {
             // Skip if rider hasn't joined yet
             if (riderJoinDate && currentDate < riderJoinDate) {
-              console.log(`⏭️  Skipping ${currentDate.toISOString().split('T')[0]} - rider hasn't joined yet (join_date: ${riderJoinDate.toISOString().split('T')[0]})`);
+              console.log('Skipping ' + currentDate.toISOString().split('T')[0] + ' - rider has not joined yet (join_date: ' + riderJoinDate.toISOString().split('T')[0] + ')');
               currentDate.setUTCDate(currentDate.getUTCDate() + 1);
               continue;
             }
@@ -266,13 +267,13 @@ export async function POST(request: Request) {
             
             entries.push(vehicleRentEntry);
             daysAdded++;
-            console.log(`✅ Added vehicle rent for ${dateStr}: ₹${dailyRent}`);
+            console.log('Added vehicle rent for ' + dateStr + ': Rs' + dailyRent);
             
             // Move to next day
             currentDate.setUTCDate(currentDate.getUTCDate() + 1);
           }
           
-          console.log(`📊 Total vehicle rent days added for ${cee_id}: ${daysAdded} days`);
+          console.log('Total vehicle rent days added for ' + cee_id + ': ' + daysAdded + ' days');
         }
       }
     } catch (e) {
