@@ -78,7 +78,7 @@ export async function POST(request: Request) {
       
       // First get the rider info to find cee_id and vehicle rent
       const riderInfo = await sql`
-        SELECT cee_id, full_name, vehicle_ownership, ev_daily_rent, ev_type, join_date FROM riders 
+        SELECT cee_id, full_name, vehicle_ownership, ev_daily_rent, ev_type, join_date, is_leader, leader_discount_percentage FROM riders 
         WHERE user_id = ${rider_id} OR cee_id = ${rider_id} OR cee_id = ${resolvedCeeId}
         LIMIT 1
       `;
@@ -91,6 +91,8 @@ export async function POST(request: Request) {
       const vehicleOwnership = riderInfo?.[0]?.vehicle_ownership;
       const storedEvDailyRent = riderInfo?.[0]?.ev_daily_rent || null;
       const evType = riderInfo?.[0]?.ev_type; // Get the EV type (sunmobility_swap or fixed_battery)
+      const isLeader = riderInfo?.[0]?.is_leader || false; // Check if rider is a leader
+      const leaderDiscountPercentage = riderInfo?.[0]?.leader_discount_percentage || 0; // Get leader discount percentage
       
       console.log('🔍 Rider Details:', { cee_id, full_name, vehicleOwnership, evType, storedEvDailyRent });
       
@@ -181,23 +183,30 @@ export async function POST(request: Request) {
         }
 
         // Determine daily rent: use stored value first, then default based on EV type
-        let dailyRent = 0;
+        let baseDailyRent = 0;
         let evTypeLabel = '';
         
         if (storedEvDailyRent && storedEvDailyRent > 0) {
-          dailyRent = Number(storedEvDailyRent);
+          baseDailyRent = Number(storedEvDailyRent);
           evTypeLabel = evType === 'sunmobility_swap' ? 'Sunmobility Swap' : 'Fixed Battery';
         } else if (evType === 'sunmobility_swap') {
-          dailyRent = 243;
+          baseDailyRent = 243;
           evTypeLabel = 'Sunmobility Swap';
         } else if (evType === 'fixed_battery') {
-          dailyRent = 215;
+          baseDailyRent = 215;
           evTypeLabel = 'Fixed Battery';
         } else {
           // Don't generate entries if we can't determine daily rent
           console.log('⚠️ Cannot determine daily rent for rider:', { evType, storedEvDailyRent });
-          dailyRent = 0;
+          baseDailyRent = 0;
         }
+        
+        // Apply leader discount if applicable
+        let dailyRent = baseDailyRent;
+        if (isLeader && leaderDiscountPercentage > 0) {
+          const discountAmount = baseDailyRent * (leaderDiscountPercentage / 100);
+          dailyRent = baseDailyRent - discountAmount;
+          console.log(`💰 Leader Discount Applied: ₹${baseDailyRent} - ${leaderDiscountPercentage}% = ₹${dailyRent.toFixed(2)}`);
 
         console.log('🚗 Vehicle Rent Debug:', {
           rider_id,
@@ -205,7 +214,10 @@ export async function POST(request: Request) {
           vehicleOwnership,
           evType,
           storedEvDailyRent,
+          baseDailyRent,
           evTypeLabel,
+          isLeader,
+          leaderDiscountPercentage,
           dailyRent,
           willGenerate: dailyRent > 0,
           riderJoinDate: riderJoinDate?.toISOString().split('T')[0],
