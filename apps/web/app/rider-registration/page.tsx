@@ -194,13 +194,33 @@ Details: ${result.details}` : '';
         throw new Error(errorMsg + details);
       }
 
-      // Show success message and redirect
+      // Show success message and reset form
       alert(`Rider ${formData.fullName} registered successfully with CEE ID: ${result.ceeId}`);
       
-      // Redirect to hub management page after successful registration
-      setTimeout(() => {
-        router.push('/hub-management');
-      }, 500);
+      // Reset form after successful registration
+      setFormData({
+        fullName: '',
+        dob: '',
+        joinDate: '',
+        mobile: '',
+        email: '',
+        address: '',
+        client: '',
+        ceeId: '',
+        assignedHub: '',
+        storeLocation: '',
+        vehicle: '',
+        bankAccount: '',
+        ifscCode: '',
+        beneficiaryName: '',
+        vehicleOwnership: 'company_ev',
+        evType: 'fixed_battery',
+        evDailyRent: '215',
+        isLeader: false,
+        leaderDiscount: '0'
+      });
+      setDlFile(null);
+      setAadharFile(null);
     } catch (error: any) {
       console.error('Error registering rider:', error);
       const errorMessage = error?.message || 'Failed to register rider. Please try again.';
