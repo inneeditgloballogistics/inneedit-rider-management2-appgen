@@ -216,10 +216,13 @@ function AdminDashboardContent() {
       // Fetch available riders if assigning
       if (item.showAssignModal) {
         try {
-          const res = await fetch('/api/riders?status=active');
+          const res = await fetch('/api/riders');
           const data = await res.json();
-          setAvailableRiders(data.riders || []);
+          // Filter riders who don't have a vehicle assigned
+          const unassignedRiders = (data.riders || []).filter((rider: any) => !rider.assigned_vehicle_id);
+          setAvailableRiders(unassignedRiders);
           setSelectedRiderId('');
+          console.log('Available riders:', unassignedRiders);
         } catch (error) {
           console.error('Error fetching riders:', error);
         }
@@ -1265,17 +1268,17 @@ function AdminDashboardContent() {
 
         {showEditModal && editItem && (
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6 border-b border-slate-200 flex items-center justify-between sticky top-0 bg-white z-10">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-xl w-full">
+              <div className="p-6 border-b border-slate-200 flex items-center justify-between">
                 <div>
-                  <h3 className="text-xl font-bold text-slate-900">Edit {editItem.type}</h3>
+                  <h3 className="text-2xl font-bold text-slate-900">Edit {editItem.type === 'vehicle' && editItem.showAssignModal ? 'vehicle' : editItem.type}</h3>
                   <p className="text-xs text-slate-500 mt-1"><span className="text-red-600 font-bold">*</span> = Required fields</p>
                 </div>
                 <button onClick={() => setShowEditModal(false)} className="p-1 hover:bg-slate-100 rounded">
-                  <i className="ph-bold ph-x text-xl"></i>
+                  <i className="ph-bold ph-x text-2xl"></i>
                 </button>
               </div>
-              <form onSubmit={handleUpdateSubmit} className="p-6 space-y-4">
+              <form onSubmit={handleUpdateSubmit} className="p-6 space-y-4 max-h-[calc(90vh-120px)] overflow-y-auto">
                 {editItem.type === 'rider' && (
                   <>
                     <h4 className="font-semibold text-slate-900 border-b pb-2 text-sm uppercase">Personal Information</h4>
@@ -1418,37 +1421,36 @@ function AdminDashboardContent() {
                   <>
                     {editItem.showAssignModal ? (
                       <>
-                        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg mb-4">
-                          <p className="text-sm font-semibold text-blue-900">Vehicle: <span className="font-bold">{editItem.vehicle_number}</span></p>
-                          <p className="text-sm text-blue-800 mt-1">{editItem.vehicle_type} - {editItem.model}</p>
-                        </div>
-
-                        <div className="mb-6">
-                          <img 
-                            src="https://app-cdn.appgen.com/c8d1da7a-8da9-4a1f-8aaa-2cb65f828731/assets/uploaded_1773561260421_l599dh.jpeg" 
-                            alt="Edit vehicle modal reference"
-                            className="w-full rounded-lg border border-slate-200 shadow-sm mb-4"
-                          />
+                        <div className="p-4 bg-blue-100 border border-blue-300 rounded-xl mb-6">
+                          <p className="text-sm font-bold text-blue-900">Vehicle: <span className="font-black">{editItem.vehicle_number}</span></p>
+                          <p className="text-sm text-blue-900 mt-2">{editItem.vehicle_type}, {editItem.model}</p>
                         </div>
 
                         <div>
-                          <label className="block text-sm font-semibold text-slate-900 mb-2">Select Rider <span className="text-red-600">*</span></label>
-                          <select
-                            value={selectedRiderId}
-                            onChange={(e) => setSelectedRiderId(e.target.value)}
-                            className="w-full px-3 py-2 border-2 border-orange-300 rounded-full focus:outline-none focus:ring-2 focus:ring-brand-600 text-base"
-                            required
-                          >
-                            <option value="">Choose a rider...</option>
-                            {availableRiders.map((rider: any) => (
-                              <option key={rider.id} value={rider.cee_id || rider.user_id}>
-                                {rider.full_name} ({rider.cee_id || rider.user_id})
-                              </option>
-                            ))}
-                          </select>
+                          <label className="block text-sm font-semibold text-slate-900 mb-3">Choose a rider...</label>
+                          {availableRiders.length === 0 ? (
+                            <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-900 text-sm">
+                              <p className="font-semibold">No unassigned riders available</p>
+                              <p className="text-xs mt-1">All riders currently have vehicles assigned, or no riders exist in the system.</p>
+                            </div>
+                          ) : (
+                            <select
+                              value={selectedRiderId}
+                              onChange={(e) => setSelectedRiderId(e.target.value)}
+                              className="w-full px-4 py-3 border-2 border-orange-400 rounded-full focus:outline-none focus:ring-2 focus:ring-orange-500 text-base font-medium text-slate-900 bg-white hover:border-orange-500 transition-colors"
+                              required
+                            >
+                              <option value="">Choose a rider...</option>
+                              {availableRiders.map((rider: any) => (
+                                <option key={rider.id} value={rider.cee_id || rider.user_id}>
+                                  {rider.full_name} ({rider.cee_id || rider.user_id})
+                                </option>
+                              ))}
+                            </select>
+                          )}
                         </div>
 
-                        <div className="flex gap-3 justify-end pt-4 border-t border-slate-200 sticky bottom-0 bg-white">
+                        <div className="flex gap-3 justify-end pt-6 border-t border-slate-300 mt-6">
                           <button
                             type="button"
                             onClick={() => {
@@ -1456,14 +1458,14 @@ function AdminDashboardContent() {
                               setEditItem(null);
                               setSelectedRiderId('');
                             }}
-                            className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 font-medium"
+                            className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-semibold text-sm"
                           >
                             Cancel
                           </button>
                           <button
                             type="button"
                             onClick={() => handleAssignRider(editItem.id, selectedRiderId)}
-                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium flex items-center gap-2"
+                            className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold text-sm flex items-center gap-2"
                           >
                             <i className="ph-bold ph-check text-lg"></i>
                             Assign Rider
@@ -1555,9 +1557,9 @@ function AdminDashboardContent() {
                           </div>
                         )}
 
-                        <div className="flex gap-3 justify-end pt-4 border-t border-slate-200 sticky bottom-0 bg-white">
-                          <button type="button" onClick={() => setShowEditModal(false)} className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 font-medium">Cancel</button>
-                          <button type="submit" className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium">Save</button>
+                        <div className="flex gap-3 justify-end pt-6 border-t border-slate-300 mt-6">
+                          <button type="button" onClick={() => setShowEditModal(false)} className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-semibold text-sm">Cancel</button>
+                          <button type="submit" className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 font-semibold text-sm">Save</button>
                         </div>
                       </>
                     )}
