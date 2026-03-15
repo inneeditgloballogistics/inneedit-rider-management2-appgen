@@ -1290,16 +1290,16 @@ function AdminDashboardContent() {
                   <>
                     <h4 className="font-semibold text-slate-900 border-b pb-2 text-sm uppercase">Personal Information</h4>
                     <div>
-                      <label className="block text-sm font-semibold text-slate-900 mb-2">Full Name <span className="text-red-600">*</span></label>
-                      <input value={editItem.full_name || ''} onChange={(e) => setEditItem({...editItem, full_name: e.target.value})} placeholder="Full Name" className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
+                      <label className="block text-sm font-semibold text-slate-900 mb-2">Full Name</label>
+                      <input value={editItem.full_name || ''} onChange={(e) => setEditItem({...editItem, full_name: e.target.value})} placeholder="Full Name" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-slate-900 mb-2">Email <span className="text-red-600">*</span></label>
-                      <input type="email" value={editItem.email || ''} onChange={(e) => setEditItem({...editItem, email: e.target.value})} placeholder="Email" className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
+                      <label className="block text-sm font-semibold text-slate-900 mb-2">Email</label>
+                      <input type="email" value={editItem.email || ''} onChange={(e) => setEditItem({...editItem, email: e.target.value})} placeholder="Email" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-slate-900 mb-2">Phone <span className="text-red-600">*</span></label>
-                      <input type="tel" value={editItem.phone || ''} onChange={(e) => setEditItem({...editItem, phone: e.target.value})} placeholder="Phone" className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
+                      <label className="block text-sm font-semibold text-slate-900 mb-2">Phone</label>
+                      <input type="tel" value={editItem.phone || ''} onChange={(e) => setEditItem({...editItem, phone: e.target.value})} placeholder="Phone" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
                     </div>
                     <div>
                       <label className="block text-sm font-semibold text-slate-900 mb-2">Date of Birth</label>
@@ -1321,82 +1321,82 @@ function AdminDashboardContent() {
 
                     <h4 className="font-semibold text-slate-900 border-b pb-2 text-sm uppercase pt-2">Address Information</h4>
                     <div>
-                      <label className="block text-sm font-semibold text-slate-900 mb-2">Address <span className="text-red-600">*</span></label>
-                      <input value={editItem.address || ''} onChange={(e) => setEditItem({...editItem, address: e.target.value})} placeholder="Address" className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
+                      <label className="block text-sm font-semibold text-slate-900 mb-2">Address</label>
+                      <input value={editItem.address || ''} onChange={(e) => setEditItem({...editItem, address: e.target.value})} placeholder="Address" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-sm font-semibold text-slate-900 mb-2">City <span className="text-red-600">*</span></label>
-                        <input value={editItem.city || ''} onChange={(e) => setEditItem({...editItem, city: e.target.value})} placeholder="City" className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
+                        <label className="block text-sm font-semibold text-slate-900 mb-2">City</label>
+                        <input value={editItem.city || ''} onChange={(e) => setEditItem({...editItem, city: e.target.value})} placeholder="City" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
                       </div>
                       <div>
-                        <label className="block text-sm font-semibold text-slate-900 mb-2">State <span className="text-red-600">*</span></label>
-                        <input value={editItem.state || ''} onChange={(e) => setEditItem({...editItem, state: e.target.value})} placeholder="State" className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
+                        <label className="block text-sm font-semibold text-slate-900 mb-2">State</label>
+                        <input value={editItem.state || ''} onChange={(e) => setEditItem({...editItem, state: e.target.value})} placeholder="State" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-slate-900 mb-2">Pincode <span className="text-red-600">*</span></label>
-                      <input value={editItem.pincode || ''} onChange={(e) => setEditItem({...editItem, pincode: e.target.value})} placeholder="Pincode" className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
+                      <label className="block text-sm font-semibold text-slate-900 mb-2">Pincode</label>
+                      <input value={editItem.pincode || ''} onChange={(e) => setEditItem({...editItem, pincode: e.target.value})} placeholder="Pincode" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
                     </div>
 
                     <h4 className="font-semibold text-slate-900 border-b pb-2 text-sm uppercase pt-2">Emergency Contact</h4>
                     <div>
-                      <label className="block text-sm font-semibold text-slate-900 mb-2">Emergency Contact Name <span className="text-red-600">*</span></label>
-                      <input value={editItem.emergency_contact_name || ''} onChange={(e) => setEditItem({...editItem, emergency_contact_name: e.target.value})} placeholder="Emergency Contact Name" className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
+                      <label className="block text-sm font-semibold text-slate-900 mb-2">Emergency Contact Name</label>
+                      <input value={editItem.emergency_contact_name || ''} onChange={(e) => setEditItem({...editItem, emergency_contact_name: e.target.value})} placeholder="Emergency Contact Name" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-slate-900 mb-2">Emergency Contact Phone <span className="text-red-600">*</span></label>
-                      <input type="tel" value={editItem.emergency_contact_phone || ''} onChange={(e) => setEditItem({...editItem, emergency_contact_phone: e.target.value})} placeholder="Emergency Contact Phone" className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
+                      <label className="block text-sm font-semibold text-slate-900 mb-2">Emergency Contact Phone</label>
+                      <input type="tel" value={editItem.emergency_contact_phone || ''} onChange={(e) => setEditItem({...editItem, emergency_contact_phone: e.target.value})} placeholder="Emergency Contact Phone" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
                     </div>
 
                     <h4 className="font-semibold text-slate-900 border-b pb-2 text-sm uppercase pt-2">Documents</h4>
                     <div>
-                      <label className="block text-sm font-semibold text-slate-900 mb-2">Driving License Number <span className="text-red-600">*</span></label>
-                      <input value={editItem.driving_license_number || ''} onChange={(e) => setEditItem({...editItem, driving_license_number: e.target.value})} placeholder="Driving License Number" className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
+                      <label className="block text-sm font-semibold text-slate-900 mb-2">Driving License Number</label>
+                      <input value={editItem.driving_license_number || ''} onChange={(e) => setEditItem({...editItem, driving_license_number: e.target.value})} placeholder="Driving License Number" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-slate-900 mb-2">DL Expiry Date <span className="text-red-600">*</span></label>
-                      <input type="date" value={editItem.driving_license_expiry || ''} onChange={(e) => setEditItem({...editItem, driving_license_expiry: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
+                      <label className="block text-sm font-semibold text-slate-900 mb-2">DL Expiry Date</label>
+                      <input type="date" value={editItem.driving_license_expiry || ''} onChange={(e) => setEditItem({...editItem, driving_license_expiry: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-slate-900 mb-2">Aadhar Number <span className="text-red-600">*</span></label>
-                      <input value={editItem.aadhar_number || ''} onChange={(e) => setEditItem({...editItem, aadhar_number: e.target.value})} placeholder="Aadhar Number" className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
+                      <label className="block text-sm font-semibold text-slate-900 mb-2">Aadhar Number</label>
+                      <input value={editItem.aadhar_number || ''} onChange={(e) => setEditItem({...editItem, aadhar_number: e.target.value})} placeholder="Aadhar Number" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
                     </div>
 
                     <h4 className="font-semibold text-slate-900 border-b pb-2 text-sm uppercase pt-2">Bank Details</h4>
                     <div>
-                      <label className="block text-sm font-semibold text-slate-900 mb-2">Bank Name <span className="text-red-600">*</span></label>
-                      <input value={editItem.bank_name || ''} onChange={(e) => setEditItem({...editItem, bank_name: e.target.value})} placeholder="Bank Name" className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
+                      <label className="block text-sm font-semibold text-slate-900 mb-2">Bank Name</label>
+                      <input value={editItem.bank_name || ''} onChange={(e) => setEditItem({...editItem, bank_name: e.target.value})} placeholder="Bank Name" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-slate-900 mb-2">Account Number <span className="text-red-600">*</span></label>
-                      <input value={editItem.account_number || ''} onChange={(e) => setEditItem({...editItem, account_number: e.target.value})} placeholder="Account Number" className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
+                      <label className="block text-sm font-semibold text-slate-900 mb-2">Account Number</label>
+                      <input value={editItem.account_number || ''} onChange={(e) => setEditItem({...editItem, account_number: e.target.value})} placeholder="Account Number" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-slate-900 mb-2">IFSC Code <span className="text-red-600">*</span></label>
-                      <input value={editItem.ifsc_code || ''} onChange={(e) => setEditItem({...editItem, ifsc_code: e.target.value})} placeholder="IFSC Code" className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
+                      <label className="block text-sm font-semibold text-slate-900 mb-2">IFSC Code</label>
+                      <input value={editItem.ifsc_code || ''} onChange={(e) => setEditItem({...editItem, ifsc_code: e.target.value})} placeholder="IFSC Code" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
                     </div>
 
                     <h4 className="font-semibold text-slate-900 border-b pb-2 text-sm uppercase pt-2">Assignment & Vehicle</h4>
                     <div>
-                      <label className="block text-sm font-semibold text-slate-900 mb-2">Vehicle Ownership <span className="text-red-600">*</span></label>
-                      <select value={editItem.vehicle_ownership || ''} onChange={(e) => setEditItem({...editItem, vehicle_ownership: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg" required>
+                      <label className="block text-sm font-semibold text-slate-900 mb-2">Vehicle Ownership</label>
+                      <select value={editItem.vehicle_ownership || ''} onChange={(e) => setEditItem({...editItem, vehicle_ownership: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg">
                         <option value="">Select Vehicle Ownership</option>
                         <option value="company_ev">Company EV</option>
                         <option value="personal">Personal</option>
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-slate-900 mb-2">EV Type <span className="text-red-600">*</span></label>
-                      <select value={editItem.ev_type || ''} onChange={(e) => setEditItem({...editItem, ev_type: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg" required>
+                      <label className="block text-sm font-semibold text-slate-900 mb-2">EV Type</label>
+                      <select value={editItem.ev_type || ''} onChange={(e) => setEditItem({...editItem, ev_type: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg">
                         <option value="">Select EV Type</option>
                         <option value="sunmobility_swap">Sunmobility Swap (₹243/day)</option>
                         <option value="fixed_battery">Fixed Battery (₹215/day)</option>
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-slate-900 mb-2">Daily EV Rent (₹) <span className="text-red-600">*</span></label>
-                      <input type="number" step="0.01" value={editItem.ev_daily_rent || ''} onChange={(e) => setEditItem({...editItem, ev_daily_rent: e.target.value ? parseFloat(e.target.value) : null})} placeholder="Daily Rent in ₹" className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
+                      <label className="block text-sm font-semibold text-slate-900 mb-2">Daily EV Rent (₹)</label>
+                      <input type="number" step="0.01" value={editItem.ev_daily_rent || ''} onChange={(e) => setEditItem({...editItem, ev_daily_rent: e.target.value ? parseFloat(e.target.value) : null})} placeholder="Daily Rent in ₹" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
                     </div>
                     <label className="flex items-center gap-2 p-3 border border-slate-300 rounded-lg cursor-pointer hover:bg-slate-50">
                       <input type="checkbox" checked={editItem.is_leader || false} onChange={(e) => setEditItem({...editItem, is_leader: e.target.checked})} />
@@ -1411,8 +1411,8 @@ function AdminDashboardContent() {
 
                     <h4 className="font-semibold text-slate-900 border-b pb-2 text-sm uppercase pt-2">Other</h4>
                     <div>
-                      <label className="block text-sm font-semibold text-slate-900 mb-2">Client <span className="text-red-600">*</span></label>
-                      <input value={editItem.client || ''} onChange={(e) => setEditItem({...editItem, client: e.target.value})} placeholder="Client" className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
+                      <label className="block text-sm font-semibold text-slate-900 mb-2">Client</label>
+                      <input value={editItem.client || ''} onChange={(e) => setEditItem({...editItem, client: e.target.value})} placeholder="Client" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
                     </div>
                     <div>
                       <label className="block text-sm font-semibold text-slate-900 mb-2">Status</label>
