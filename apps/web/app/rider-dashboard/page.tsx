@@ -946,8 +946,8 @@ export default function RiderDashboard() {
                 </p>
                 <p className="text-3xl font-bold text-green-600 mt-2">
                   {currentPayrollWeek?.status === 'finalized'
-                    ? `₹${parseFloat(String(currentPayrollWeek.final_payout || currentPayrollWeek.net_payout || '0')).toFixed(0)}`
-                    : `₹${parseFloat(orderStats?.total_payout || '0').toFixed(0)}`}
+                    ? `₹${parseFloat((currentPayrollWeek.final_payout || currentPayrollWeek.net_payout || 0).toString()).toFixed(0)}`
+                    : `₹${parseFloat((orderStats?.total_payout || 0).toString()).toFixed(0)}`}
                 </p>
               </div>
               <Wallet className="w-12 h-12 text-green-100" />
@@ -1241,7 +1241,7 @@ export default function RiderDashboard() {
                   <p className="text-xs text-gray-600 font-medium">This Week Payout</p>
                   <p className="text-sm font-semibold text-indigo-600 mt-1">
                     ₹{currentPayrollWeek?.status === 'finalized'
-                      ? parseFloat(String(currentPayrollWeek.final_payout || currentPayrollWeek.net_payout || '0')).toFixed(2)
+                      ? parseFloat((currentPayrollWeek.final_payout || currentPayrollWeek.net_payout || 0).toString()).toFixed(2)
                       : stats?.finalPayout.toFixed(2) || '0.00'}
                   </p>
                   {currentPayrollWeek?.status !== 'finalized' && <p className="text-xs text-gray-500 mt-1">Estimated (Pending Approval)</p>}
