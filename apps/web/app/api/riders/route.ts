@@ -211,6 +211,7 @@ export async function PUT(request: NextRequest) {
         is_leader = ${otherFields.is_leader || false},
         leader_discount_percentage = ${otherFields.leader_discount_percentage || 0},
         status = ${otherFields.status || 'active'},
+        join_date = ${otherFields.join_date || null},
         onboarding_completed = ${onboarding_completed !== undefined ? onboarding_completed : null}
       WHERE id = ${id}
       RETURNING *
