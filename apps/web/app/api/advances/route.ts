@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import sql from '../utils/sql';
+import { getTodayIST } from '@/lib/timezone';
 
 export async function GET(request: NextRequest) {
   try {
@@ -56,10 +57,11 @@ export async function POST(request: NextRequest) {
     }
 
     const description = `Advance request: ${reason} - Store: ${storeLocation}`;
+    const todayIST = getTodayIST(); // Get today's date in IST (YYYY-MM-DD)
 
     const result = await sql`
       INSERT INTO deductions (cee_id, amount, description, entry_date, entry_type, status)
-      VALUES (${ceeId}, ${amount}, ${description}, CURRENT_DATE, 'advance', 'pending')
+      VALUES (${ceeId}, ${amount}, ${description}, ${todayIST}::date, 'advance', 'pending')
       RETURNING *
     `;
 
