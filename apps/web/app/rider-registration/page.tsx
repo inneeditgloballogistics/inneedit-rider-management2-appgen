@@ -196,6 +196,11 @@ Details: ${result.details}` : '';
 
       // Show success message and redirect
       alert(`Rider ${formData.fullName} registered successfully with CEE ID: ${result.ceeId}`);
+      
+      // Redirect to hub management page after successful registration
+      setTimeout(() => {
+        router.push('/hub-management');
+      }, 500);
     } catch (error: any) {
       console.error('Error registering rider:', error);
       const errorMessage = error?.message || 'Failed to register rider. Please try again.';
