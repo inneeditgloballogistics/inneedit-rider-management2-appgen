@@ -96,8 +96,8 @@ export async function POST(request: Request) {
         const allAdditions = parseFloat(additionsData[0]?.total || 0);
         const allDeductions = parseFloat(deductionsData[0]?.total || 0);
         
-        // Calculate vehicle rent and store in database
-        let vehicleRent = 0;
+        // OPTION 1: Calculate FINAL vehicle rent amount and store it (NOT the base + discount separately)
+        let totalVehicleRent = 0;
         if (vehicleOwnership === 'company_ev') {
           let riderJoinDate: Date | null = null;
           if (riderInfo[0]?.join_date) {
@@ -110,7 +110,7 @@ export async function POST(request: Request) {
             }
           }
           
-          // Get base daily rent before discount
+          // Get base daily rent
           let baseDailyRent = 0;
           const evDailyRent = riderInfo[0]?.ev_daily_rent || null;
           const evType = riderInfo[0]?.ev_type;
@@ -123,62 +123,59 @@ export async function POST(request: Request) {
             baseDailyRent = 215;
           }
           
-          // Apply leader discount if applicable
+          // Apply leader discount if applicable to get FINAL amount
           const isLeader = riderInfo[0]?.is_leader || false;
           const leaderDiscountPercentage = riderInfo[0]?.leader_discount_percentage || 0;
-          let dailyRent = baseDailyRent;
+          let finalDailyVehicleRentAmount = baseDailyRent;  // Start with base
           
           if (isLeader && leaderDiscountPercentage > 0) {
             const discountAmount = baseDailyRent * (leaderDiscountPercentage / 100);
-            dailyRent = baseDailyRent - discountAmount;
+            finalDailyVehicleRentAmount = baseDailyRent - discountAmount;
           }
           
-          if (dailyRent > 0) {
-            const startDate = new Date(`${startDateStr}T00:00:00Z`);
-            const endDate = new Date(`${endDateStr}T00:00:00Z`);
-            let currentDate = new Date(startDate);
-            
-            // Delete existing vehicle rent entries for this week first
-            await sql`
-              DELETE FROM vehicle_rent
-              WHERE cee_id = ${cee_id}
-              AND rent_date >= ${startDateStr}::date
-              AND rent_date <= ${endDateStr}::date
-            `;
-            
-            // Insert daily vehicle rent entries with discount info (NO hardcoding - store only parameters)
-            while (currentDate <= endDate) {
-              if (!riderJoinDate || currentDate >= riderJoinDate) {
-                const dateStr = currentDate.toISOString().split('T')[0];
-                
-                // Store ONLY the parameters (base_daily_rent and discount_percentage)
-                // Calculate the amount dynamically when needed
-                await sql`
-                  INSERT INTO vehicle_rent (
-                    cee_id,
-                    rent_date,
-                    base_daily_rent,
-                    discount_percentage,
-                    status,
-                    created_at
-                  ) VALUES (
-                    ${cee_id},
-                    ${dateStr}::date,
-                    ${baseDailyRent},
-                    ${leaderDiscountPercentage || 0},
-                    'AUTO DEDUCTED',
-                    NOW()
-                  )
-                `;
-                
-                vehicleRent += dailyRent;
-              }
-              currentDate.setUTCDate(currentDate.getUTCDate() + 1);
+          // Delete existing vehicle rent entries for this week first
+          await sql`
+            DELETE FROM vehicle_rent
+            WHERE cee_id = ${cee_id}
+            AND rent_date >= ${startDateStr}::date
+            AND rent_date <= ${endDateStr}::date
+          `;
+          
+          // Now insert DAILY records with the FINAL amount (no base_daily_rent or discount stored)
+          const startDateObj = new Date(`${startDateStr}T00:00:00Z`);
+          const endDateObj = new Date(`${endDateStr}T00:00:00Z`);
+          let currentDate = new Date(startDateObj);
+          
+          while (currentDate <= endDateObj) {
+            if (!riderJoinDate || currentDate >= riderJoinDate) {
+              const dateStr = currentDate.toISOString().split('T')[0];
+              
+              // OPTION 1: Store ONLY the final calculated amount
+              await sql`
+                INSERT INTO vehicle_rent (
+                  cee_id,
+                  rent_date,
+                  daily_rent_amount,
+                  description,
+                  status,
+                  created_at
+                ) VALUES (
+                  ${cee_id},
+                  ${dateStr}::date,
+                  ${finalDailyVehicleRentAmount},
+                  'Auto-deducted vehicle rent',
+                  'AUTO DEDUCTED',
+                  NOW()
+                )
+              `;
+              
+              totalVehicleRent += finalDailyVehicleRentAmount;
             }
+            currentDate.setUTCDate(currentDate.getUTCDate() + 1);
           }
         }
         
-        const finalAmount = allAdditions - allDeductions - vehicleRent;
+        const finalAmount = allAdditions - allDeductions - totalVehicleRent;
         const finalPayout = basePayout + finalAmount;
 
         // Check if payout exists

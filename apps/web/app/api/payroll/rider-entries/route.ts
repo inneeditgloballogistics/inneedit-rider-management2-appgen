@@ -72,13 +72,14 @@ export async function POST(request: Request) {
     } catch (e) {
       console.log('Additions query error (non-critical):', e);
     }
+
     // Fetch deductions and vehicle rent
     try {
       let deductions: any[] = [];
       
-      // First get the rider info to find cee_id and vehicle rent
+      // First get the rider info to find cee_id
       const riderInfo = await sql`
-        SELECT cee_id, full_name, vehicle_ownership, ev_daily_rent, ev_type, join_date, is_leader, leader_discount_percentage FROM riders 
+        SELECT cee_id, full_name, vehicle_ownership, join_date FROM riders 
         WHERE user_id = ${rider_id} OR cee_id = ${rider_id} OR cee_id = ${resolvedCeeId}
         LIMIT 1
       `;
@@ -89,12 +90,6 @@ export async function POST(request: Request) {
       const cee_id = riderInfo?.[0]?.cee_id || rider_id;
       const full_name = riderInfo?.[0]?.full_name || 'Unknown';
       const vehicleOwnership = riderInfo?.[0]?.vehicle_ownership;
-      const storedEvDailyRent = riderInfo?.[0]?.ev_daily_rent || null;
-      const evType = riderInfo?.[0]?.ev_type; // Get the EV type (sunmobility_swap or fixed_battery)
-      const isLeader = riderInfo?.[0]?.is_leader || false; // Check if rider is a leader
-      const leaderDiscountPercentage = riderInfo?.[0]?.leader_discount_percentage || 0; // Get leader discount percentage
-      
-      console.log('Rider Details:', { cee_id, full_name, vehicleOwnership, evType, storedEvDailyRent });
       
       // Parse and normalize join_date to midnight UTC for proper date comparison
       let riderJoinDate: Date | null = null;
@@ -117,7 +112,6 @@ export async function POST(request: Request) {
       }
       
       console.log("Deductions Query Debug - Looking for rider_id:", rider_id, "or cee_id:", cee_id);
-      
       console.log("=== DEDUCTIONS QUERY DEBUG ===");
       console.log("Looking for deductions with rider_id:", rider_id, "or cee_id:", cee_id, "or resolvedCeeId:", resolvedCeeId);
       
@@ -162,7 +156,7 @@ export async function POST(request: Request) {
       console.log("=== TOTAL DEDUCTIONS FOUND:", deductions.length);
       entries = [...entries, ...deductions];
       
-      // Fetch vehicle rent from database instead of calculating dynamically
+      // Fetch vehicle rent from database - OPTION 1: Just read the stored amount
       if (vehicleOwnership === 'company_ev' && start_date && end_date) {
         try {
           // Parse dates properly - handle both ISO and YYYY-MM-DD formats
@@ -191,8 +185,6 @@ export async function POST(request: Request) {
               id,
               cee_id,
               rent_date,
-              base_daily_rent,
-              discount_percentage,
               daily_rent_amount,
               description,
               status,
@@ -205,12 +197,10 @@ export async function POST(request: Request) {
             ORDER BY rent_date DESC
           `;
           console.log('Vehicle rent records found:', vehicleRentRecords.length);
-          // Add vehicle rent entries from database - CALCULATE amount dynamically from parameters
+          
+          // Add vehicle rent entries from database - OPTION 1: Use stored amount directly
           for (const record of vehicleRentRecords) {
-            // Calculate the amount dynamically: base * (1 - discount/100)
-            const baseDailyRent = parseFloat(record.base_daily_rent) || 0;
-            const discountPercentage = parseFloat(record.discount_percentage) || 0;
-            const calculatedAmount = baseDailyRent * (1 - discountPercentage / 100);
+            const vehicleRentAmount = parseFloat(record.daily_rent_amount) || 0;
             
             const vehicleRentEntry = {
               id: record.id,
@@ -218,8 +208,8 @@ export async function POST(request: Request) {
               cee_id: resolvedCeeId,
               full_name: full_name,
               entry_type: 'vehicle_rent',
-              amount: calculatedAmount,
-              description: `Vehicle Rent (${record.rent_date}) - Base: ₹${baseDailyRent}, Discount: ${discountPercentage}%`,
+              amount: vehicleRentAmount,
+              description: `Vehicle Rent (${record.rent_date}): ₹${vehicleRentAmount}`,
               status: 'auto-deducted',
               entry_date: record.rent_date,
               created_at: record.created_at,
@@ -227,7 +217,7 @@ export async function POST(request: Request) {
             };
             
             entries.push(vehicleRentEntry);
-            console.log('Added vehicle rent from DB for', record.rent_date, ': Rs', calculatedAmount, '(Base:', baseDailyRent, '- Discount:', discountPercentage + '%)');
+            console.log('Added vehicle rent from DB for', record.rent_date, ': Rs', vehicleRentAmount);
           }
         } catch (e) {
           console.log('Vehicle rent fetch error (non-critical):', e);

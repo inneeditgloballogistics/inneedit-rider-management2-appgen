@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     const weekStart = weekDates[week as keyof typeof weekDates].start;
     const weekEnd = weekDates[week as keyof typeof weekDates].end;
 
-    // Fetch payout entries with rider details for vehicle rent calculation
+    // Fetch payout entries with rider details
     const payouts = await sql`
       SELECT 
         pe.cee_id,
@@ -25,10 +25,6 @@ export async function POST(request: Request) {
         pe.base_payout,
         r.user_id as rider_id,
         r.vehicle_ownership,
-        r.ev_daily_rent,
-        r.is_leader,
-        r.leader_discount_percentage,
-        r.ev_type,
         r.join_date,
         COALESCE(
           (
@@ -50,56 +46,27 @@ export async function POST(request: Request) {
         ) as total_deductions,
         COALESCE(
           (
-            SELECT COUNT(DISTINCT rent_date) FROM vehicle_rent 
+            SELECT SUM(daily_rent_amount) FROM vehicle_rent 
             WHERE cee_id = pe.cee_id
             AND rent_date >= ${weekStart}::date
             AND rent_date <= ${weekEnd}::date
             AND (r.join_date IS NULL OR rent_date >= CAST(r.join_date AS date))
           ),
           0
-        ) as vehicle_rent_days,
-        COALESCE(
-          (
-            SELECT AVG(base_daily_rent) FROM vehicle_rent 
-            WHERE cee_id = pe.cee_id
-            AND rent_date >= ${weekStart}::date
-            AND rent_date <= ${weekEnd}::date
-            AND (r.join_date IS NULL OR rent_date >= CAST(r.join_date AS date))
-          ),
-          0
-        ) as base_daily_rent,
-        COALESCE(
-          (
-            SELECT COALESCE(discount_percentage, 0) FROM vehicle_rent 
-            WHERE cee_id = pe.cee_id
-            AND rent_date >= ${weekStart}::date
-            AND rent_date <= ${weekEnd}::date
-            AND (r.join_date IS NULL OR rent_date >= CAST(r.join_date AS date))
-            LIMIT 1
-          ),
-          0
-        ) as discount_percentage
+        ) as vehicle_rent
       FROM payout_entries pe
       LEFT JOIN riders r ON r.cee_id = pe.cee_id
       WHERE pe.year = ${year} AND pe.month = ${month} AND pe.week = ${week}
       ORDER BY pe.cee_id ASC
     `;
 
-    // Convert to required format and calculate vehicle rent dynamically
+    // Convert to required format
     console.log(`Payout summary query returned ${payouts.length} entries for week ${week}, month ${month}, year ${year}`);
 
     const result = payouts.map((entry: any) => {
-      // Calculate vehicle rent dynamically from stored parameters
-      let vehicleRent = 0;
-      if (entry.vehicle_rent_days > 0) {
-        const baseDailyRent = parseFloat(entry.base_daily_rent) || 0;
-        const discountPercentage = parseFloat(entry.discount_percentage) || 0;
-        const dailyRentAfterDiscount = baseDailyRent * (1 - discountPercentage / 100);
-        vehicleRent = dailyRentAfterDiscount * entry.vehicle_rent_days;
-      }
-
       const allAdditions = parseFloat(entry.total_additions) || 0;
       const allDeductions = parseFloat(entry.total_deductions) || 0;
+      const vehicleRent = parseFloat(entry.vehicle_rent) || 0;
       const finalAmount = allAdditions - allDeductions - vehicleRent;
       const basePayout = parseFloat(entry.base_payout) || 0;
       const finalPayout = basePayout + finalAmount;
