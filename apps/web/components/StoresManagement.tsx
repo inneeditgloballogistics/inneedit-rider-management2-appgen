@@ -374,23 +374,32 @@ export default function StoresManagement() {
         </div>
       )}
 
-      {/* Add Store Modal */}
+      {/* Add Store Modal - Enhanced UI */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-slate-200 flex items-center justify-between sticky top-0 bg-white">
-              <h3 className="text-xl font-bold text-slate-900">Add New Store</h3>
-              <button onClick={() => setShowAddModal(false)} className="p-1 hover:bg-slate-100 rounded">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full my-8">
+            {/* Header with Gradient */}
+            <div className="relative bg-gradient-to-r from-brand-600 to-brand-700 p-8 rounded-t-2xl text-white">
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="absolute top-6 right-6 p-2 hover:bg-white/20 rounded-full transition-colors"
+              >
                 <i className="ph-bold ph-x text-xl"></i>
               </button>
+              <h3 className="text-3xl font-bold">Add New Store</h3>
+              <p className="text-brand-100 mt-2">Create and configure a new store location</p>
             </div>
-            <form onSubmit={handleAddSubmit} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-slate-900 mb-2">Search Location</label>
+
+            <form onSubmit={handleAddSubmit} className="p-8 space-y-8 max-h-[calc(90vh-200px)] overflow-y-auto">
+              {/* Section 1: Location Selection */}
+              <div className="border-b border-slate-200 pb-6">
+                <h4 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                  <span className="flex items-center justify-center w-8 h-8 rounded-full bg-brand-100 text-brand-600 font-semibold">1</span>
+                  Search & Select Location
+                </h4>
                 <LocationSearch
                   value={newStore.location || ''}
                   onChange={(location, lat, lng, address, addressComponents) => {
-                    // Only update if lat/lng are provided (i.e., place was selected from Google)
                     if (lat !== undefined && lng !== undefined) {
                       setNewStore({
                         ...newStore,
@@ -402,138 +411,197 @@ export default function StoresManagement() {
                         pincode: addressComponents?.pincode || newStore.pincode
                       });
                     } else {
-                      // Just update the search text if still typing
                       setNewStore({
                         ...newStore,
                         location
                       });
                     }
                   }}
-                  placeholder="Search for store location"
+                  placeholder="Search store location (address, city, or landmark)"
+                  showCoordinates={true}
                 />
               </div>
               
-              {newStore.latitude && newStore.longitude && (
-                <div className="p-4 bg-green-50 border border-green-200 rounded-lg space-y-2">
-                  <div className="text-sm">
-                    <strong className="text-green-900">📍 Location Confirmed</strong>
-                  </div>
-                  <div className="text-sm text-green-700 space-y-1">
-                    <div><strong>Coordinates:</strong> {(typeof newStore.latitude === 'number' ? newStore.latitude : parseFloat(newStore.latitude)).toFixed(6)}, {(typeof newStore.longitude === 'number' ? newStore.longitude : parseFloat(newStore.longitude)).toFixed(6)}</div>
-                    {newStore.city && <div><strong>City:</strong> {newStore.city}</div>}
-                    {newStore.state && <div><strong>State:</strong> {newStore.state}</div>}
-                    {newStore.pincode && <div><strong>Pincode:</strong> {newStore.pincode}</div>}
-                  </div>
-                </div>
-              )}
-              
-              <div>
-                <label className="block text-sm font-semibold text-slate-900 mb-2">Store Name <span className="text-red-500">*</span></label>
-                <input
-                  type="text"
-                  value={newStore.store_name || ''}
-                  onChange={(e) => setNewStore({...newStore, store_name: e.target.value})}
-                  placeholder="Store name"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-slate-900 mb-2">Store Code</label>
-                  <div className="flex gap-2">
+              {/* Section 2: Basic Information */}
+              <div className="border-b border-slate-200 pb-6">
+                <h4 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                  <span className="flex items-center justify-center w-8 h-8 rounded-full bg-brand-100 text-brand-600 font-semibold">2</span>
+                  Basic Information
+                </h4>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-900 mb-2">
+                      Store Name <span className="text-red-500">*</span>
+                    </label>
                     <input
                       type="text"
-                      value={newStore.store_code || ''}
-                      onChange={(e) => setNewStore({...newStore, store_code: e.target.value})}
-                      placeholder="Auto-generated code"
-                      className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
+                      value={newStore.store_name || ''}
+                      onChange={(e) => setNewStore({...newStore, store_name: e.target.value})}
+                      placeholder="e.g., Downtown Store, Mall Store"
+                      className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent"
                     />
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        const code = await generateStoreCode();
-                        setNewStore({...newStore, store_code: code});
-                      }}
-                      className="px-3 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 font-medium text-sm whitespace-nowrap"
-                      title="Generate a new code"
-                    >
-                      <i className="ph-bold ph-shuffle text-lg"></i>
-                    </button>
                   </div>
-                  <p className="text-xs text-slate-500 mt-1">Leave empty to auto-generate</p>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-900 mb-2">Store Code</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={newStore.store_code || ''}
+                          onChange={(e) => setNewStore({...newStore, store_code: e.target.value})}
+                          placeholder="Auto-generated"
+                          className="flex-1 px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent"
+                        />
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const code = await generateStoreCode();
+                            setNewStore({...newStore, store_code: code});
+                          }}
+                          className="px-4 py-2.5 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 font-medium transition-colors flex items-center gap-1"
+                        >
+                          <i className="ph-bold ph-lightning"></i>
+                          Generate
+                        </button>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-1">Leave empty to auto-generate</p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-900 mb-2">Client</label>
+                      <input
+                        type="text"
+                        value={newStore.client || ''}
+                        onChange={(e) => setNewStore({...newStore, client: e.target.value})}
+                        placeholder="Client name"
+                        className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-semibold text-slate-900 mb-2">Client</label>
-                  <input
-                    type="text"
-                    value={newStore.client || ''}
-                    onChange={(e) => setNewStore({...newStore, client: e.target.value})}
-                    placeholder="Client"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                  />
+              </div>
+              
+              {/* Section 3: Address Details */}
+              <div className="border-b border-slate-200 pb-6">
+                <h4 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                  <span className="flex items-center justify-center w-8 h-8 rounded-full bg-brand-100 text-brand-600 font-semibold">3</span>
+                  Address Details
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-900 mb-2">City</label>
+                    <input
+                      type="text"
+                      value={newStore.city || ''}
+                      onChange={(e) => setNewStore({...newStore, city: e.target.value})}
+                      placeholder="City"
+                      className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-900 mb-2">State</label>
+                    <input
+                      type="text"
+                      value={newStore.state || ''}
+                      onChange={(e) => setNewStore({...newStore, state: e.target.value})}
+                      placeholder="State"
+                      className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-900 mb-2">Pincode</label>
+                    <input
+                      type="text"
+                      value={newStore.pincode || ''}
+                      onChange={(e) => setNewStore({...newStore, pincode: e.target.value})}
+                      placeholder="Pincode"
+                      className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-900 mb-2">Latitude</label>
+                    <input
+                      type="text"
+                      value={newStore.latitude ? (typeof newStore.latitude === 'number' ? newStore.latitude.toFixed(6) : parseFloat(newStore.latitude).toFixed(6)) : ''}
+                      readOnly
+                      className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-slate-50 text-slate-600 font-mono text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-900 mb-2">Longitude</label>
+                    <input
+                      type="text"
+                      value={newStore.longitude ? (typeof newStore.longitude === 'number' ? newStore.longitude.toFixed(6) : parseFloat(newStore.longitude).toFixed(6)) : ''}
+                      readOnly
+                      className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-slate-50 text-slate-600 font-mono text-sm"
+                    />
+                  </div>
                 </div>
               </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-slate-900 mb-2">City</label>
-                  <input
-                    type="text"
-                    value={newStore.city || ''}
-                    onChange={(e) => setNewStore({...newStore, city: e.target.value})}
-                    placeholder="City"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                  />
+
+              {/* Section 4: Store Manager Details */}
+              <div className="pb-6">
+                <h4 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                  <span className="flex items-center justify-center w-8 h-8 rounded-full bg-brand-100 text-brand-600 font-semibold">4</span>
+                  Store Manager Details
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-900 mb-2">Manager Name</label>
+                    <input
+                      type="text"
+                      value={newStore.store_manager_name || ''}
+                      onChange={(e) => setNewStore({...newStore, store_manager_name: e.target.value})}
+                      placeholder="Full name"
+                      className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-900 mb-2">Manager Phone</label>
+                    <input
+                      type="tel"
+                      value={newStore.store_manager_phone || ''}
+                      onChange={(e) => setNewStore({...newStore, store_manager_phone: e.target.value})}
+                      placeholder="10-digit phone number"
+                      className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-semibold text-slate-900 mb-2">State</label>
-                  <input
-                    type="text"
-                    value={newStore.state || ''}
-                    onChange={(e) => setNewStore({...newStore, state: e.target.value})}
-                    placeholder="State"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                  />
-                </div>
               </div>
-              
-              <div>
-                <label className="block text-sm font-semibold text-slate-900 mb-2">Pincode</label>
-                <input
-                  type="text"
-                  value={newStore.pincode || ''}
-                  onChange={(e) => setNewStore({...newStore, pincode: e.target.value})}
-                  placeholder="Pincode"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-semibold text-slate-900 mb-2">Store Manager Name</label>
-                <input
-                  type="text"
-                  value={newStore.store_manager_name || ''}
-                  onChange={(e) => setNewStore({...newStore, store_manager_name: e.target.value})}
-                  placeholder="Store manager name"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-semibold text-slate-900 mb-2">Store Manager Phone</label>
-                <input
-                  type="tel"
-                  value={newStore.store_manager_phone || ''}
-                  onChange={(e) => setNewStore({...newStore, store_manager_phone: e.target.value})}
-                  placeholder="Phone number"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                />
-              </div>
-              
-              <div className="flex gap-3 justify-end pt-4 border-t border-slate-200">
-                <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 font-medium">Cancel</button>
-                <button type="submit" className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium">Add Store</button>
+
+              {/* Form Actions */}
+              <div className="flex gap-3 justify-end pt-6 border-t border-slate-200 sticky bottom-0 bg-white -mx-8 px-8 py-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAddModal(false);
+                    setNewStore({
+                      store_name: '',
+                      store_code: '',
+                      location: '',
+                      latitude: undefined,
+                      longitude: undefined,
+                      city: '',
+                      state: '',
+                      pincode: '',
+                      client: '',
+                      store_manager_name: '',
+                      store_manager_phone: '',
+                      status: 'active'
+                    });
+                  }}
+                  className="px-6 py-2.5 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 font-semibold transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2.5 bg-gradient-to-r from-brand-600 to-brand-700 text-white rounded-lg hover:from-brand-700 hover:to-brand-800 font-semibold transition-all shadow-md hover:shadow-lg flex items-center gap-2"
+                >
+                  <i className="ph-bold ph-plus"></i>
+                  Add Store
+                </button>
               </div>
             </form>
           </div>

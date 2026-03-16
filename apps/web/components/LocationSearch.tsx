@@ -8,6 +8,15 @@ interface LocationSearchProps {
   value: string;
   onChange: (value: string, lat?: number, lng?: number, address?: string, addressComponents?: any) => void;
   placeholder?: string;
+  showCoordinates?: boolean;
+}
+
+interface AutocompleteResult {
+  place_id: string;
+  description: string;
+  main_text: string;
+  secondary_text?: string;
+  types: string[];
 }
 
 declare global {
@@ -86,15 +95,17 @@ const TELANGANA_LOCATIONS = [
   { name: 'Bandlaguda', lat: 17.2933, lng: 78.4958 },
 ];
 
-export default function LocationSearch({ value, onChange, placeholder = 'Search location' }: LocationSearchProps) {
+export default function LocationSearch({ value, onChange, placeholder = 'Search location', showCoordinates = true }: LocationSearchProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const autocompleteRef = useRef<any>(null);
   const sessionTokenRef = useRef<any>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [filteredLocations, setFilteredLocations] = useState<typeof TELANGANA_LOCATIONS>([]);
-  const [selectedCoords, setSelectedCoords] = useState<{ lat: number; lng: number; address: string } | null>(null);
+  const [autocompletePredictions, setAutocompletePredictions] = useState<AutocompleteResult[]>([]);
+  const [selectedCoords, setSelectedCoords] = useState<{ lat: number; lng: number; address: string; city?: string; state?: string; pincode?: string } | null>(null);
   const { reverseGeocode } = useGeocoding();
 
   // Filter Telangana locations based on input
@@ -124,7 +135,7 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
         // Create a fresh session token for this search session
         sessionTokenRef.current = new window.google.maps.places.AutocompleteSessionToken();
 
-        // ✅ PLACES API - Autocomplete with Telangana bounds (strict)
+        // PLACES API - Autocomplete with Telangana bounds (strict)
         const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
           types: ['geocode'],
           sessionToken: sessionTokenRef.current,
@@ -153,7 +164,7 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
           setShowSuggestions(false);
 
           try {
-            // ✅ MAPS JAVASCRIPT API & PLACES API - Get place details with geometry
+            // MAPS JAVASCRIPT API & PLACES API - Get place details with geometry
             const mapElement = document.body;
             const service = new window.google.maps.places.PlacesService(mapElement);
             
@@ -186,7 +197,7 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
                   
                   console.log('✅ Extracted coordinates from Places API:', { lat, lng, address: result.formatted_address });
                   
-                  // ✅ GEOCODING API - Reverse geocode to extract detailed address components
+                  // GEOCODING API - Reverse geocode to extract detailed address components
                   try {
                     const geocodedAddress = await reverseGeocode(lat, lng);
                     const validatedAddress = geocodedAddress?.formatted_address || result.formatted_address;
@@ -200,8 +211,15 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
                       pincode: geocodedAddress?.pincode
                     });
                   
-                    // Store coords for map display
-                    setSelectedCoords({ lat, lng, address: validatedAddress });
+                    // Store coords for map display with all details
+                    setSelectedCoords({
+                      lat,
+                      lng,
+                      address: validatedAddress,
+                      city: geocodedAddress?.city,
+                      state: geocodedAddress?.state,
+                      pincode: geocodedAddress?.pincode
+                    });
                     
                     // Notify parent with geocoded address components
                     onChange(validatedAddress, lat, lng, validatedAddress, geocodedAddress);
@@ -211,10 +229,12 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
                     setSelectedCoords({ lat, lng, address: result.formatted_address });
                     onChange(result.formatted_address, lat, lng, result.formatted_address);
                   }
-                  
-                } catch (extractError) {
-                  console.error('Error extracting coordinates:', extractError);
-                }
+                  } catch (extractError) {
+                    console.error('Error extracting coordinates:', extractError);
+                    // Fallback: still use what we have
+                    setSelectedCoords({ lat, lng, address: result.formatted_address });
+                    onChange(result.formatted_address, lat, lng, result.formatted_address);
+                  }
               } else {
                 console.error('PlacesService error or no geometry:', { status });
                 // Fallback: If getDetails fails, try to use geometry from initial place object
@@ -228,8 +248,21 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
                     lng = place.geometry.location.lng;
                   }
                   console.log('📍 Using geometry from initial place object:', { lat, lng });
-                  setSelectedCoords({ lat, lng, address: place.formatted_address });
-                  onChange(place.formatted_address, lat, lng, place.formatted_address);
+                  try {
+                    const geocodedAddress = await reverseGeocode(lat, lng);
+                    setSelectedCoords({
+                      lat,
+                      lng,
+                      address: geocodedAddress?.formatted_address || place.formatted_address,
+                      city: geocodedAddress?.city,
+                      state: geocodedAddress?.state,
+                      pincode: geocodedAddress?.pincode
+                    });
+                    onChange(geocodedAddress?.formatted_address || place.formatted_address, lat, lng, geocodedAddress?.formatted_address || place.formatted_address, geocodedAddress);
+                  } catch (error) {
+                    setSelectedCoords({ lat, lng, address: place.formatted_address });
+                    onChange(place.formatted_address, lat, lng, place.formatted_address);
+                  }
                 }
               }
               
@@ -266,7 +299,14 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
       const geocodedAddress = await reverseGeocode(location.lat, location.lng);
       const address = geocodedAddress?.formatted_address || `${location.name}, Telangana`;
       
-      setSelectedCoords({ lat: location.lat, lng: location.lng, address });
+      setSelectedCoords({
+        lat: location.lat,
+        lng: location.lng,
+        address,
+        city: geocodedAddress?.city,
+        state: geocodedAddress?.state,
+        pincode: geocodedAddress?.pincode
+      });
       onChange(address, location.lat, location.lng, address, geocodedAddress);
       
       if (inputRef.current) {
@@ -293,64 +333,202 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
     }
   };
 
-  const handleMapMarkerMove = (newLat: number, newLng: number, newAddress: string) => {
-    setSelectedCoords({ lat: newLat, lng: newLng, address: newAddress });
-    onChange(newAddress, newLat, newLng, newAddress);
+  const handleMapMarkerMove = async (newLat: number, newLng: number, newAddress: string) => {
+    try {
+      const geocodedAddress = await reverseGeocode(newLat, newLng);
+      const finalAddress = geocodedAddress?.formatted_address || newAddress;
+      
+      setSelectedCoords({
+        lat: newLat,
+        lng: newLng,
+        address: finalAddress,
+        city: geocodedAddress?.city,
+        state: geocodedAddress?.state,
+        pincode: geocodedAddress?.pincode
+      });
+      
+      onChange(finalAddress, newLat, newLng, finalAddress, geocodedAddress);
+    } catch (error) {
+      console.error('Error updating map marker location:', error);
+      setSelectedCoords({ lat: newLat, lng: newLng, address: newAddress });
+      onChange(newAddress, newLat, newLng, newAddress);
+    }
   };
 
   return (
-    <div className="space-y-3">
-      <div className="relative">
-        <input
-          ref={inputRef}
-          type="text"
-          placeholder={placeholder}
-          onChange={(e) => onChange(e.target.value)}
-          onFocus={() => value && value.length > 0 && setShowSuggestions(true)}
-          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent"
-          disabled={isValidating}
-        />
-        {(!isInitialized || isValidating) && (
-          <div className="absolute right-3 top-2.5">
-            <div className="w-4 h-4 border-2 border-brand-600 border-t-transparent rounded-full animate-spin"></div>
-          </div>
-        )}
-        
-        {/* Telangana Location Suggestions */}
-        {showSuggestions && filteredLocations.length > 0 && (
-          <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-300 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
-            {filteredLocations.map((location) => (
+    <div className="space-y-4">
+      {/* Google Maps Style Search Bar */}
+      <div className="relative" ref={containerRef}>
+        <div className="relative flex items-center bg-white border border-slate-300 rounded-xl shadow-md hover:shadow-lg transition-shadow focus-within:ring-2 focus-within:ring-brand-500 focus-within:border-transparent">
+          {/* Search Icon */}
+          <svg className="absolute left-3 w-5 h-5 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          
+          <input
+            ref={inputRef}
+            type="text"
+            placeholder={placeholder}
+            onChange={(e) => onChange(e.target.value)}
+            onFocus={() => value && value.length > 0 && setShowSuggestions(true)}
+            className="w-full pl-10 pr-10 py-3 bg-transparent focus:outline-none text-slate-900 placeholder-slate-500"
+            disabled={isValidating}
+          />
+          
+          {/* Spinner or Clear Button */}
+          <div className="absolute right-3">
+            {isValidating ? (
+              <div className="w-5 h-5 border-2 border-brand-600 border-t-transparent rounded-full animate-spin"></div>
+            ) : selectedCoords ? (
               <button
-                key={location.name}
                 type="button"
-                onClick={() => handleLocationSelect(location)}
-                className="w-full text-left px-3 py-2 hover:bg-brand-50 transition-colors flex items-center gap-2 border-b border-slate-100 last:border-b-0"
+                onClick={() => {
+                  setSelectedCoords(null);
+                  onChange('');
+                  if (inputRef.current) inputRef.current.value = '';
+                }}
+                className="p-1 hover:bg-slate-100 rounded-full transition-colors"
               >
-                <svg className="w-4 h-4 text-slate-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                <svg className="w-5 h-5 text-slate-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
                 </svg>
-                <span className="text-sm text-slate-900 font-medium">{location.name}</span>
-                <span className="text-xs text-slate-500 ml-auto">Telangana</span>
               </button>
-            ))}
+            ) : null}
+          </div>
+        </div>
+        
+        {/* Suggestions Dropdown - Google Maps Style */}
+        {showSuggestions && (value.length > 0) && (
+          <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-300 rounded-lg shadow-xl z-50 max-h-96 overflow-y-auto">
+            {/* Telangana Location Suggestions */}
+            {filteredLocations.length > 0 && (
+              <>
+                <div className="px-4 py-2 bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-600 sticky top-0">
+                  Telangana Locations
+                </div>
+                {filteredLocations.map((location) => (
+                  <button
+                    key={location.name}
+                    type="button"
+                    onClick={() => handleLocationSelect(location)}
+                    className="w-full text-left px-4 py-3 hover:bg-brand-50 transition-colors flex items-center gap-3 border-b border-slate-100 last:border-b-0 group"
+                  >
+                    <svg className="w-5 h-5 text-slate-400 group-hover:text-brand-600 flex-shrink-0 transition-colors" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                    </svg>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-slate-900 font-medium truncate">{location.name}</p>
+                      <p className="text-xs text-slate-500">Telangana, India</p>
+                    </div>
+                  </button>
+                ))}
+              </>
+            )}
+            
+            {/* Google Places Autocomplete Predictions */}
+            {autocompletePredictions.length > 0 && (
+              <>
+                {filteredLocations.length > 0 && (
+                  <div className="px-4 py-2 bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-600">
+                    Search Results
+                  </div>
+                )}
+                {autocompletePredictions.map((prediction) => (
+                  <button
+                    key={prediction.place_id}
+                    type="button"
+                    onClick={() => {
+                      if (inputRef.current) {
+                        inputRef.current.value = prediction.description;
+                      }
+                    }}
+                    className="w-full text-left px-4 py-3 hover:bg-brand-50 transition-colors flex items-center gap-3 border-b border-slate-100 last:border-b-0 group"
+                  >
+                    <svg className="w-5 h-5 text-slate-400 group-hover:text-brand-600 flex-shrink-0 transition-colors" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                    </svg>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-slate-900 font-medium truncate">{prediction.main_text}</p>
+                      {prediction.secondary_text && (
+                        <p className="text-xs text-slate-500 truncate">{prediction.secondary_text}</p>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </>
+            )}
+            
+            {filteredLocations.length === 0 && autocompletePredictions.length === 0 && (
+              <div className="px-4 py-8 text-center text-slate-500">
+                <svg className="w-12 h-12 mx-auto mb-2 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p className="text-sm">No locations found</p>
+              </div>
+            )}
           </div>
         )}
       </div>
 
+      {/* Coordinate Fields - Always Visible */}
+      {showCoordinates && selectedCoords && (
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-slate-50 rounded-lg border border-slate-200 p-3">
+            <label className="text-xs font-semibold text-slate-600">Latitude</label>
+            <p className="text-sm font-mono text-slate-900 mt-1">{selectedCoords.lat.toFixed(6)}</p>
+          </div>
+          <div className="bg-slate-50 rounded-lg border border-slate-200 p-3">
+            <label className="text-xs font-semibold text-slate-600">Longitude</label>
+            <p className="text-sm font-mono text-slate-900 mt-1">{selectedCoords.lng.toFixed(6)}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Address Details Grid */}
+      {selectedCoords && (selectedCoords.city || selectedCoords.state || selectedCoords.pincode) && (
+        <div className="grid grid-cols-3 gap-3">
+          {selectedCoords.city && (
+            <div className="bg-blue-50 rounded-lg border border-blue-200 p-3">
+              <label className="text-xs font-semibold text-blue-700">City</label>
+              <p className="text-sm text-blue-900 mt-1 truncate">{selectedCoords.city}</p>
+            </div>
+          )}
+          {selectedCoords.state && (
+            <div className="bg-green-50 rounded-lg border border-green-200 p-3">
+              <label className="text-xs font-semibold text-green-700">State</label>
+              <p className="text-sm text-green-900 mt-1 truncate">{selectedCoords.state}</p>
+            </div>
+          )}
+          {selectedCoords.pincode && (
+            <div className="bg-purple-50 rounded-lg border border-purple-200 p-3">
+              <label className="text-xs font-semibold text-purple-700">Pincode</label>
+              <p className="text-sm text-purple-900 mt-1 truncate">{selectedCoords.pincode}</p>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Map Preview with Draggable Marker */}
       {selectedCoords && (
-        <div className="w-full">
-          <div className="text-xs font-semibold text-slate-600 mb-2 px-1">Location Map (Drag marker to adjust)</div>
-          <GoogleMapComponent
-            lat={selectedCoords.lat}
-            lng={selectedCoords.lng}
-            address={selectedCoords.address}
-            onMarkerMove={handleMapMarkerMove}
-          />
-          <div className="mt-2 p-2.5 bg-green-50 border border-green-200 rounded-lg">
-            <p className="text-xs font-semibold text-green-700">📍 Selected Location:</p>
-            <p className="text-xs text-green-600 mt-1">{selectedCoords.address}</p>
-            <p className="text-xs text-green-600 mt-1">Lat: {selectedCoords.lat.toFixed(4)}, Lng: {selectedCoords.lng.toFixed(4)}</p>
+        <div className="w-full space-y-2">
+          <div className="rounded-lg overflow-hidden border border-slate-200 shadow-sm">
+            <GoogleMapComponent
+              lat={selectedCoords.lat}
+              lng={selectedCoords.lng}
+              address={selectedCoords.address}
+              onMarkerMove={handleMapMarkerMove}
+            />
+          </div>
+          <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-300 rounded-lg">
+            <div className="flex items-start gap-2">
+              <svg className="w-5 h-5 text-green-700 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-green-900">Location Confirmed</p>
+                <p className="text-sm text-green-700 mt-1">{selectedCoords.address}</p>
+              </div>
+            </div>
           </div>
         </div>
       )}
