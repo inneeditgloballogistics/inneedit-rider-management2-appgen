@@ -230,11 +230,13 @@ function AdminDashboardContent() {
         try {
           const res = await fetch('/api/riders');
           const data = await res.json();
-          // Show ALL riders - both with and without vehicles so admin can reassign
+          // Show ALL riders including those already assigned (admin can reassign)
           const allRiders = data.riders || [];
+          console.log('All riders:', allRiders);
+          console.log('Filtered riders:', allRiders);
           setAvailableRiders(allRiders);
           setSelectedRiderId('');
-          console.log('Available riders:', allRiders);
+          console.log('Available riders for assignment:', allRiders);
         } catch (error) {
           console.error('Error fetching riders:', error);
         }
@@ -1494,23 +1496,26 @@ function AdminDashboardContent() {
                         <label className="block text-sm font-semibold text-slate-900 mb-3">Choose a rider...</label>
                         {availableRiders.length === 0 ? (
                           <div className="p-4 bg-yellow-50 border-2 border-yellow-300 rounded-xl text-yellow-900 text-sm">
-                            <p className="font-bold text-base">No riders available</p>
-                            <p className="text-sm mt-2">No riders exist in the system.</p>
+                            <p className="font-bold text-base">No riders found</p>
+                            <p className="text-sm mt-2">No riders exist in the system. Please register a rider first.</p>
                           </div>
                         ) : (
-                          <select
-                            value={selectedRiderId}
-                            onChange={(e) => setSelectedRiderId(e.target.value)}
-                            className="w-full px-4 py-3 border-2 border-orange-400 rounded-full focus:outline-none focus:ring-2 focus:ring-orange-500 text-base font-medium text-slate-900 bg-white hover:border-orange-500 transition-colors"
-                            required
-                          >
-                            <option value="">Choose a rider...</option>
-                            {availableRiders.map((rider: any) => (
-                              <option key={rider.id} value={rider.cee_id || rider.user_id}>
-                                {rider.full_name} ({rider.cee_id || rider.user_id})
-                              </option>
-                            ))}
-                          </select>
+                          <>
+                            <select
+                              value={selectedRiderId}
+                              onChange={(e) => setSelectedRiderId(e.target.value)}
+                              className="w-full px-4 py-3 border-2 border-orange-400 rounded-full focus:outline-none focus:ring-2 focus:ring-orange-500 text-base font-medium text-slate-900 bg-white hover:border-orange-500 transition-colors"
+                              required
+                            >
+                              <option value="">Choose a rider ({availableRiders.length} available)...</option>
+                              {availableRiders.map((rider: any) => (
+                                <option key={rider.id} value={rider.cee_id || rider.user_id}>
+                                  {rider.full_name} ({rider.cee_id || rider.user_id}) {rider.assigned_vehicle_id ? '(Already assigned)' : '(Unassigned)'}
+                                </option>
+                              ))}
+                            </select>
+                            <p className="text-xs text-slate-500 mt-2">Total riders: {availableRiders.length}</p>
+                          </>
                         )}
 
                         <div className="flex gap-3 justify-end pt-6 border-t border-slate-300 mt-6">
@@ -1529,11 +1534,14 @@ function AdminDashboardContent() {
                             type="button"
                             onClick={() => handleAssignRider(editItem.id, selectedRiderId)}
                             className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold text-sm flex items-center gap-2"
+                            disabled={!selectedRiderId}
                           >
                             <i className="ph-bold ph-check text-lg"></i>
                             Assign Rider
                           </button>
                         </div>
+                      </>
+                    ) : (
                       </>
                     ) : (
                       <>
