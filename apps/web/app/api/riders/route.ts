@@ -5,13 +5,32 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const action = searchParams.get('action');
+    const userId = searchParams.get('user_id');
 
     if (action === 'count') {
       const result = await sql`SELECT COUNT(*) as count FROM riders`;
       return NextResponse.json({ count: parseInt(result[0].count) });
     }
 
-    // Get all riders
+    // If user_id is provided, return only that rider's data (for rider profile page)
+    if (userId) {
+      const result = await sql`
+        SELECT 
+          r.*,
+          u.name as user_name,
+          u.email as user_email,
+          h.hub_name
+        FROM riders r
+        LEFT JOIN "user" u ON r.user_id = u.id
+        LEFT JOIN hubs h ON r.assigned_hub_id = h.id
+        WHERE r.user_id = ${userId}
+        ORDER BY r.created_at DESC
+      `;
+      
+      return NextResponse.json({ riders: result });
+    }
+
+    // Get all riders (for admin dashboard)
     const result = await sql`
       SELECT 
         r.*,
