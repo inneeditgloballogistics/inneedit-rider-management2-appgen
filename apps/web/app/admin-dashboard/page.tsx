@@ -10,6 +10,7 @@ import LocationSearch from '@/components/LocationSearch';
 import StoresManagement from '@/components/StoresManagement';
 import HubsManagement from '@/components/HubsManagement';
 import WeatherBadge from '@/components/WeatherBadge';
+import BulkUploadModal from '@/components/BulkUploadModal';
 
 const StoreMapView = dynamic(() => import('@/components/StoreMapView'), {
   ssr: false,
@@ -46,6 +47,7 @@ function AdminDashboardContent() {
   const [modalType, setModalType] = useState<'vehicle' | 'hub' | 'store'>('vehicle');
   const [showMapView, setShowMapView] = useState(false);
   const [formData, setFormData] = useState<any>({});
+  const [showBulkUploadModal, setShowBulkUploadModal] = useState(false);
 
   const [viewItem, setViewItem] = useState<any>(null);
   const [editItem, setEditItem] = useState<any>(null);
@@ -543,9 +545,14 @@ function AdminDashboardContent() {
               <>
                 <div className="flex justify-between items-center">
                   <h2 className="font-display text-3xl font-bold text-slate-900">Vehicle Management ({vehiclesCount})</h2>
-                  <button onClick={() => handleAddNew('vehicle')} className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium flex items-center gap-2">
-                    <i className="ph-bold ph-plus"></i>Add Vehicle
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => setShowBulkUploadModal(true)} className="px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 font-medium flex items-center gap-2">
+                      <i className="ph-bold ph-upload text-lg"></i>Bulk Upload
+                    </button>
+                    <button onClick={() => handleAddNew('vehicle')} className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium flex items-center gap-2">
+                      <i className="ph-bold ph-plus"></i>Add Vehicle
+                    </button>
+                  </div>
                 </div>
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                   <table className="w-full">
@@ -1680,6 +1687,17 @@ function AdminDashboardContent() {
             </div>
           </div>
         )}
+
+        {/* Bulk Upload Modal */}
+        <BulkUploadModal
+          isOpen={showBulkUploadModal}
+          onClose={() => setShowBulkUploadModal(false)}
+          type="vehicles"
+          onSuccess={() => {
+            fetchVehicles();
+            fetchCounts();
+          }}
+        />
       </div>
       </GoogleMapsLoader>
     </>

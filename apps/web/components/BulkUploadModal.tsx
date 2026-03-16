@@ -6,7 +6,7 @@ import Papa from 'papaparse';
 interface BulkUploadModalProps {
   isOpen: boolean;
   onClose: () => void;
-  type: 'riders' | 'hubs' | 'stores';
+  type: 'riders' | 'hubs' | 'stores' | 'vehicles';
   onSuccess: () => void;
 }
 
@@ -29,6 +29,8 @@ export default function BulkUploadModal({ isOpen, onClose, type, onSuccess }: Bu
       ];
     } else if (type === 'hubs') {
       return ['hub_name', 'hub_code', 'location', 'city', 'state', 'pincode', 'manager_name', 'manager_phone', 'status', 'latitude', 'longitude'];
+    } else if (type === 'vehicles') {
+      return ['vehicle_number', 'vehicle_type', 'model', 'year', 'assigned_rider_id', 'hub_id', 'status'];
     } else {
       return ['store_name', 'store_code', 'client', 'location', 'city', 'state', 'pincode', 'contact_person', 'contact_phone', 'status', 'latitude', 'longitude', 'store_manager_name', 'store_manager_phone'];
     }
@@ -95,6 +97,7 @@ export default function BulkUploadModal({ isOpen, onClose, type, onSuccess }: Bu
             try {
               const endpoint = type === 'riders' ? '/api/riders' : 
                              type === 'hubs' ? '/api/hubs' : 
+                             type === 'vehicles' ? '/api/vehicles' :
                              '/api/stores';
 
               const payload = preparePayload(row);
@@ -187,6 +190,16 @@ export default function BulkUploadModal({ isOpen, onClose, type, onSuccess }: Bu
         status: row.status || 'active',
         latitude: row.latitude ? parseFloat(row.latitude) : null,
         longitude: row.longitude ? parseFloat(row.longitude) : null
+      };
+    } else if (type === 'vehicles') {
+      return {
+        vehicle_number: row.vehicle_number,
+        vehicle_type: row.vehicle_type,
+        model: row.model || null,
+        year: row.year ? parseInt(row.year) : null,
+        assigned_rider_id: row.assigned_rider_id || null,
+        hub_id: row.hub_id ? parseInt(row.hub_id) : null,
+        status: row.status || 'available'
       };
     } else {
       return {
