@@ -6,7 +6,7 @@ import dynamic from 'next/dynamic';
 
 interface LocationSearchProps {
   value: string;
-  onChange: (value: string, lat?: number, lng?: number, address?: string) => void;
+  onChange: (value: string, lat?: number, lng?: number, address?: string, addressComponents?: any) => void;
   placeholder?: string;
 }
 
@@ -179,9 +179,6 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
                   const geocodedAddress = await reverseGeocode(lat, lng);
                   const validatedAddress = geocodedAddress?.formatted_address || result.formatted_address;
                   
-                  // Pass all details back
-                  onChange(validatedAddress, lat, lng, validatedAddress);
-                  
                   console.log('📍 Location confirmed:', { 
                     address: validatedAddress,
                     latitude: lat, 
@@ -191,11 +188,11 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
                     pincode: geocodedAddress?.pincode
                   });
                 
-                // Store coords for map display
-                setSelectedCoords({ lat, lng, address: validatedAddress });
-                
-                // Notify parent
-                onChange(validatedAddress, lat, lng, validatedAddress);
+                  // Store coords for map display
+                  setSelectedCoords({ lat, lng, address: validatedAddress });
+                  
+                  // Notify parent with geocoded address components
+                  onChange(validatedAddress, lat, lng, validatedAddress, geocodedAddress);
                 } catch (geocodingError) {
                   // Fallback if Geocoding API fails
                   console.warn('Geocoding API validation skipped, using Places data:', geocodingError);
@@ -240,7 +237,7 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
       const address = geocodedAddress?.formatted_address || `${location.name}, Telangana`;
       
       setSelectedCoords({ lat: location.lat, lng: location.lng, address });
-      onChange(address, location.lat, location.lng, address);
+      onChange(address, location.lat, location.lng, address, geocodedAddress);
       
       if (inputRef.current) {
         inputRef.current.value = address;
@@ -250,7 +247,8 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
         name: location.name,
         lat: location.lat,
         lng: location.lng,
-        address
+        address,
+        components: geocodedAddress
       });
     } catch (error) {
       console.error('Error selecting location:', error);

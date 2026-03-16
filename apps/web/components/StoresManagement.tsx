@@ -389,27 +389,17 @@ export default function StoresManagement() {
                 <label className="block text-sm font-semibold text-slate-900 mb-2">Search Location</label>
                 <LocationSearch
                   value={newStore.location || ''}
-                  onChange={(location, lat, lng, address) => {
+                  onChange={(location, lat, lng, address, addressComponents) => {
                     // Only update if lat/lng are provided (i.e., place was selected from Google)
                     if (lat !== undefined && lng !== undefined) {
-                      const parts = (address || location).split(',').map((p: string) => p.trim());
-                      let city = '', state = '', pincode = '';
-                      
-                      if (parts.length >= 2) {
-                        city = parts[parts.length - 3] || '';
-                        state = parts[parts.length - 2] || '';
-                        const lastPart = parts[parts.length - 1];
-                        pincode = lastPart?.match(/\\d{6}/) ? lastPart : '';
-                      }
-                      
                       setNewStore({
                         ...newStore,
                         location: address || location,
                         latitude: lat,
                         longitude: lng,
-                        city: city || newStore.city,
-                        state: state || newStore.state,
-                        pincode: pincode || newStore.pincode
+                        city: addressComponents?.city || newStore.city,
+                        state: addressComponents?.state || newStore.state,
+                        pincode: addressComponents?.pincode || newStore.pincode
                       });
                     } else {
                       // Just update the search text if still typing
@@ -424,8 +414,16 @@ export default function StoresManagement() {
               </div>
               
               {newStore.latitude && newStore.longitude && (
-                <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
-                  <strong>Location:</strong> Lat: {(typeof newStore.latitude === 'number' ? newStore.latitude : parseFloat(newStore.latitude)).toFixed(4)}, Lng: {(typeof newStore.longitude === 'number' ? newStore.longitude : parseFloat(newStore.longitude)).toFixed(4)}
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg space-y-2">
+                  <div className="text-sm">
+                    <strong className="text-green-900">📍 Location Confirmed</strong>
+                  </div>
+                  <div className="text-sm text-green-700 space-y-1">
+                    <div><strong>Coordinates:</strong> {(typeof newStore.latitude === 'number' ? newStore.latitude : parseFloat(newStore.latitude)).toFixed(6)}, {(typeof newStore.longitude === 'number' ? newStore.longitude : parseFloat(newStore.longitude)).toFixed(6)}</div>
+                    {newStore.city && <div><strong>City:</strong> {newStore.city}</div>}
+                    {newStore.state && <div><strong>State:</strong> {newStore.state}</div>}
+                    {newStore.pincode && <div><strong>Pincode:</strong> {newStore.pincode}</div>}
+                  </div>
                 </div>
               )}
               
@@ -557,27 +555,17 @@ export default function StoresManagement() {
                 <label className="block text-sm font-semibold text-slate-900 mb-2">Search Location</label>
                 <LocationSearch
                   value={editItem.location || ''}
-                  onChange={(location, lat, lng, address) => {
+                  onChange={(location, lat, lng, address, addressComponents) => {
                     // Only update if lat/lng are provided (i.e., place was selected from Google)
                     if (lat !== undefined && lng !== undefined) {
-                      const parts = (address || location).split(',').map((p: string) => p.trim());
-                      let city = '', state = '', pincode = '';
-                      
-                      if (parts.length >= 2) {
-                        city = parts[parts.length - 3] || '';
-                        state = parts[parts.length - 2] || '';
-                        const lastPart = parts[parts.length - 1];
-                        pincode = lastPart?.match(/\d{6}/) ? lastPart : '';
-                      }
-                      
                       setEditItem({
                         ...editItem,
                         location: address || location,
                         latitude: lat,
                         longitude: lng,
-                        city: city || editItem.city,
-                        state: state || editItem.state,
-                        pincode: pincode || editItem.pincode
+                        city: addressComponents?.city || editItem.city,
+                        state: addressComponents?.state || editItem.state,
+                        pincode: addressComponents?.pincode || editItem.pincode
                       });
                     } else {
                       // Just update the search text if still typing
@@ -592,8 +580,16 @@ export default function StoresManagement() {
               </div>
               
               {editItem.latitude && editItem.longitude && (
-                <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
-                  <strong>Location:</strong> Lat: {(typeof editItem.latitude === 'number' ? editItem.latitude : parseFloat(editItem.latitude)).toFixed(4)}, Lng: {(typeof editItem.longitude === 'number' ? editItem.longitude : parseFloat(editItem.longitude)).toFixed(4)}
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg space-y-2">
+                  <div className="text-sm">
+                    <strong className="text-green-900">📍 Location Confirmed</strong>
+                  </div>
+                  <div className="text-sm text-green-700 space-y-1">
+                    <div><strong>Coordinates:</strong> {(typeof editItem.latitude === 'number' ? editItem.latitude : parseFloat(editItem.latitude)).toFixed(6)}, {(typeof editItem.longitude === 'number' ? editItem.longitude : parseFloat(editItem.longitude)).toFixed(6)}</div>
+                    {editItem.city && <div><strong>City:</strong> {editItem.city}</div>}
+                    {editItem.state && <div><strong>State:</strong> {editItem.state}</div>}
+                    {editItem.pincode && <div><strong>Pincode:</strong> {editItem.pincode}</div>}
+                  </div>
                 </div>
               )}
               
