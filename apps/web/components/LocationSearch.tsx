@@ -56,8 +56,7 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
       {
         input: value,
         componentRestrictions: { country: 'in' },
-        sessionToken: sessionTokenRef.current,
-        types: ['geocode', 'establishment', 'address']
+        sessionToken: sessionTokenRef.current
       },
       (predictions: Prediction[] | null) => {
         if (predictions) {
