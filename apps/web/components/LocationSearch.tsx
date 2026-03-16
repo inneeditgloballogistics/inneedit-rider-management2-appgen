@@ -205,6 +205,11 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
     }
   };
 
+  const handlePredictionMouseDown = (e: React.MouseEvent) => {
+    // Prevent blur on input when clicking suggestion
+    e.preventDefault();
+  };
+
   return (
     <div className="space-y-4">
       <div className="relative" ref={containerRef}>
@@ -222,9 +227,9 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
             onChange={handleInputChange}
             onFocus={handleInputFocus}
             className="w-full pl-10 pr-10 py-3 bg-transparent focus:outline-none text-slate-900 placeholder-slate-500 text-base"
-            disabled={isLoading}
             autoComplete="off"
             spellCheck="false"
+            inputMode="text"
           />
           
           <div className="absolute right-3">
@@ -254,7 +259,7 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
         
         {/* Predictions Dropdown - Google Maps Style */}
         {showSuggestions && predictions.length > 0 && (
-          <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-300 rounded-lg shadow-xl z-50 max-h-96 overflow-y-auto">
+          <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-300 rounded-lg shadow-xl z-50 max-h-96 overflow-y-auto" style={{ pointerEvents: 'auto' }}>
             {predictions.map((prediction) => {
               // The description from Google Places API contains the full address
               // Try to extract main place name and address
@@ -276,6 +281,7 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
                 <button
                   key={prediction.place_id}
                   type="button"
+                  onMouseDown={handlePredictionMouseDown}
                   onClick={() => handlePredictionSelect(prediction)}
                   className="w-full text-left px-4 py-3 hover:bg-brand-50 transition-colors flex items-center gap-3 border-b border-slate-100 last:border-b-0 group"
                 >
