@@ -1318,13 +1318,7 @@ function AdminDashboardContent() {
                   <i className="ph-bold ph-x text-2xl"></i>
                 </button>
               </div>
-              <form onSubmit={(e) => {
-                if (editItem.type === 'vehicle' && editItem.showAssignModal) {
-                  e.preventDefault();
-                } else {
-                  handleUpdateSubmit(e);
-                }
-              }} className="p-6 space-y-4 max-h-[calc(90vh-120px)] overflow-y-auto">
+              <form onSubmit={handleUpdateSubmit} className="p-6 space-y-4 max-h-[calc(90vh-120px)] overflow-y-auto">
                 {editItem.type === 'rider' && (
                   <>
                     <h4 className="font-semibold text-slate-900 border-b pb-2 text-sm uppercase">Personal Information</h4>
@@ -1522,11 +1516,6 @@ function AdminDashboardContent() {
                               placeholder="Search by name, phone, or CEE ID..."
                               value={riderSearchQuery}
                               onChange={(e) => setRiderSearchQuery(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  e.preventDefault();
-                                }
-                              }}
                               className="w-full pl-10 pr-4 py-3 border-2 border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
                             />
                           </div>
