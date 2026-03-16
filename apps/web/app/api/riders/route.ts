@@ -38,8 +38,11 @@ export async function POST(request: Request) {
     // Generate a unique user_id for the rider (required for payroll finalization and dashboard access)
     const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
-    // Use the provided CEE ID or generate if empty
-    const ceeId = body.ceeId || `CEE-${Math.floor(10000 + Math.random() * 90000)}`;
+    // Use the provided CEE ID or generate if empty (trim and validate)
+    let ceeId = body.ceeId ? String(body.ceeId).trim() : null;
+    if (!ceeId || ceeId === '') {
+      ceeId = `CEE-${Math.floor(10000 + Math.random() * 90000)}`;
+    }
     
     // Parse assignedHub - need to handle both numeric strings and select option values
     let hubId = null;
