@@ -55,6 +55,7 @@ function AdminDashboardContent() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [availableRiders, setAvailableRiders] = useState<any[]>([]);
   const [selectedRiderId, setSelectedRiderId] = useState<string>('');
+  const [riderSearchQuery, setRiderSearchQuery] = useState<string>('');
 
   const [storesForRider, setStoresForRider] = useState<any[]>([]);
   const [vehiclesForRider, setVehiclesForRider] = useState<any[]>([]);
@@ -292,6 +293,7 @@ function AdminDashboardContent() {
       setShowEditModal(false);
       setEditItem(null);
       setSelectedRiderId('');
+      setRiderSearchQuery('');
       fetchVehicles();
     } catch (error) {
       console.error('Error assigning vehicle:', error);
@@ -1488,33 +1490,131 @@ function AdminDashboardContent() {
                   <>
                     {editItem.showAssignModal ? (
                       <>
-                        <div className="p-4 bg-blue-100 border border-blue-300 rounded-xl mb-6">
-                          <p className="text-sm font-bold text-blue-900">Vehicle: <span className="font-black">{editItem.vehicle_number}</span></p>
-                          <p className="text-sm text-blue-900 mt-2">{editItem.vehicle_type}, {editItem.model}</p>
+                        <div className="p-6 bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-300 rounded-2xl mb-6">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider">Vehicle Assignment</p>
+                              <p className="text-2xl font-black text-blue-900 mt-2">{editItem.vehicle_number}</p>
+                              <div className="flex gap-2 mt-3 flex-wrap">
+                                <span className="px-3 py-1 bg-blue-200 text-blue-900 text-xs font-semibold rounded-full">{editItem.vehicle_type}</span>
+                                <span className="px-3 py-1 bg-blue-200 text-blue-900 text-xs font-semibold rounded-full">{editItem.model}</span>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <i className="ph-bold ph-truck text-4xl text-blue-400 mb-2"></i>
+                              <p className="text-xs text-blue-700">Year {editItem.year || 'N/A'}</p>
+                            </div>
+                          </div>
                         </div>
 
-                        <label className="block text-sm font-semibold text-slate-900 mb-3">Choose a rider...</label>
+                        <div className="mb-6">
+                          <label className="block text-sm font-semibold text-slate-900 mb-3">Search for a rider</label>
+                          <div className="relative">
+                            <i className="ph-bold ph-magnifying-glass absolute left-3 top-3 text-slate-400 text-lg"></i>
+                            <input
+                              type="text"
+                              placeholder="Search by name, phone, or CEE ID..."
+                              value={riderSearchQuery}
+                              onChange={(e) => setRiderSearchQuery(e.target.value)}
+                              className="w-full pl-10 pr-4 py-3 border-2 border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
+                            />
+                          </div>
+                        </div>
+
                         {availableRiders.length === 0 ? (
-                          <div className="p-4 bg-yellow-50 border-2 border-yellow-300 rounded-xl text-yellow-900 text-sm">
-                            <p className="font-bold text-base">No riders found</p>
-                            <p className="text-sm mt-2">No riders exist in the system. Please register a rider first.</p>
+                          <div className="p-8 bg-yellow-50 border-2 border-yellow-300 rounded-2xl text-center">
+                            <i className="ph-bold ph-warning text-4xl text-yellow-600 mb-3 block"></i>
+                            <p className="font-bold text-lg text-yellow-900">No riders found</p>
+                            <p className="text-sm text-yellow-800 mt-2">No riders exist in the system yet. Please register a rider first before assigning vehicles.</p>
                           </div>
                         ) : (
                           <>
-                            <select
-                              value={selectedRiderId}
-                              onChange={(e) => setSelectedRiderId(e.target.value)}
-                              className="w-full px-4 py-3 border-2 border-orange-400 rounded-full focus:outline-none focus:ring-2 focus:ring-orange-500 text-base font-medium text-slate-900 bg-white hover:border-orange-500 transition-colors"
-                              required
-                            >
-                              <option value="">Choose a rider ({availableRiders.length} available)...</option>
-                              {availableRiders.map((rider: any) => (
-                                <option key={rider.id} value={rider.cee_id || rider.user_id}>
-                                  {rider.full_name} ({rider.cee_id || rider.user_id}) {rider.assigned_vehicle_id ? '(Already assigned)' : '(Unassigned)'}
-                                </option>
-                              ))}
-                            </select>
-                            <p className="text-xs text-slate-500 mt-2">Total riders: {availableRiders.length}</p>
+                            <div className="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden max-h-96 overflow-y-auto">
+                              {availableRiders
+                                .filter((rider: any) => {
+                                  const query = riderSearchQuery.toLowerCase();
+                                  return (
+                                    rider.full_name?.toLowerCase().includes(query) ||
+                                    rider.phone?.toLowerCase().includes(query) ||
+                                    rider.cee_id?.toLowerCase().includes(query) ||
+                                    rider.email?.toLowerCase().includes(query)
+                                  );
+                                })
+                                .length === 0 ? (
+                                <div className="p-6 text-center text-slate-500">
+                                  <i className="ph-bold ph-magnifying-glass text-2xl mb-2 block text-slate-400"></i>
+                                  <p className="text-sm">No riders match your search</p>
+                                </div>
+                              ) : (
+                                availableRiders
+                                  .filter((rider: any) => {
+                                    const query = riderSearchQuery.toLowerCase();
+                                    return (
+                                      rider.full_name?.toLowerCase().includes(query) ||
+                                      rider.phone?.toLowerCase().includes(query) ||
+                                      rider.cee_id?.toLowerCase().includes(query) ||
+                                      rider.email?.toLowerCase().includes(query)
+                                    );
+                                  })
+                                  .map((rider: any) => (
+                                    <div
+                                      key={rider.id}
+                                      onClick={() => setSelectedRiderId(rider.cee_id || rider.user_id)}
+                                      className={`p-4 border-b border-slate-200 cursor-pointer transition-all hover:bg-slate-100 ${
+                                        selectedRiderId === (rider.cee_id || rider.user_id)
+                                          ? 'bg-orange-100 border-l-4 border-l-orange-500'
+                                          : 'hover:bg-slate-100'
+                                      }`}
+                                    >
+                                      <div className="flex items-start justify-between gap-4">
+                                        <div className="flex-1">
+                                          <div className="flex items-center gap-2 mb-2">
+                                            <p className="font-bold text-slate-900">{rider.full_name || 'N/A'}</p>
+                                            {rider.assigned_vehicle_id && (
+                                              <span className="px-2 py-0.5 bg-amber-200 text-amber-900 text-xs font-semibold rounded-full">Assigned</span>
+                                            )}
+                                            {!rider.assigned_vehicle_id && (
+                                              <span className="px-2 py-0.5 bg-green-200 text-green-900 text-xs font-semibold rounded-full">Available</span>
+                                            )}
+                                          </div>
+                                          <div className="grid grid-cols-2 gap-4 text-xs text-slate-600 mt-2">
+                                            <div>
+                                              <p className="font-semibold text-slate-500">Phone</p>
+                                              <p className="mt-0.5 font-medium text-slate-900">{rider.phone || 'N/A'}</p>
+                                            </div>
+                                            <div>
+                                              <p className="font-semibold text-slate-500">CEE ID</p>
+                                              <p className="mt-0.5 font-medium text-slate-900">{rider.cee_id || rider.user_id || 'N/A'}</p>
+                                            </div>
+                                            <div>
+                                              <p className="font-semibold text-slate-500">Email</p>
+                                              <p className="mt-0.5 font-medium text-slate-900 truncate">{rider.email || 'N/A'}</p>
+                                            </div>
+                                            <div>
+                                              <p className="font-semibold text-slate-500">Status</p>
+                                              <p className="mt-0.5 font-medium capitalize text-slate-900">{rider.status || 'active'}</p>
+                                            </div>
+                                          </div>
+                                        </div>
+                                        <div className="flex-shrink-0">
+                                          {selectedRiderId === (rider.cee_id || rider.user_id) ? (
+                                            <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center">
+                                              <i className="ph-bold ph-check text-white text-xl"></i>
+                                            </div>
+                                          ) : (
+                                            <div className="w-12 h-12 bg-slate-300 rounded-full flex items-center justify-center">
+                                              <i className="ph ph-circle text-slate-400 text-xl"></i>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))
+                              )}
+                            </div>
+                            <p className="text-xs text-slate-500 mt-3 text-center">
+                              {availableRiders.filter((r: any) => !r.assigned_vehicle_id).length} unassigned riders out of {availableRiders.length} total
+                            </p>
                           </>
                         )}
 
@@ -1525,19 +1625,20 @@ function AdminDashboardContent() {
                               setShowEditModal(false);
                               setEditItem(null);
                               setSelectedRiderId('');
+                              setRiderSearchQuery('');
                             }}
-                            className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-semibold text-sm"
+                            className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-semibold text-sm transition-all"
                           >
                             Cancel
                           </button>
                           <button
                             type="button"
                             onClick={() => handleAssignRider(editItem.id, selectedRiderId)}
-                            className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold text-sm flex items-center gap-2"
+                            className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                             disabled={!selectedRiderId}
                           >
                             <i className="ph-bold ph-check text-lg"></i>
-                            Assign Rider
+                            Confirm Assignment
                           </button>
                         </div>
                       </>
