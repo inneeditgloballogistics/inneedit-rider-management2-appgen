@@ -29,6 +29,7 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
   const placesServiceRef = useRef<any>(null);
   const sessionTokenRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   const [isInitialized, setIsInitialized] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -39,6 +40,11 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
 
   // Fetch predictions from Google Places Autocomplete Service
   useEffect(() => {
+    // Clear previous debounce timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
     if (!value || value.length < 2) {
       setPredictions([]);
       setShowSuggestions(false);
@@ -51,24 +57,40 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
 
     setIsLoading(true);
     
-    // Use Autocomplete Service for predictions
-    autocompleteServiceRef.current.getPlacePredictions(
-      {
-        input: value,
-        componentRestrictions: { country: 'in' },
-        sessionToken: sessionTokenRef.current
-      },
-      (predictions: Prediction[] | null) => {
-        if (predictions) {
-          setPredictions(predictions.slice(0, 8)); // Limit to 8 results
-          setShowSuggestions(predictions.length > 0);
-        } else {
-          setPredictions([]);
-          setShowSuggestions(false);
+    // Debounce predictions fetch by 300ms
+    debounceTimerRef.current = setTimeout(() => {
+      // Use Autocomplete Service for predictions
+      autocompleteServiceRef.current.getPlacePredictions(
+        {
+          input: value,
+          componentRestrictions: { country: 'in' },
+          sessionToken: sessionTokenRef.current
+        },
+        (predictions: Prediction[] | null) => {
+          if (predictions) {
+            setPredictions(predictions.slice(0, 8)); // Limit to 8 results
+            setShowSuggestions(predictions.length > 0);
+          } else {
+            setPredictions([]);
+            setShowSuggestions(false);
+          }
+          setIsLoading(false);
+          
+          // Restore focus to input on mobile to keep keyboard visible
+          setTimeout(() => {
+            if (inputRef.current && document.activeElement !== inputRef.current) {
+              inputRef.current.focus();
+            }
+          }, 0);
         }
-        setIsLoading(false);
+      );
+    }, 300);
+
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
       }
-    );
+    };
   }, [value]);
 
   // Initialize Google Places Services
@@ -167,6 +189,22 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
     }
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    onChange(newValue);
+    
+    // Show suggestions on focus/input
+    if (newValue && newValue.length >= 2) {
+      setShowSuggestions(true);
+    }
+  };
+
+  const handleInputFocus = () => {
+    if (value && value.length >= 2 && predictions.length > 0) {
+      setShowSuggestions(true);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="relative" ref={containerRef}>
@@ -181,11 +219,12 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
             type="text"
             placeholder={placeholder}
             value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onFocus={() => value && value.length >= 2 && setShowSuggestions(true)}
-            className="w-full pl-10 pr-10 py-3 bg-transparent focus:outline-none text-slate-900 placeholder-slate-500"
+            onChange={handleInputChange}
+            onFocus={handleInputFocus}
+            className="w-full pl-10 pr-10 py-3 bg-transparent focus:outline-none text-slate-900 placeholder-slate-500 text-base"
             disabled={isLoading}
             autoComplete="off"
+            spellCheck="false"
           />
           
           <div className="absolute right-3">
@@ -198,7 +237,10 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
                   setSelectedCoords(null);
                   onChange('');
                   setPredictions([]);
-                  if (inputRef.current) inputRef.current.value = '';
+                  if (inputRef.current) {
+                    inputRef.current.value = '';
+                    inputRef.current.focus();
+                  }
                 }}
                 className="p-1 hover:bg-slate-100 rounded-full transition-colors"
               >
