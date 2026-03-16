@@ -310,18 +310,16 @@ export async function DELETE(request: NextRequest) {
       }
     }
 
-    // Check if rider has related records
-    const [orders, advances, referrals, deductions, incentives, payouts] = await Promise.all([
-      sql`SELECT COUNT(*) as count FROM orders WHERE rider_id = ${riderData.cee_id}`,
-      sql`SELECT COUNT(*) as count FROM advances WHERE rider_id = ${riderData.cee_id}`,
+    // Check if rider has related records (excluding orders table which doesn't exist)
+    const [advances, referrals, deductions, incentives, payouts] = await Promise.all([
+      sql`SELECT COUNT(*) as count FROM advances WHERE cee_id = ${riderData.cee_id}`,
       sql`SELECT COUNT(*) as count FROM referrals WHERE referrer_cee_id = ${riderData.cee_id}`,
-      sql`SELECT COUNT(*) as count FROM deductions WHERE rider_id = ${riderData.cee_id}`,
-      sql`SELECT COUNT(*) as count FROM incentives WHERE rider_id = ${riderData.cee_id}`,
-      sql`SELECT COUNT(*) as count FROM payouts WHERE rider_id = ${riderData.cee_id}`
+      sql`SELECT COUNT(*) as count FROM deductions WHERE cee_id = ${riderData.cee_id}`,
+      sql`SELECT COUNT(*) as count FROM incentives WHERE cee_id = ${riderData.cee_id}`,
+      sql`SELECT COUNT(*) as count FROM payouts WHERE cee_id = ${riderData.cee_id}`
     ]);
 
     const hasRelatedRecords = 
-      parseInt(orders[0].count) > 0 ||
       parseInt(advances[0].count) > 0 ||
       parseInt(referrals[0].count) > 0 ||
       parseInt(deductions[0].count) > 0 ||
@@ -330,7 +328,7 @@ export async function DELETE(request: NextRequest) {
 
     if (hasRelatedRecords) {
       return NextResponse.json({ 
-        error: 'Cannot delete rider with existing orders, advances, referrals, deductions, incentives, or payouts. Please remove or reassign these records first.' 
+        error: 'Cannot delete rider with existing advances, referrals, deductions, incentives, or payouts. Please remove or reassign these records first.' 
       }, { status: 400 });
     }
 
