@@ -213,24 +213,31 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
         {/* Predictions Dropdown - Google Maps Style */}
         {showSuggestions && predictions.length > 0 && (
           <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-300 rounded-lg shadow-xl z-50 max-h-96 overflow-y-auto">
-            {predictions.map((prediction) => (
-              <button
-                key={prediction.place_id}
-                type="button"
-                onClick={() => handlePredictionSelect(prediction)}
-                className="w-full text-left px-4 py-3 hover:bg-brand-50 transition-colors flex items-center gap-3 border-b border-slate-100 last:border-b-0 group"
-              >
-                <svg className="w-5 h-5 text-slate-400 group-hover:text-brand-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                </svg>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-slate-900 font-medium truncate">{prediction.main_text}</p>
-                  {prediction.secondary_text && (
-                    <p className="text-xs text-slate-500 truncate">{prediction.secondary_text}</p>
-                  )}
-                </div>
-              </button>
-            ))}
+            {predictions.map((prediction) => {
+              // Parse description to extract main and secondary text
+              const parts = prediction.description?.split(', ') || [];
+              const mainText = parts[0] || prediction.main_text || '';
+              const secondaryText = parts.slice(1).join(', ') || prediction.secondary_text || '';
+              
+              return (
+                <button
+                  key={prediction.place_id}
+                  type="button"
+                  onClick={() => handlePredictionSelect(prediction)}
+                  className="w-full text-left px-4 py-3 hover:bg-brand-50 transition-colors flex items-center gap-3 border-b border-slate-100 last:border-b-0 group"
+                >
+                  <svg className="w-5 h-5 text-slate-400 group-hover:text-brand-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                  </svg>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-slate-900 font-medium truncate">{mainText}</p>
+                    {secondaryText && (
+                      <p className="text-xs text-slate-500 truncate">{secondaryText}</p>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
           </div>
         )}
       </div>
