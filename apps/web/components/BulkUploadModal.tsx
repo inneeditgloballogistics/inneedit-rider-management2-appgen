@@ -20,13 +20,7 @@ export default function BulkUploadModal({ isOpen, onClose, type, onSuccess }: Bu
 
   const getTemplateColumns = () => {
     if (type === 'riders') {
-      return [
-        'full_name', 'phone', 'email', 'date_of_birth', 'gender', 'address', 'city', 'state', 'pincode',
-        'emergency_contact_name', 'emergency_contact_phone', 'client', 'driving_license_number',
-        'driving_license_expiry', 'aadhar_number', 'bank_name', 'account_number', 'ifsc_code',
-        'vehicle_type', 'assigned_hub_id', 'status', 'vehicle_ownership', 'ev_monthly_rent',
-        'ev_weekly_rent', 'is_leader', 'leader_discount_percentage', 'join_date', 'ev_type'
-      ];
+      return ['full_name', 'date_of_birth', 'join_date', 'phone', 'email', 'address', 'client'];
     } else if (type === 'hubs') {
       return ['hub_name', 'hub_code', 'location', 'city', 'state', 'pincode', 'manager_name', 'manager_phone', 'status', 'latitude', 'longitude'];
     } else if (type === 'vehicles') {
@@ -148,33 +142,12 @@ export default function BulkUploadModal({ isOpen, onClose, type, onSuccess }: Bu
     if (type === 'riders') {
       return {
         fullName: row.full_name,
+        dob: row.date_of_birth || null,
+        joinDate: row.join_date || null,
         phone: row.phone,
         email: row.email || null,
-        dob: row.date_of_birth || null,
-        gender: row.gender || null,
         address: row.address || null,
-        city: row.city || null,
-        state: row.state || null,
-        pincode: row.pincode || null,
-        emergencyContactName: row.emergency_contact_name || null,
-        emergencyContactPhone: row.emergency_contact_phone || null,
-        client: row.client,
-        drivingLicenseNumber: row.driving_license_number || null,
-        drivingLicenseExpiry: row.driving_license_expiry || null,
-        aadharNumber: row.aadhar_number || null,
-        bankName: row.bank_name || null,
-        accountNumber: row.account_number || null,
-        ifscCode: row.ifsc_code || null,
-        vehicleType: row.vehicle_type || null,
-        assignedHubId: row.assigned_hub_id ? parseInt(row.assigned_hub_id) : null,
-        status: row.status || 'active',
-        vehicleOwnership: row.vehicle_ownership || 'company_ev',
-        evMonthlyRent: row.ev_monthly_rent ? parseFloat(row.ev_monthly_rent) : null,
-        evWeeklyRent: row.ev_weekly_rent ? parseFloat(row.ev_weekly_rent) : null,
-        isLeader: row.is_leader === 'true' || row.is_leader === '1',
-        leaderDiscountPercentage: row.leader_discount_percentage ? parseFloat(row.leader_discount_percentage) : 0,
-        joinDate: row.join_date || null,
-        evType: row.ev_type || 'fixed_battery'
+        client: row.client
       };
     } else if (type === 'hubs') {
       return {
