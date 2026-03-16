@@ -214,10 +214,21 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
         {showSuggestions && predictions.length > 0 && (
           <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-300 rounded-lg shadow-xl z-50 max-h-96 overflow-y-auto">
             {predictions.map((prediction) => {
-              // Parse description to extract main and secondary text
-              const parts = prediction.description?.split(', ') || [];
-              const mainText = parts[0] || prediction.main_text || '';
-              const secondaryText = parts.slice(1).join(', ') || prediction.secondary_text || '';
+              // The description from Google Places API contains the full address
+              // Try to extract main place name and address
+              const description = prediction.description || '';
+              const commaIndex = description.lastIndexOf(',');
+              
+              let mainText = '';
+              let secondaryText = '';
+              
+              if (commaIndex > 0) {
+                // Split at the last comma to separate place name from full address
+                mainText = description.substring(0, commaIndex).trim();
+                secondaryText = description.substring(commaIndex + 1).trim();
+              } else {
+                mainText = description.trim();
+              }
               
               return (
                 <button
@@ -230,7 +241,7 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
                     <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
                   </svg>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-slate-900 font-medium truncate">{mainText}</p>
+                    <p className="text-sm text-slate-900 font-medium truncate">{mainText || description}</p>
                     {secondaryText && (
                       <p className="text-xs text-slate-500 truncate">{secondaryText}</p>
                     )}
