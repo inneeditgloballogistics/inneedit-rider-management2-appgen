@@ -144,7 +144,7 @@ export default function BulkUploadModal({ isOpen, onClose, type, onSuccess }: Bu
         fullName: row.full_name,
         dob: row.date_of_birth || null,
         joinDate: row.join_date || null,
-        phone: row.phone,
+        mobile: row.phone,
         email: row.email || null,
         address: row.address || null,
         client: row.client
