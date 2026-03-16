@@ -25,14 +25,14 @@ export default function BulkUploadModal({ isOpen, onClose, type, onSuccess }: Bu
         'emergency_contact_name', 'emergency_contact_phone', 'client', 'driving_license_number',
         'driving_license_expiry', 'aadhar_number', 'bank_name', 'account_number', 'ifsc_code',
         'vehicle_type', 'assigned_hub_id', 'status', 'vehicle_ownership', 'ev_monthly_rent',
-        'ev_weekly_rent', 'is_leader', 'leader_discount_percentage', 'join_date', 'ev_type', 'ev_daily_rent'
+        'ev_weekly_rent', 'is_leader', 'leader_discount_percentage', 'join_date', 'ev_type'
       ];
     } else if (type === 'hubs') {
       return ['hub_name', 'hub_code', 'location', 'city', 'state', 'pincode', 'manager_name', 'manager_phone', 'status', 'latitude', 'longitude'];
     } else if (type === 'vehicles') {
       return ['vehicle_number', 'vehicle_type', 'model', 'year', 'assigned_rider_id', 'hub_id', 'status'];
     } else {
-      return ['store_name', 'store_code', 'client', 'location', 'city', 'state', 'pincode', 'contact_person', 'contact_phone', 'status', 'latitude', 'longitude', 'store_manager_name', 'store_manager_phone'];
+      return ['store_name', 'store_code', 'client', 'manager_name', 'manager_phone'];
     }
   };
 
@@ -174,8 +174,7 @@ export default function BulkUploadModal({ isOpen, onClose, type, onSuccess }: Bu
         isLeader: row.is_leader === 'true' || row.is_leader === '1',
         leaderDiscountPercentage: row.leader_discount_percentage ? parseFloat(row.leader_discount_percentage) : 0,
         joinDate: row.join_date || null,
-        evType: row.ev_type || 'fixed_battery',
-        evDailyRent: row.ev_daily_rent ? parseFloat(row.ev_daily_rent) : 215
+        evType: row.ev_type || 'fixed_battery'
       };
     } else if (type === 'hubs') {
       return {
@@ -206,17 +205,11 @@ export default function BulkUploadModal({ isOpen, onClose, type, onSuccess }: Bu
         store_name: row.store_name,
         store_code: row.store_code,
         client: row.client,
-        location: row.location,
-        city: row.city || null,
-        state: row.state || null,
-        pincode: row.pincode || null,
-        contact_person: row.contact_person || null,
-        contact_phone: row.contact_phone || null,
-        status: row.status || 'active',
-        latitude: row.latitude ? parseFloat(row.latitude) : null,
-        longitude: row.longitude ? parseFloat(row.longitude) : null,
-        store_manager_name: row.store_manager_name || null,
-        store_manager_phone: row.store_manager_phone || null
+        contact_person: row.manager_name || null,
+        contact_phone: row.manager_phone || null,
+        status: 'active',
+        store_manager_name: row.manager_name || null,
+        store_manager_phone: row.manager_phone || null
       };
     }
   };
