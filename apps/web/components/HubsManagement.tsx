@@ -354,158 +354,201 @@ export default function HubsManagement() {
       {/* Add Hub Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-slate-200 flex items-center justify-between sticky top-0 bg-white">
-              <h3 className="text-xl font-bold text-slate-900">Add New Hub</h3>
-              <button onClick={() => setShowAddModal(false)} className="p-1 hover:bg-slate-100 rounded">
-                <i className="ph-bold ph-x text-xl"></i>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[95vh] overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="p-6 border-b border-slate-200 flex items-center justify-between sticky top-0 bg-gradient-to-r from-brand-50 to-white">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-brand-100 rounded-lg flex items-center justify-center">
+                  <i className="ph-bold ph-plus text-brand-600 text-lg"></i>
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900">Add New Hub</h3>
+                  <p className="text-xs text-slate-500">Create a new hub location with complete details</p>
+                </div>
+              </div>
+              <button onClick={() => setShowAddModal(false)} className="p-1 hover:bg-slate-200 rounded-lg transition-colors">
+                <i className="ph-bold ph-x text-xl text-slate-600"></i>
               </button>
             </div>
-            <form onSubmit={handleAddSubmit} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-slate-900 mb-2">Search Location</label>
-                <LocationSearch
-                  value={newHub.location || ''}
-                  onChange={(location, lat, lng, address) => {
-                    // Only update if lat/lng are provided (i.e., place was selected from Google)
-                    if (lat !== undefined && lng !== undefined) {
-                      const parts = (address || location).split(',').map((p: string) => p.trim());
-                      let city = '', state = '', pincode = '';
-                      
-                      if (parts.length >= 2) {
-                        city = parts[parts.length - 3] || '';
-                        state = parts[parts.length - 2] || '';
-                        const lastPart = parts[parts.length - 1];
-                        pincode = lastPart?.match(/\d{6}/) ? lastPart : '';
-                      }
-                      
-                      setNewHub({
-                        ...newHub,
-                        location: address || location,
-                        latitude: lat,
-                        longitude: lng,
-                        city: city || newHub.city,
-                        state: state || newHub.state,
-                        pincode: pincode || newHub.pincode
-                      });
-                    } else {
-                      // Just update the search text if still typing
-                      setNewHub({
-                        ...newHub,
-                        location
-                      });
-                    }
-                  }}
-                  placeholder="Search for hub location"
-                />
-              </div>
-              
-              {newHub.latitude && newHub.longitude && (
-                <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
-                  <strong>Location:</strong> Lat: {(typeof newHub.latitude === 'number' ? newHub.latitude : parseFloat(newHub.latitude)).toFixed(4)}, Lng: {(typeof newHub.longitude === 'number' ? newHub.longitude : parseFloat(newHub.longitude)).toFixed(4)}
+            
+            {/* Form Content */}
+            <form onSubmit={handleAddSubmit} className="overflow-y-auto flex-1 p-6 space-y-6">
+              {/* Location Section */}
+              <div className="bg-slate-50 rounded-xl p-5 border border-slate-200">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-8 h-8 bg-brand-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <i className="ph-bold ph-map-pin text-brand-600"></i>
+                  </div>
+                  <h4 className="font-semibold text-slate-900">Location Details</h4>
                 </div>
-              )}
-              
-              <div>
-                <label className="block text-sm font-semibold text-slate-900 mb-2">Hub Name <span className="text-red-500">*</span></label>
-                <input
-                  type="text"
-                  value={newHub.hub_name || ''}
-                  onChange={(e) => setNewHub({...newHub, hub_name: e.target.value})}
-                  placeholder="Hub name"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                />
+                <div className="space-y-4">
+                  <LocationSearch
+                    value={newHub.location || ''}
+                    onChange={(location, lat, lng, address) => {
+                      if (lat !== undefined && lng !== undefined) {
+                        const parts = (address || location).split(',').map((p: string) => p.trim());
+                        let city = '', state = '', pincode = '';
+                        
+                        if (parts.length >= 2) {
+                          city = parts[parts.length - 3] || '';
+                          state = parts[parts.length - 2] || '';
+                          const lastPart = parts[parts.length - 1];
+                          pincode = lastPart?.match(/\\d{6}/) ? lastPart : '';
+                        }
+                        
+                        setNewHub({
+                          ...newHub,
+                          location: address || location,
+                          latitude: lat,
+                          longitude: lng,
+                          city: city || newHub.city,
+                          state: state || newHub.state,
+                          pincode: pincode || newHub.pincode
+                        });
+                      } else {
+                        setNewHub({
+                          ...newHub,
+                          location
+                        });
+                      }
+                    }}
+                    placeholder="Search and select hub location"
+                  />
+                  
+                  {/* Location Info Grid */}
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 mb-1.5">City</label>
+                      <input
+                        type="text"
+                        value={newHub.city || ''}
+                        onChange={(e) => setNewHub({...newHub, city: e.target.value})}
+                        placeholder="Auto-filled from location"
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 text-sm bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 mb-1.5">State</label>
+                      <input
+                        type="text"
+                        value={newHub.state || ''}
+                        onChange={(e) => setNewHub({...newHub, state: e.target.value})}
+                        placeholder="Auto-filled from location"
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 text-sm bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 mb-1.5">Postal Code</label>
+                      <input
+                        type="text"
+                        value={newHub.pincode || ''}
+                        onChange={(e) => setNewHub({...newHub, pincode: e.target.value})}
+                        placeholder="Auto-filled from location"
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 text-sm bg-white"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-slate-900 mb-2">Hub Code</label>
-                  <div className="flex gap-2">
+              {/* Hub Info Section */}
+              <div className="bg-slate-50 rounded-xl p-5 border border-slate-200">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-8 h-8 bg-brand-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <i className="ph-bold ph-building text-brand-600"></i>
+                  </div>
+                  <h4 className="font-semibold text-slate-900">Hub Information</h4>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-900 mb-1.5">Hub Name <span className="text-red-500">*</span></label>
                     <input
                       type="text"
-                      value={newHub.hub_code || ''}
-                      onChange={(e) => setNewHub({...newHub, hub_code: e.target.value})}
-                      placeholder="Auto-generated code"
-                      className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
+                      value={newHub.hub_name || ''}
+                      onChange={(e) => setNewHub({...newHub, hub_name: e.target.value})}
+                      placeholder="e.g., Downtown Hub, North Center"
+                      className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 text-sm"
                     />
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        const code = await generateHubCode();
-                        setNewHub({...newHub, hub_code: code});
-                      }}
-                      className="px-3 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 font-medium text-sm whitespace-nowrap"
-                      title="Generate a new code"
-                    >
-                      <i className="ph-bold ph-shuffle text-lg"></i>
-                    </button>
                   </div>
-                  <p className="text-xs text-slate-500 mt-1">Leave empty to auto-generate</p>
+                  
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-900 mb-1.5">Hub Code</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={newHub.hub_code || ''}
+                        onChange={(e) => setNewHub({...newHub, hub_code: e.target.value})}
+                        placeholder="Auto-generated (e.g., HUB-001)"
+                        className="flex-1 px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 text-sm"
+                      />
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const code = await generateHubCode();
+                          setNewHub({...newHub, hub_code: code});
+                        }}
+                        className="px-4 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-medium text-sm transition-colors flex items-center gap-2 whitespace-nowrap"
+                        title="Generate a new code"
+                      >
+                        <i className="ph-bold ph-shuffle"></i>Generate
+                      </button>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1.5">Leave empty to auto-generate</p>
+                  </div>
                 </div>
-                <div></div>
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-slate-900 mb-2">City</label>
-                  <input
-                    type="text"
-                    value={newHub.city || ''}
-                    onChange={(e) => setNewHub({...newHub, city: e.target.value})}
-                    placeholder="City"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                  />
+              {/* Manager Section */}
+              <div className="bg-slate-50 rounded-xl p-5 border border-slate-200">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-8 h-8 bg-brand-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <i className="ph-bold ph-user text-brand-600"></i>
+                  </div>
+                  <h4 className="font-semibold text-slate-900">Hub In-charge</h4>
                 </div>
-                <div>
-                  <label className="block text-sm font-semibold text-slate-900 mb-2">State</label>
-                  <input
-                    type="text"
-                    value={newHub.state || ''}
-                    onChange={(e) => setNewHub({...newHub, state: e.target.value})}
-                    placeholder="State"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                  />
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-900 mb-1.5">Name</label>
+                    <input
+                      type="text"
+                      value={newHub.manager_name || ''}
+                      onChange={(e) => setNewHub({...newHub, manager_name: e.target.value})}
+                      placeholder="Hub manager's full name"
+                      className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 text-sm"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-900 mb-1.5">Phone Number</label>
+                    <input
+                      type="tel"
+                      value={newHub.manager_phone || ''}
+                      onChange={(e) => setNewHub({...newHub, manager_phone: e.target.value})}
+                      placeholder="10-digit phone number"
+                      className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 text-sm"
+                    />
+                  </div>
                 </div>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-semibold text-slate-900 mb-2">Pincode</label>
-                <input
-                  type="text"
-                  value={newHub.pincode || ''}
-                  onChange={(e) => setNewHub({...newHub, pincode: e.target.value})}
-                  placeholder="Pincode"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-semibold text-slate-900 mb-2">Hub In-charge Name</label>
-                <input
-                  type="text"
-                  value={newHub.manager_name || ''}
-                  onChange={(e) => setNewHub({...newHub, manager_name: e.target.value})}
-                  placeholder="Hub in-charge name"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-semibold text-slate-900 mb-2">Hub In-charge Phone</label>
-                <input
-                  type="tel"
-                  value={newHub.manager_phone || ''}
-                  onChange={(e) => setNewHub({...newHub, manager_phone: e.target.value})}
-                  placeholder="Phone number"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                />
-              </div>
-              
-              <div className="flex gap-3 justify-end pt-4 border-t border-slate-200">
-                <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 font-medium">Cancel</button>
-                <button type="submit" className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium">Add Hub</button>
               </div>
             </form>
+            
+            {/* Footer */}
+            <div className="p-6 border-t border-slate-200 bg-slate-50 flex gap-3 justify-end">
+              <button 
+                type="button" 
+                onClick={() => setShowAddModal(false)} 
+                className="px-6 py-2.5 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 font-medium transition-colors flex items-center gap-2"
+              >
+                <i className="ph-bold ph-x"></i>Cancel
+              </button>
+              <button 
+                type="submit" 
+                onClick={handleAddSubmit}
+                className="px-6 py-2.5 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium transition-colors flex items-center gap-2"
+              >
+                <i className="ph-bold ph-plus"></i>Add Hub
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -513,169 +556,218 @@ export default function HubsManagement() {
       {/* Edit Hub Modal */}
       {showEditModal && editItem && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-slate-200 flex items-center justify-between sticky top-0 bg-white">
-              <h3 className="text-xl font-bold text-slate-900">Edit Hub</h3>
-              <button onClick={() => setShowEditModal(false)} className="p-1 hover:bg-slate-100 rounded">
-                <i className="ph-bold ph-x text-xl"></i>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[95vh] overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="p-6 border-b border-slate-200 flex items-center justify-between sticky top-0 bg-gradient-to-r from-amber-50 to-white">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                  <i className="ph-bold ph-pencil text-amber-600 text-lg"></i>
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900">Edit Hub</h3>
+                  <p className="text-xs text-slate-500">Update hub location and manager details</p>
+                </div>
+              </div>
+              <button onClick={() => setShowEditModal(false)} className="p-1 hover:bg-slate-200 rounded-lg transition-colors">
+                <i className="ph-bold ph-x text-xl text-slate-600"></i>
               </button>
             </div>
-            <form onSubmit={handleUpdateSubmit} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-slate-900 mb-2">Search Location</label>
-                <LocationSearch
-                  value={editItem.location || ''}
-                  onChange={(location, lat, lng, address) => {
-                    // Only update if lat/lng are provided (i.e., place was selected from Google)
-                    if (lat !== undefined && lng !== undefined) {
-                      const parts = (address || location).split(',').map((p: string) => p.trim());
-                      let city = '', state = '', pincode = '';
-                      
-                      if (parts.length >= 2) {
-                        city = parts[parts.length - 3] || '';
-                        state = parts[parts.length - 2] || '';
-                        const lastPart = parts[parts.length - 1];
-                        pincode = lastPart?.match(/\d{6}/) ? lastPart : '';
-                      }
-                      
-                      setEditItem({
-                        ...editItem,
-                        location: address || location,
-                        latitude: lat,
-                        longitude: lng,
-                        city: city || editItem.city,
-                        state: state || editItem.state,
-                        pincode: pincode || editItem.pincode
-                      });
-                    } else {
-                      // Just update the search text if still typing
-                      setEditItem({
-                        ...editItem,
-                        location
-                      });
-                    }
-                  }}
-                  placeholder="Update location"
-                />
-              </div>
-              
-              {editItem.latitude && editItem.longitude && (
-                <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
-                  <strong>Location:</strong> Lat: {(typeof editItem.latitude === 'number' ? editItem.latitude : parseFloat(editItem.latitude)).toFixed(4)}, Lng: {(typeof editItem.longitude === 'number' ? editItem.longitude : parseFloat(editItem.longitude)).toFixed(4)}
+            
+            {/* Form Content */}
+            <form onSubmit={handleUpdateSubmit} className="overflow-y-auto flex-1 p-6 space-y-6">
+              {/* Location Section */}
+              <div className="bg-slate-50 rounded-xl p-5 border border-slate-200">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <i className="ph-bold ph-map-pin text-amber-600"></i>
+                  </div>
+                  <h4 className="font-semibold text-slate-900">Location Details</h4>
                 </div>
-              )}
-              
-              <div>
-                <label className="block text-sm font-semibold text-slate-900 mb-2">Hub Name</label>
-                <input
-                  type="text"
-                  value={editItem.hub_name || ''}
-                  onChange={(e) => setEditItem({...editItem, hub_name: e.target.value})}
-                  placeholder="Hub name"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-slate-900 mb-2">Hub Code</label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={editItem.hub_code || ''}
-                      onChange={(e) => setEditItem({...editItem, hub_code: e.target.value})}
-                      placeholder="Hub code"
-                      className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                    />
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        const code = await generateHubCode();
-                        setEditItem({...editItem, hub_code: code});
-                      }}
-                      className="px-3 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 font-medium text-sm whitespace-nowrap"
-                      title="Generate a new code"
-                    >
-                      <i className="ph-bold ph-shuffle text-lg"></i>
-                    </button>
+                <div className="space-y-4">
+                  <LocationSearch
+                    value={editItem.location || ''}
+                    onChange={(location, lat, lng, address) => {
+                      if (lat !== undefined && lng !== undefined) {
+                        const parts = (address || location).split(',').map((p: string) => p.trim());
+                        let city = '', state = '', pincode = '';
+                        
+                        if (parts.length >= 2) {
+                          city = parts[parts.length - 3] || '';
+                          state = parts[parts.length - 2] || '';
+                          const lastPart = parts[parts.length - 1];
+                          pincode = lastPart?.match(/\\d{6}/) ? lastPart : '';
+                        }
+                        
+                        setEditItem({
+                          ...editItem,
+                          location: address || location,
+                          latitude: lat,
+                          longitude: lng,
+                          city: city || editItem.city,
+                          state: state || editItem.state,
+                          pincode: pincode || editItem.pincode
+                        });
+                      } else {
+                        setEditItem({
+                          ...editItem,
+                          location
+                        });
+                      }
+                    }}
+                    placeholder="Update hub location"
+                  />
+                  
+                  {/* Location Info Grid */}
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 mb-1.5">City</label>
+                      <input
+                        type="text"
+                        value={editItem.city || ''}
+                        onChange={(e) => setEditItem({...editItem, city: e.target.value})}
+                        placeholder="Auto-filled from location"
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-600 text-sm bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 mb-1.5">State</label>
+                      <input
+                        type="text"
+                        value={editItem.state || ''}
+                        onChange={(e) => setEditItem({...editItem, state: e.target.value})}
+                        placeholder="Auto-filled from location"
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-600 text-sm bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 mb-1.5">Postal Code</label>
+                      <input
+                        type="text"
+                        value={editItem.pincode || ''}
+                        onChange={(e) => setEditItem({...editItem, pincode: e.target.value})}
+                        placeholder="Auto-filled from location"
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-600 text-sm bg-white"
+                      />
+                    </div>
                   </div>
                 </div>
-                <div></div>
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-slate-900 mb-2">City</label>
-                  <input
-                    type="text"
-                    value={editItem.city || ''}
-                    onChange={(e) => setEditItem({...editItem, city: e.target.value})}
-                    placeholder="City"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                  />
+              {/* Hub Info Section */}
+              <div className="bg-slate-50 rounded-xl p-5 border border-slate-200">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <i className="ph-bold ph-building text-amber-600"></i>
+                  </div>
+                  <h4 className="font-semibold text-slate-900">Hub Information</h4>
                 </div>
-                <div>
-                  <label className="block text-sm font-semibold text-slate-900 mb-2">State</label>
-                  <input
-                    type="text"
-                    value={editItem.state || ''}
-                    onChange={(e) => setEditItem({...editItem, state: e.target.value})}
-                    placeholder="State"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                  />
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-900 mb-1.5">Hub Name</label>
+                    <input
+                      type="text"
+                      value={editItem.hub_name || ''}
+                      onChange={(e) => setEditItem({...editItem, hub_name: e.target.value})}
+                      placeholder="e.g., Downtown Hub, North Center"
+                      className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-600 text-sm"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-900 mb-1.5">Hub Code</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={editItem.hub_code || ''}
+                        onChange={(e) => setEditItem({...editItem, hub_code: e.target.value})}
+                        placeholder="e.g., HUB-001"
+                        className="flex-1 px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-600 text-sm"
+                      />
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const code = await generateHubCode();
+                          setEditItem({...editItem, hub_code: code});
+                        }}
+                        className="px-4 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-medium text-sm transition-colors flex items-center gap-2 whitespace-nowrap"
+                        title="Generate a new code"
+                      >
+                        <i className="ph-bold ph-shuffle"></i>Generate
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
               
-              <div>
-                <label className="block text-sm font-semibold text-slate-900 mb-2">Pincode</label>
-                <input
-                  type="text"
-                  value={editItem.pincode || ''}
-                  onChange={(e) => setEditItem({...editItem, pincode: e.target.value})}
-                  placeholder="Pincode"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                />
+              {/* Manager Section */}
+              <div className="bg-slate-50 rounded-xl p-5 border border-slate-200">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <i className="ph-bold ph-user text-amber-600"></i>
+                  </div>
+                  <h4 className="font-semibold text-slate-900">Hub In-charge</h4>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-900 mb-1.5">Name</label>
+                    <input
+                      type="text"
+                      value={editItem.manager_name || ''}
+                      onChange={(e) => setEditItem({...editItem, manager_name: e.target.value})}
+                      placeholder="Hub manager's full name"
+                      className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-600 text-sm"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-900 mb-1.5">Phone Number</label>
+                    <input
+                      type="tel"
+                      value={editItem.manager_phone || ''}
+                      onChange={(e) => setEditItem({...editItem, manager_phone: e.target.value})}
+                      placeholder="10-digit phone number"
+                      className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-600 text-sm"
+                    />
+                  </div>
+                </div>
               </div>
               
-              <div>
-                <label className="block text-sm font-semibold text-slate-900 mb-2">Hub In-charge Name</label>
-                <input
-                  type="text"
-                  value={editItem.manager_name || ''}
-                  onChange={(e) => setEditItem({...editItem, manager_name: e.target.value})}
-                  placeholder="Hub in-charge name"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-semibold text-slate-900 mb-2">Hub In-charge Phone</label>
-                <input
-                  type="tel"
-                  value={editItem.manager_phone || ''}
-                  onChange={(e) => setEditItem({...editItem, manager_phone: e.target.value})}
-                  placeholder="Phone number"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-semibold text-slate-900 mb-2">Status</label>
+              {/* Status Section */}
+              <div className="bg-slate-50 rounded-xl p-5 border border-slate-200">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <i className="ph-bold ph-toggle-right text-amber-600"></i>
+                  </div>
+                  <h4 className="font-semibold text-slate-900">Status</h4>
+                </div>
                 <select
                   value={editItem.status || 'active'}
                   onChange={(e) => setEditItem({...editItem, status: e.target.value})}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
+                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-600 text-sm"
                 >
                   <option value="active">Active</option>
                   <option value="inactive">Inactive</option>
                 </select>
               </div>
-              
-              <div className="flex gap-3 justify-end pt-4 border-t border-slate-200">
-                <button type="button" onClick={() => setShowEditModal(false)} className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 font-medium">Cancel</button>
-                <button type="submit" className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium">Save Changes</button>
-              </div>
             </form>
+            
+            {/* Footer */}
+            <div className="p-6 border-t border-slate-200 bg-slate-50 flex gap-3 justify-end">
+              <button 
+                type="button" 
+                onClick={() => setShowEditModal(false)} 
+                className="px-6 py-2.5 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 font-medium transition-colors flex items-center gap-2"
+              >
+                <i className="ph-bold ph-x"></i>Cancel
+              </button>
+              <button 
+                type="submit" 
+                onClick={handleUpdateSubmit}
+                className="px-6 py-2.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 font-medium transition-colors flex items-center gap-2"
+              >
+                <i className="ph-bold ph-check"></i>Save Changes
+              </button>
+            </div>
           </div>
         </div>
       )}
