@@ -128,7 +128,7 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
         const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
           types: ['geocode'],
           sessionToken: sessionTokenRef.current,
-          fields: ['place_id', 'formatted_address', 'name'],
+          fields: ['place_id', 'formatted_address', 'name', 'geometry'],
           componentRestrictions: { country: 'in' },
           bounds: new window.google.maps.LatLngBounds(
             new window.google.maps.LatLng(15.4, 77.8),   // Southwest corner of Telangana (expanded)
@@ -142,8 +142,10 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
         autocomplete.addListener('place_changed', async () => {
           const place = autocomplete.getPlace();
           
-          if (!place.place_id) {
-            console.warn('No place selected');
+          console.log('📍 Place selected from autocomplete:', { place_id: place?.place_id, formattedAddress: place?.formatted_address });
+          
+          if (!place || !place.place_id) {
+            console.warn('No place selected or no place_id');
             return;
           }
 
@@ -152,59 +154,87 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
 
           try {
             // ✅ MAPS JAVASCRIPT API & PLACES API - Get place details with geometry
-            const service = new window.google.maps.places.PlacesService(document.createElement('div'));
+            const mapElement = document.body;
+            const service = new window.google.maps.places.PlacesService(mapElement);
+            
+            console.log('📍 Requesting place details for place_id:', place.place_id);
             
             service.getDetails({
               placeId: place.place_id,
+              sessionToken: sessionTokenRef.current,
               fields: ['geometry', 'formatted_address', 'address_components', 'name']
             }, async (result: any, status: string) => {
-              console.log('PlacesService response:', { status, hasGeometry: !!result?.geometry, geometry: result?.geometry });
+              console.log('📍 PlacesService.getDetails response:', { 
+                status, 
+                placeId: place.place_id,
+                hasGeometry: !!result?.geometry,
+                hasLocation: !!result?.geometry?.location 
+              });
               
               if (status === window.google.maps.places.PlacesServiceStatus.OK && result?.geometry?.location) {
-                let lat, lng;
-                
-                // Handle both function and property access
-                if (typeof result.geometry.location.lat === 'function') {
-                  lat = result.geometry.location.lat();
-                  lng = result.geometry.location.lng();
-                } else {
-                  lat = result.geometry.location.lat;
-                  lng = result.geometry.location.lng;
-                }
-                
-                console.log('Extracted coordinates:', { lat, lng, type_lat: typeof lat, type_lng: typeof lng });
-                
-                // ✅ GEOCODING API - Validate & enhance address with reverse geocoding
                 try {
-                  const geocodedAddress = await reverseGeocode(lat, lng);
-                  const validatedAddress = geocodedAddress?.formatted_address || result.formatted_address;
+                  let lat, lng;
                   
-                  console.log('📍 Location confirmed:', { 
-                    address: validatedAddress,
-                    latitude: lat, 
-                    longitude: lng,
-                    city: geocodedAddress?.city,
-                    state: geocodedAddress?.state,
-                    pincode: geocodedAddress?.pincode
-                  });
-                
-                  // Store coords for map display
-                  setSelectedCoords({ lat, lng, address: validatedAddress });
+                  // Handle both function and property access
+                  if (typeof result.geometry.location.lat === 'function') {
+                    lat = result.geometry.location.lat();
+                    lng = result.geometry.location.lng();
+                  } else {
+                    lat = result.geometry.location.lat;
+                    lng = result.geometry.location.lng;
+                  }
                   
-                  // Notify parent with geocoded address components
-                  onChange(validatedAddress, lat, lng, validatedAddress, geocodedAddress);
-                } catch (geocodingError) {
-                  // Fallback if Geocoding API fails
-                  console.warn('Geocoding API validation skipped, using Places data:', geocodingError);
-                  setSelectedCoords({ lat, lng, address: result.formatted_address });
-                  onChange(result.formatted_address, lat, lng, result.formatted_address);
+                  console.log('✅ Extracted coordinates from Places API:', { lat, lng, address: result.formatted_address });
+                  
+                  // ✅ GEOCODING API - Reverse geocode to extract detailed address components
+                  try {
+                    const geocodedAddress = await reverseGeocode(lat, lng);
+                    const validatedAddress = geocodedAddress?.formatted_address || result.formatted_address;
+                    
+                    console.log('📍 Location confirmed via Geocoding API:', { 
+                      address: validatedAddress,
+                      latitude: lat, 
+                      longitude: lng,
+                      city: geocodedAddress?.city,
+                      state: geocodedAddress?.state,
+                      pincode: geocodedAddress?.pincode
+                    });
+                  
+                    // Store coords for map display
+                    setSelectedCoords({ lat, lng, address: validatedAddress });
+                    
+                    // Notify parent with geocoded address components
+                    onChange(validatedAddress, lat, lng, validatedAddress, geocodedAddress);
+                  } catch (geocodingError) {
+                    // Fallback if Geocoding API fails - still use the coordinates we got from Places API
+                    console.warn('Geocoding API failed, using Places data:', geocodingError);
+                    setSelectedCoords({ lat, lng, address: result.formatted_address });
+                    onChange(result.formatted_address, lat, lng, result.formatted_address);
+                  }
+                  
+                } catch (extractError) {
+                  console.error('Error extracting coordinates:', extractError);
                 }
-                
-                // Reset session token after selection for next search
-                sessionTokenRef.current = new window.google.maps.places.AutocompleteSessionToken();
               } else {
-                console.error('PlacesService error:', status);
+                console.error('PlacesService error or no geometry:', { status });
+                // Fallback: If getDetails fails, try to use geometry from initial place object
+                if (place?.geometry?.location) {
+                  let lat, lng;
+                  if (typeof place.geometry.location.lat === 'function') {
+                    lat = place.geometry.location.lat();
+                    lng = place.geometry.location.lng();
+                  } else {
+                    lat = place.geometry.location.lat;
+                    lng = place.geometry.location.lng;
+                  }
+                  console.log('📍 Using geometry from initial place object:', { lat, lng });
+                  setSelectedCoords({ lat, lng, address: place.formatted_address });
+                  onChange(place.formatted_address, lat, lng, place.formatted_address);
+                }
               }
+              
+              // Reset session token after selection for next search
+              sessionTokenRef.current = new window.google.maps.places.AutocompleteSessionToken();
               setIsValidating(false);
             });
           } catch (error) {
