@@ -11,6 +11,7 @@ import StoresManagement from '@/components/StoresManagement';
 import HubsManagement from '@/components/HubsManagement';
 import WeatherBadge from '@/components/WeatherBadge';
 import BulkUploadModal from '@/components/BulkUploadModal';
+import HubManagerCredentialsGenerator from '@/components/HubManagerCredentialsGenerator';
 
 const StoreMapView = dynamic(() => import('@/components/StoreMapView'), {
   ssr: false,
@@ -631,7 +632,35 @@ function AdminDashboardContent() {
 
 
             {activeTab === 'hubs' && (
-              <HubsManagement />
+              <>
+                <div className="flex gap-2 border-b border-slate-200 mb-6">
+                  <button
+                    onClick={() => setActiveTab('hubs')}
+                    className={`px-4 py-3 font-medium text-sm border-b-2 transition-all ${
+                      activeTab === 'hubs'
+                        ? 'border-brand-600 text-brand-600'
+                        : 'border-transparent text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <i className="ph-bold ph-list inline mr-2"></i>Hub Management
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('hub-credentials')}
+                    className={`px-4 py-3 font-medium text-sm border-b-2 transition-all ${
+                      activeTab === 'hub-credentials'
+                        ? 'border-brand-600 text-brand-600'
+                        : 'border-transparent text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <i className="ph-bold ph-key inline mr-2"></i>Manager Credentials
+                  </button>
+                </div>
+                <HubsManagement />
+              </>
+            )}
+
+            {activeTab === 'hub-credentials' && (
+              <HubManagerCredentialsGenerator />
             )}
 
             {activeTab === 'stores' && (

@@ -36,11 +36,21 @@ export default function HubsManagement() {
     state: '',
     pincode: '',
     manager_name: '',
+    manager_email: '',
     manager_phone: '',
     status: 'active'
   });
   const [activeView, setActiveView] = useState<'list' | 'map'>('list');
   const [searchTerm, setSearchTerm] = useState('');
+  const [showCredentialsModal, setShowCredentialsModal] = useState(false);
+  const [credentialsHub, setCredentialsHub] = useState<any>(null);
+  const [credentialEmail, setCredentialEmail] = useState('');
+  const [credentialPassword, setCredentialPassword] = useState('');
+  const [credentialsLoading, setCredentialsLoading] = useState(false);
+  const [credentialsMessage, setCredentialsMessage] = useState('');
+  const [credentialsError, setCredentialsError] = useState('');
+  const [showGeneratedPassword, setShowGeneratedPassword] = useState(false);
+  const [generatedCredentials, setGeneratedCredentials] = useState<any>(null);
 
   useEffect(() => {
     fetchHubs();
@@ -130,6 +140,7 @@ export default function HubsManagement() {
           state: '',
           pincode: '',
           manager_name: '',
+          manager_email: '',
           manager_phone: '',
           status: 'active'
         });
@@ -243,6 +254,7 @@ export default function HubsManagement() {
                     <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Code</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Location</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Hub In-charge</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Manager Email</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Phone</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Status</th>
                     <th className="px-6 py-4 text-right text-sm font-semibold text-slate-900">Actions</th>
@@ -262,6 +274,7 @@ export default function HubsManagement() {
                         <td className="px-6 py-4 text-sm text-slate-600">{hub.hub_code}</td>
                         <td className="px-6 py-4 text-sm text-slate-600">{hub.location}</td>
                         <td className="px-6 py-4 text-sm text-slate-600">{hub.manager_name}</td>
+                        <td className="px-6 py-4 text-sm text-slate-600">{hub.manager_email || '-'}</td>
                         <td className="px-6 py-4 text-sm text-slate-600">{hub.manager_phone}</td>
                         <td className="px-6 py-4 text-sm">
                           <span className={`px-3 py-1 rounded-full text-xs font-medium ${
@@ -284,6 +297,21 @@ export default function HubsManagement() {
                             className="px-3 py-1 text-amber-600 text-sm font-medium border border-amber-200 rounded hover:bg-amber-50"
                           >
                             Edit
+                          </button>
+                          <button
+                            onClick={() => {
+                              setCredentialsHub(hub);
+                              setCredentialEmail(hub.manager_email || '');
+                              setCredentialPassword('');
+                              setCredentialsMessage('');
+                              setCredentialsError('');
+                              setShowGeneratedPassword(false);
+                              setGeneratedCredentials(null);
+                              setShowCredentialsModal(true);
+                            }}
+                            className="px-3 py-1 text-green-600 text-sm font-medium border border-green-200 rounded hover:bg-green-50"
+                          >
+                            Credentials
                           </button>
                           <button
                             onClick={() => handleDelete(hub.id)}
@@ -327,6 +355,7 @@ export default function HubsManagement() {
               <div><strong>State:</strong> {viewItem.state}</div>
               <div><strong>Pincode:</strong> {viewItem.pincode}</div>
               <div><strong>Hub In-charge Name:</strong> {viewItem.manager_name}</div>
+              <div><strong>Hub In-charge Email:</strong> {viewItem.manager_email || '-'}</div>
               <div><strong>Hub In-charge Phone:</strong> {viewItem.manager_phone}</div>
               <div><strong>Status:</strong> {viewItem.status}</div>
               {viewItem.latitude && viewItem.longitude && (
@@ -516,6 +545,18 @@ export default function HubsManagement() {
                       placeholder="Hub manager's full name"
                       className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 text-sm"
                     />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-900 mb-1.5">Email Address <span className="text-red-500">*</span></label>
+                    <input
+                      type="email"
+                      value={newHub.manager_email || ''}
+                      onChange={(e) => setNewHub({...newHub, manager_email: e.target.value})}
+                      placeholder="manager@inneedit.com (for login)"
+                      className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 text-sm"
+                    />
+                    <p className="text-xs text-slate-500 mt-1.5">This email will be used for hub manager login</p>
                   </div>
                   
                   <div>
@@ -720,6 +761,18 @@ export default function HubsManagement() {
                   </div>
                   
                   <div>
+                    <label className="block text-sm font-semibold text-slate-900 mb-1.5">Email Address</label>
+                    <input
+                      type="email"
+                      value={editItem.manager_email || ''}
+                      onChange={(e) => setEditItem({...editItem, manager_email: e.target.value})}
+                      placeholder="manager@inneedit.com"
+                      className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-600 text-sm"
+                    />
+                    <p className="text-xs text-slate-500 mt-1.5">Used for hub manager login</p>
+                  </div>
+                  
+                  <div>
                     <label className="block text-sm font-semibold text-slate-900 mb-1.5">Phone Number</label>
                     <input
                       type="tel"
@@ -779,6 +832,290 @@ export default function HubsManagement() {
         type="hubs"
         onSuccess={fetchHubs}
       />
+
+      {/* Hub Manager Credentials Modal */}
+      {showCredentialsModal && credentialsHub && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full">
+            {/* Header */}
+            <div className="p-6 border-b border-slate-200 flex items-center justify-between bg-gradient-to-r from-green-50 to-white">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                  <i className="ph-bold ph-key text-green-600 text-lg"></i>
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900">Generate Login Credentials</h3>
+                  <p className="text-xs text-slate-500">{credentialsHub.hub_name}</p>
+                </div>
+              </div>
+              <button onClick={() => setShowCredentialsModal(false)} className="p-1 hover:bg-slate-200 rounded-lg transition-colors">
+                <i className="ph-bold ph-x text-xl text-slate-600"></i>
+              </button>
+            </div>
+            
+            {/* Content */}
+            <div className="p-6 space-y-6">
+              {/* Error Message */}
+              {credentialsError && (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm flex items-start gap-3">
+                  <i className="ph-bold ph-warning-circle text-lg flex-shrink-0 mt-0.5"></i>
+                  <div>
+                    <p className="font-semibold">Error</p>
+                    <p>{credentialsError}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Success Message */}
+              {generatedCredentials && (
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-start gap-3 mb-4">
+                    <i className="ph-bold ph-check-circle text-lg text-green-600 mt-0.5"></i>
+                    <div>
+                      <p className="font-semibold text-green-900">Credentials Created Successfully!</p>
+                      <p className="text-sm text-green-700 mt-1">Share these credentials with the hub manager</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3 bg-white rounded-lg p-4 border border-green-100">
+                    <div>
+                      <p className="text-xs font-semibold text-slate-600 mb-1">Email Address</p>
+                      <div className="flex items-center gap-2">
+                        <code className="flex-1 px-3 py-2 bg-slate-100 rounded text-sm font-mono text-slate-900 break-all">
+                          {generatedCredentials.email}
+                        </code>
+                        <button
+                          onClick={() => navigator.clipboard.writeText(generatedCredentials.email)}
+                          className="p-2 hover:bg-slate-200 rounded transition-colors"
+                        >
+                          <i className="ph-bold ph-copy text-slate-600"></i>
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <p className="text-xs font-semibold text-slate-600 mb-1">Password</p>
+                      <div className="flex items-center gap-2">
+                        <code className="flex-1 px-3 py-2 bg-slate-100 rounded text-sm font-mono text-slate-900 break-all">
+                          {showGeneratedPassword ? generatedCredentials.password : '••••••••'}
+                        </code>
+                        <button
+                          onClick={() => setShowGeneratedPassword(!showGeneratedPassword)}
+                          className="p-2 hover:bg-slate-200 rounded transition-colors"
+                        >
+                          <i className={`ph-bold ${showGeneratedPassword ? 'ph-eye-slash' : 'ph-eye'} text-slate-600`}></i>
+                        </button>
+                        <button
+                          onClick={() => navigator.clipboard.writeText(generatedCredentials.password)}
+                          className="p-2 hover:bg-slate-200 rounded transition-colors"
+                        >
+                          <i className="ph-bold ph-copy text-slate-600"></i>
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div className="pt-3 border-t border-green-100">
+                      <p className="text-xs font-semibold text-slate-600 mb-2">Login Instructions</p>
+                      <ol className="text-xs text-slate-700 space-y-1 list-decimal list-inside">
+                        <li>Go to <span className="font-mono bg-slate-100 px-1 rounded">inneedit.app/login</span></li>
+                        <li>Select <strong>"Hub Manager"</strong> tab</li>
+                        <li>Enter the email and password above</li>
+                        <li>Click "Sign In"</li>
+                      </ol>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-xs">
+                    <p className="font-semibold mb-1">⚠️ Important</p>
+                    <ul className="list-disc list-inside space-y-0.5">
+                      <li>Share these credentials securely with the hub manager</li>
+                      <li>The manager should change the password after first login</li>
+                      <li>Do not share publicly or via email</li>
+                  </ul>
+                  </div>
+                </div>
+              )}
+
+              {/* Form (shown when not yet submitted) */}
+              {!generatedCredentials && (
+                <form onSubmit={async (e) => {
+                  e.preventDefault();
+                  setCredentialsLoading(true);
+                  setCredentialsError('');
+                  setCredentialsMessage('');
+
+                  try {
+                    const res = await fetch('/api/admin/hub-manager-credentials', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        hub_id: credentialsHub.id,
+                        email: credentialEmail,
+                        password: credentialPassword,
+                        manager_name: credentialsHub.manager_name
+                      })
+                    });
+
+                    if (!res.ok) {
+                      const error = await res.json();
+                      throw new Error(error.error || 'Failed to create credentials');
+                    }
+
+                    const data = await res.json();
+                    setGeneratedCredentials({
+                      email: credentialEmail,
+                      password: credentialPassword
+                    });
+                    setShowGeneratedPassword(false);
+                  } catch (error: any) {
+                    setCredentialsError(error.message);
+                  } finally {
+                    setCredentialsLoading(false);
+                  }
+                }} className="space-y-5">
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-900 mb-2">Manager Email</label>
+                    <input
+                      type="email"
+                      value={credentialEmail}
+                      onChange={(e) => setCredentialEmail(e.target.value)}
+                      placeholder="manager@inneedit.com"
+                      required
+                      className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 text-sm"
+                    />
+                    <p className="text-xs text-slate-500 mt-1.5">This will be the login email for the hub manager</p>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-sm font-semibold text-slate-900">Password</label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+                          let pass = '';
+                          for (let i = 0; i < 12; i++) {
+                            pass += chars.charAt(Math.floor(Math.random() * chars.length));
+                          }
+                          setCredentialPassword(pass);
+                        }}
+                        className="text-xs px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded transition-colors"
+                      >
+                        <i className="ph-bold ph-shuffle inline mr-1"></i>Auto-Generate
+                      </button>
+                    </div>
+                    <div className="relative">
+                      <input
+                        type={showGeneratedPassword ? 'text' : 'password'}
+                        value={credentialPassword}
+                        onChange={(e) => setCredentialPassword(e.target.value)}
+                        placeholder="Enter or generate a password"
+                        required
+                        minLength={8}
+                        className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 text-sm pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowGeneratedPassword(!showGeneratedPassword)}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-500 hover:text-slate-700"
+                      >
+                        <i className={`ph-bold ${showGeneratedPassword ? 'ph-eye-slash' : 'ph-eye'}`}></i>
+                      </button>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1.5">Minimum 8 characters. Use auto-generate for a strong password.</p>
+                  </div>
+
+                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-xs text-blue-800">
+                      <i className="ph-bold ph-info inline mr-1"></i>
+                      Once created, the hub manager can log in using these credentials at <span className="font-mono bg-blue-100 px-1 rounded">inneedit.app/login</span>
+                    </p>
+                  </div>
+                </form>
+              )}
+            </div>
+            
+            {/* Footer */}
+            <div className="p-6 border-t border-slate-200 bg-slate-50 flex gap-3 justify-end">
+              {generatedCredentials ? (
+                <>
+                  <button 
+                    type="button" 
+                    onClick={() => setShowCredentialsModal(false)} 
+                    className="px-6 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-colors flex items-center gap-2"
+                  >
+                    <i className="ph-bold ph-check"></i>Done
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button 
+                    type="button" 
+                    onClick={() => setShowCredentialsModal(false)} 
+                    className="px-6 py-2.5 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 font-medium transition-colors flex items-center gap-2"
+                  >
+                    <i className="ph-bold ph-x"></i>Cancel
+                  </button>
+                  <button 
+                    type="button" 
+                    disabled={credentialsLoading}
+                    onClick={async () => {
+                      setCredentialsLoading(true);
+                      setCredentialsError('');
+                      setCredentialsMessage('');
+
+                      try {
+                        if (!credentialEmail || !credentialPassword) {
+                          throw new Error('Email and password are required');
+                        }
+
+                        const res = await fetch('/api/admin/hub-manager-credentials', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            hub_id: credentialsHub.id,
+                            email: credentialEmail,
+                            password: credentialPassword,
+                            manager_name: credentialsHub.manager_name
+                          })
+                        });
+
+                        if (!res.ok) {
+                          const error = await res.json();
+                          throw new Error(error.error || 'Failed to create credentials');
+                        }
+
+                        const data = await res.json();
+                        setGeneratedCredentials({
+                          email: credentialEmail,
+                          password: credentialPassword
+                        });
+                        setShowGeneratedPassword(false);
+                      } catch (error: any) {
+                        setCredentialsError(error.message);
+                        console.error('Credentials creation error:', error);
+                      } finally {
+                        setCredentialsLoading(false);
+                      }
+                    }}
+                    className="px-6 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {credentialsLoading ? (
+                      <>
+                        <i className="ph ph-circle-notch animate-spin"></i>Creating...
+                      </>
+                    ) : (
+                      <>
+                        <i className="ph-bold ph-key"></i>Create Credentials
+                      </>
+                    )}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

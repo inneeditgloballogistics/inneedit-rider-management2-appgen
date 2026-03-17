@@ -1,26 +1,31 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import ProtectedRoute from '@/components/ProtectedRoute';
-import { useAuth } from '@/hooks/useAuth';
 import { useState, useEffect } from 'react';
-import { LogOut, Users, Package, TrendingUp, Warehouse, AlertCircle } from 'lucide-react';
+import { LogOut, Package, Warehouse, AlertCircle } from 'lucide-react';
 
 function HubManagerDashboardContent() {
   const router = useRouter();
-  const { user, signOut } = useAuth();
+  const [managerData, setManagerData] = useState<any>(null);
   const [hubData, setHubData] = useState<any>(null);
-  const [riders, setRiders] = useState<any[]>([]);
   const [vehicles, setVehicles] = useState<any[]>([]);
-  const [orders, setOrders] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  // Role-based access control
+  // Check if session exists
   useEffect(() => {
-    if (user && user.role !== 'hub_manager' && user.role !== 'admin') {
-      router.push('/login');
-    }
-  }, [user, router]);
+    const checkSession = async () => {
+      try {
+        const response = await fetch('/api/hub-managers/dashboard');
+        if (!response.ok) {
+          router.push('/login');
+        }
+      } catch (error) {
+        router.push('/login');
+      }
+    };
+
+    checkSession();
+  }, [router]);
 
   // Fetch hub manager data
   useEffect(() => {
@@ -32,27 +37,14 @@ function HubManagerDashboardContent() {
         const hubResponse = await fetch('/api/hub-managers/dashboard');
         if (hubResponse.ok) {
           const hubInfo = await hubResponse.json();
+          setManagerData(hubInfo);
           setHubData(hubInfo);
-
-          // Get riders assigned to this hub
-          const ridersResponse = await fetch(`/api/hub-managers/riders?hubId=${hubInfo.hubId}`);
-          if (ridersResponse.ok) {
-            const ridersData = await ridersResponse.json();
-            setRiders(ridersData);
-          }
 
           // Get vehicles at this hub
           const vehiclesResponse = await fetch(`/api/hub-managers/vehicles?hubId=${hubInfo.hubId}`);
           if (vehiclesResponse.ok) {
             const vehiclesData = await vehiclesResponse.json();
             setVehicles(vehiclesData);
-          }
-
-          // Get order statistics for hub
-          const ordersResponse = await fetch(`/api/hub-managers/orders?hubId=${hubInfo.hubId}`);
-          if (ordersResponse.ok) {
-            const ordersData = await ordersResponse.json();
-            setOrders(ordersData);
           }
         }
       } catch (error) {
@@ -62,13 +54,15 @@ function HubManagerDashboardContent() {
       }
     };
 
-    if (user?.role === 'hub_manager') {
-      fetchData();
-    }
-  }, [user]);
+    fetchData();
+  }, []);
 
   const handleLogout = async () => {
-    await signOut();
+    try {
+      await fetch('/api/hub-managers/logout', { method: 'POST' });
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
     router.push('/login');
   };
 
@@ -122,10 +116,10 @@ function HubManagerDashboardContent() {
               <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
             </button>
             <div className="flex items-center gap-3 pl-4 border-l border-slate-200">
-              <div className="text-right hidden sm:block">
-                <p className="text-sm font-semibold text-slate-900">{user?.name || 'Hub Manager'}</p>
-                <p className="text-xs text-slate-500">{hubData?.hubCode || 'HUB'}</p>
-              </div>
+            <div className="text-right hidden sm:block">
+              <p className="text-sm font-semibold text-slate-900">{managerData?.name || 'Hub Manager'}</p>
+              <p className="text-xs text-slate-500">{hubData?.hubCode || 'HUB'}</p>
+            </div>
               <button
                 onClick={handleLogout}
                 className="p-2 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
@@ -142,19 +136,7 @@ function HubManagerDashboardContent() {
         <div className="max-w-7xl mx-auto space-y-8">
           
           {/* Quick Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-slate-600 font-medium">Active Riders</p>
-                  <p className="text-3xl font-bold text-slate-900 mt-2">
-                    {riders.filter((r: any) => r.status === 'active').length}
-                  </p>
-                </div>
-                <Users className="w-12 h-12 text-blue-100" />
-              </div>
-            </div>
-
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
               <div className="flex items-center justify-between">
                 <div>
@@ -170,21 +152,9 @@ function HubManagerDashboardContent() {
             <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-slate-600 font-medium">Orders Today</p>
+                  <p className="text-sm text-slate-600 font-medium">Available Vehicles</p>
                   <p className="text-3xl font-bold text-slate-900 mt-2">
-                    {orders?.todayOrders || 0}
-                  </p>
-                </div>
-                <TrendingUp className="w-12 h-12 text-purple-100" />
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-slate-600 font-medium">Hub Capacity</p>
-                  <p className="text-3xl font-bold text-slate-900 mt-2">
-                    {Math.round((riders.length / 100) * 100)}%
+                    {vehicles.filter((v: any) => v.status === 'available').length}
                   </p>
                 </div>
                 <Warehouse className="w-12 h-12 text-orange-100" />
@@ -223,11 +193,11 @@ function HubManagerDashboardContent() {
                   <div className="space-y-3">
                     <div>
                       <p className="text-xs text-slate-500">Manager Name</p>
-                      <p className="text-sm font-medium text-slate-900">{user?.name}</p>
+                      <p className="text-sm font-medium text-slate-900">{managerData?.name}</p>
                     </div>
                     <div>
                       <p className="text-xs text-slate-500">Manager Email</p>
-                      <p className="text-sm font-medium text-slate-900">{user?.email}</p>
+                      <p className="text-sm font-medium text-slate-900">{managerData?.email}</p>
                     </div>
                     <div>
                       <p className="text-xs text-slate-500">Pincode</p>
@@ -238,63 +208,6 @@ function HubManagerDashboardContent() {
               </div>
             </div>
           )}
-
-          {/* Riders List */}
-          <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-            <div className="px-8 py-6 border-b border-slate-200">
-              <h2 className="text-xl font-bold text-slate-900">Hub Riders</h2>
-              <p className="text-sm text-slate-600 mt-1">{riders.length} riders assigned to this hub</p>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-slate-50 border-b border-slate-200">
-                  <tr>
-                    <th className="px-8 py-4 text-left text-xs font-semibold text-slate-600 uppercase">Name</th>
-                    <th className="px-8 py-4 text-left text-xs font-semibold text-slate-600 uppercase">CEE ID</th>
-                    <th className="px-8 py-4 text-left text-xs font-semibold text-slate-600 uppercase">Phone</th>
-                    <th className="px-8 py-4 text-left text-xs font-semibold text-slate-600 uppercase">Vehicle</th>
-                    <th className="px-8 py-4 text-left text-xs font-semibold text-slate-600 uppercase">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {riders.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="px-8 py-8 text-center">
-                        <AlertCircle className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                        <p className="text-slate-500">No riders assigned to this hub yet</p>
-                      </td>
-                    </tr>
-                  ) : (
-                    riders.map((rider: any) => (
-                      <tr key={rider.id} className="border-b border-slate-200 hover:bg-slate-50 transition">
-                        <td className="px-8 py-4">
-                          <p className="font-medium text-slate-900">{rider.full_name}</p>
-                        </td>
-                        <td className="px-8 py-4">
-                          <p className="text-sm text-slate-600">{rider.cee_id}</p>
-                        </td>
-                        <td className="px-8 py-4">
-                          <p className="text-sm text-slate-600">{rider.phone}</p>
-                        </td>
-                        <td className="px-8 py-4">
-                          <p className="text-sm text-slate-600">{rider.vehicle_type || 'N/A'}</p>
-                        </td>
-                        <td className="px-8 py-4">
-                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                            rider.status === 'active' 
-                              ? 'bg-green-100 text-green-700'
-                              : 'bg-slate-100 text-slate-700'
-                          }`}>
-                            {rider.status || 'inactive'}
-                          </span>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
 
           {/* Vehicles List */}
           <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
@@ -375,9 +288,5 @@ function HubManagerDashboardContent() {
 }
 
 export default function HubManagerDashboardPage() {
-  return (
-    <ProtectedRoute>
-      <HubManagerDashboardContent />
-    </ProtectedRoute>
-  );
+  return <HubManagerDashboardContent />;
 }

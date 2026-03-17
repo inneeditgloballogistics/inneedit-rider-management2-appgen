@@ -58,9 +58,9 @@ export async function GET(request: NextRequest) {
       city: manager.city,
       state: manager.state,
       pincode: manager.pincode,
-      managerName: manager.manager_name,
-      managerEmail: manager.manager_email,
-      managerPhone: manager.manager_phone,
+      name: manager.manager_name,
+      email: manager.manager_email,
+      phone: manager.manager_phone,
     });
   } catch (error: any) {
     console.error('Dashboard fetch error:', error);
