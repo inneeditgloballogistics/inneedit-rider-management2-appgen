@@ -142,19 +142,23 @@ export async function POST(request: NextRequest) {
     `;
 
     // Return success response
+    const managerData = {
+      id: manager.id,
+      name: manager.manager_name,
+      email: manager.manager_email,
+      phone: manager.manager_phone,
+      hub_id: manager.hub_id,
+      hubId: manager.hub_id,
+      hubName: manager.hub_name,
+      hubCode: manager.hub_code,
+      location: manager.location,
+      city: manager.city,
+    };
+
     const response = NextResponse.json({
       success: true,
-      manager: {
-        id: manager.id,
-        name: manager.manager_name,
-        email: manager.manager_email,
-        phone: manager.manager_phone,
-        hubId: manager.hub_id,
-        hubName: manager.hub_name,
-        hubCode: manager.hub_code,
-        location: manager.location,
-        city: manager.city,
-      },
+      manager: managerData,
+      hub_manager: managerData,
     });
 
     // Set session cookie

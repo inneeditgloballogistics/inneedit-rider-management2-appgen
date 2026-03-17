@@ -6,6 +6,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const action = searchParams.get('action');
     const status = searchParams.get('status');
+    const hubId = searchParams.get('hubId');
 
     if (action === 'count') {
       const result = await sql`SELECT COUNT(*) as count FROM vehicles`;
@@ -20,6 +21,18 @@ export async function GET(request: NextRequest) {
       AND assigned_rider_id != ''
       AND assigned_rider_id NOT IN (SELECT cee_id FROM riders)
     `;
+
+    // Filter by hub_id if provided
+    if (hubId) {
+      const vehicles = await sql`
+        SELECT v.*, h.hub_name 
+        FROM vehicles v
+        LEFT JOIN hubs h ON v.hub_id = h.id
+        WHERE v.hub_id = ${parseInt(hubId)}
+        ORDER BY v.created_at DESC
+      `;
+      return NextResponse.json(vehicles);
+    }
 
     // Filter by status if provided
     let vehicles;

@@ -1,0 +1,275 @@
+╔════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
+║                        PERSONALIZED NOTIFICATION & VEHICLE HANDOVER WORKFLOW                                                            ║
+╚════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
+
+┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ PHASE 1: ADMIN CREATES RIDER                                                                                                              │
+└─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+    ┌──────────────────────────────────────────────┐
+    │      Admin Dashboard                          │
+    │  ┌────────────────────────────────────────┐   │
+    │  │ Create New Rider                       │   │
+    │  │ - Full Name: John Doe                  │   │
+    │  │ - CEE ID: CEE-12345                    │   │
+    │  │ - Assigned Hub: Hub 001 (ID: 2)        │   │
+    │  │ - Vehicle: KA-01-XY-1234 (ID: 5)       │   │
+    │  │ - Click "Save"                         │   │
+    │  └────────────────────────────────────────┘   │
+    └──────────────────────────────────────────────┘
+                          │
+                          ▼
+    ┌──────────────────────────────────────────────┐
+    │   /api/riders POST                            │
+    │  ┌────────────────────────────────────────┐   │
+    │  │ Insert into riders table                │   │
+    │  │ Update vehicles SET assigned_rider_id   │   │
+    │  └────────────────────────────────────────┘   │
+    └──────────────────────────────────────────────┘
+           │                                    │
+           │                                    │
+           ▼                                    ▼
+    ┌────────────────────┐            ┌─────────────────────┐
+    │ NOTIFICATION #1    │            │ NOTIFICATION #2     │
+    │ For Hub Manager    │            │ For Rider           │
+    │ ─────────────────  │            │ ─────────────────── │
+    │ Type: new_rider_   │            │ Type: rider_        │
+    │ onboarding         │            │ assignment          │
+    │ hub_manager_id: 7  │            │ user_id: user_123   │
+    │ rider_id: 1        │            │ rider_id: 1         │
+    │                    │            │                     │
+    │ "New Rider ready   │            │ "Welcome to Team! 🎉│
+    │  for handover"     │            │  Assigned to Hub    │
+    │                    │            │  001. Vehicle:      │
+    │                    │            │  KA-01-XY-1234"     │
+    └────────────────────┘            └─────────────────────┘
+           │                                    │
+           │                                    │
+           ▼                                    ▼
+    ┌──────────────────────────────────────────────┐
+    │      Both Users See Notifications in Bell    │
+    │    When They Open Their Dashboards           │
+    └──────────────────────────────────────────────┘
+
+
+┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ PHASE 2: HUB MANAGER STARTS HANDOVER                                                                                                      │
+└─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+    ┌──────────────────────────────────────────────┐
+    │    Hub Manager Dashboard                      │
+    │  ┌────────────────────────────────────────┐   │
+    │  │ New Riders Tab                         │   │
+    │  │ ──────────────────────────────────────  │   │
+    │  │ [Search: ________________]             │   │
+    │  │                                         │   │
+    │  │ John Doe (CEE-12345)                   │   │
+    │  │ Phone: 9876543210                      │   │
+    │  │ Vehicle: KA-01-XY-1234                 │   │
+    │  │ Status: Awaiting Handover              │   │
+    │  │ [Start Handover] ← CLICK HERE           │   │
+    │  │                                         │   │
+    │  └────────────────────────────────────────┘   │
+    └──────────────────────────────────────────────┘
+                          │
+                          ▼
+    ┌──────────────────────────────────────────────┐
+    │   VehicleHandoverModal Opens                  │
+    │  ┌────────────────────────────────────────┐   │
+    │  │ Vehicle Handover Form                  │   │
+    │  │ ─────────────────────────────────────  │   │
+    │  │ Rider: John Doe (CEE-12345)            │   │
+    │  │ Phone: 9876543210                      │   │
+    │  │ Vehicle: KA-01-XY-1234                 │   │
+    │  │                                         │   │
+    │  │ Odometer: [50234____]                  │   │
+    │  │ Fuel Level: [Full   ▼]                 │   │
+    │  │ Notes: [_____________]                 │   │
+    │  │                                         │   │
+    │  │ Photos: [📷 Upload Photos (0/3)]       │   │
+    │  │                                         │   │
+    │  │ Signature: [Canvas for signature]      │   │
+    │  │                                         │   │
+    │  │ [Cancel] [Complete Handover] ◄─ CLICK  │   │
+    │  └────────────────────────────────────────┘   │
+    └──────────────────────────────────────────────┘
+
+
+┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ PHASE 3: CAPTURE VEHICLE DETAILS                                                                                                          │
+└─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+    Hub Manager fills in:
+    ├─ Odometer Reading: "50234 KM"
+    ├─ Fuel Level: "Full"
+    ├─ Notes: "Vehicle in excellent condition"
+    │
+    ├─ Upload Photos:
+    │  ├─ [Front view image]
+    │  ├─ [Side view image]
+    │  └─ [Interior image]
+    │
+    └─ Digital Signature:
+       └─ Rider signs in canvas
+          └─ System captures signature
+
+
+┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ PHASE 4: SUBMIT HANDOVER                                                                                                                  │
+└─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+    Hub Manager clicks "Complete Handover"
+                          │
+                          ▼
+    ┌──────────────────────────────────────────────┐
+    │   /api/vehicle-handover POST                  │
+    │  ┌────────────────────────────────────────┐   │
+    │  │ 1. Insert into vehicle_handovers table  │   │
+    │  │ 2. Fetch rider details                 │   │
+    │  │ 3. Create notification for rider       │   │
+    │  │ 4. Send success response               │   │
+    │  └────────────────────────────────────────┘   │
+    └──────────────────────────────────────────────┘
+                          │
+                          ▼
+    ┌──────────────────────────────────────────────────────────────────┐
+    │   NOTIFICATION #3: Rider Receives Congratulations              │
+    │   ┌──────────────────────────────────────────────────────────┐   │
+    │   │ Type: vehicle_handover_complete                         │   │
+    │   │ user_id: user_123                                       │   │
+    │   │ rider_id: 1                                             │   │
+    │   │                                                          │   │
+    │   │ ✅ Vehicle Handed Over Successfully! 🎉                 │   │
+    │   │                                                          │   │
+    │   │ "Congratulations! Your vehicle                          │   │
+    │   │ KA-01-XY-1234 has been handed over.                    │   │
+    │   │ You are all set to start delivering.                    │   │
+    │   │ Welcome to the team!                                    │   │
+    │   │ Head to your assigned store and                         │   │
+    │   │ begin working. Best of luck!"                           │   │
+    │   └──────────────────────────────────────────────────────────┘   │
+    └──────────────────────────────────────────────────────────────────┘
+                          │
+                          ▼
+    ┌──────────────────────────────────────────────┐
+    │     Rider Receives Notification               │
+    │  ┌────────────────────────────────────────┐   │
+    │  │ 🔔 Bell shows "1 unread"               │   │
+    │  │ Click to see:                          │   │
+    │  │ ✅ Handover Complete!                  │   │
+    │  │ Head to store and start work           │   │
+    │  └────────────────────────────────────────┘   │
+    └──────────────────────────────────────────────┘
+
+
+┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ FINAL STATE                                                                                                                               │
+└─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+    ┌────────────────────────────────────────────────────────────────────────────────┐
+    │ Hub Manager Dashboard                                                          │
+    │  ├─ New Riders Tab: John Doe ❌ REMOVED (handover complete)                   │
+    │  └─ Notification: Task Complete ✓                                             │
+    ├────────────────────────────────────────────────────────────────────────────────┤
+    │ vehicle_handovers Table Record:                                                │
+    │  ├─ rider_id: 1                                                               │
+    │  ├─ hub_manager_id: 7                                                         │
+    │  ├─ vehicle_id: 5                                                             │
+    │  ├─ status: "completed"                                                       │
+    │  ├─ vehicle_photos: [data:image/..., data:image/..., data:image/...]          │
+    │  ├─ rider_signature_url: data:image/canvas/...                                │
+    │  ├─ odometer_reading: "50234 KM"                                              │
+    │  ├─ fuel_level: "full"                                                        │
+    │  ├─ notes: "Vehicle in excellent condition"                                   │
+    │  ├─ handed_over_at: 2024-01-15T10:30:00Z                                      │
+    │  └─ created_at: 2024-01-15T10:30:00Z                                          │
+    ├────────────────────────────────────────────────────────────────────────────────┤
+    │ Rider (John Doe)                                                               │
+    │  ├─ Receives: ✅ Handover Complete Notification                                │
+    │  ├─ Ready: To start deliveries                                                │
+    │  ├─ Location: Assigned Store                                                  │
+    │  └─ Status: Active, Ready to Work                                             │
+    └────────────────────────────────────────────────────────────────────────────────┘
+
+
+╔════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
+║                                                      NOTIFICATION FILTERING                                                              ║
+╚════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
+
+    When user opens dashboard:
+
+    Hub Manager (logged in as hubManager ID 7)
+    └─ /api/notifications?hubManagerId=7
+       └─ Returns: Only notifications where hub_manager_id = 7
+          ├─ "New Rider Ready for Handover"
+          └─ Other hub-related notifications
+
+    Rider (logged in as user_id user_123)
+    └─ /api/notifications?userId=user_123
+       └─ Returns: Only notifications where user_id = user_123
+          ├─ "Welcome to Team!"
+          ├─ "Vehicle Handed Over Successfully!"
+          └─ Other personal notifications
+
+    Admin (No filter)
+    └─ /api/notifications
+       └─ Returns: All notifications in system
+          ├─ "New Rider Ready for Handover"
+          ├─ "Welcome to Team!"
+          ├─ "Vehicle Handed Over Successfully!"
+          ├─ "Referral Submitted"
+          └─ All other notifications
+
+
+╔════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
+║                                                    DATABASE RELATIONSHIPS                                                                ║
+╚════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
+
+    riders (id: 1)
+        ↓
+    vehicle_handovers
+        ├─ rider_id: 1 ──────────→ riders (id: 1)
+        ├─ hub_manager_id: 7 ───→ hub_managers (id: 7)
+        ├─ vehicle_id: 5 ───────→ vehicles (id: 5)
+        └─ hub_id: 2 ───────────→ hubs (id: 2)
+
+    notifications
+        ├─ rider_id: 1 ─────────→ riders (id: 1)
+        ├─ hub_manager_id: 7 ──→ hub_managers (id: 7)
+        ├─ user_id: user_123 ──→ user (id: user_123)
+        └─ related_id: (various)
+
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+SUMMARY:
+========
+
+✅ Admin creates rider with hub & vehicle assignment
+   ├─ Notification sent to Hub Manager (new_rider_onboarding)
+   └─ Notification sent to Rider (rider_assignment)
+
+✅ Hub Manager sees new rider in dashboard
+   ├─ Views "New Riders" tab
+   ├─ Searches for rider
+   └─ Clicks "Start Handover"
+
+✅ Hub Manager completes handover form
+   ├─ Enters odometer reading
+   ├─ Selects fuel level
+   ├─ Uploads vehicle photos (1-3)
+   ├─ Captures rider signature
+   └─ Clicks "Complete Handover"
+
+✅ System creates handover record
+   ├─ Stores all details and photos
+   ├─ Saves rider signature
+   ├─ Creates handover_vehicle record
+   └─ Sends notification to rider
+
+✅ Rider receives congratulation notification
+   ├─ Sees "Vehicle Handed Over Successfully!"
+   ├─ Ready to start deliveries
+   └─ Heads to assigned store
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════

@@ -58,15 +58,18 @@ export default function LoginPage() {
 
       // Store data based on login type
       if (loginType === 'hub_manager') {
-        localStorage.setItem('hubManager', JSON.stringify(data.hub_manager));
-        router.push('/hub-manager-dashboard');
+        localStorage.setItem('hubManager', JSON.stringify(data.hub_manager || data.manager));
+        // Force navigation after localStorage is set
+        setTimeout(() => router.push('/hub-manager-dashboard'), 100);
       } else if (loginType === 'technician') {
         localStorage.setItem('technician', JSON.stringify(data.technician));
-        router.push('/technician-dashboard');
+        // Force navigation after localStorage is set
+        setTimeout(() => router.push('/technician-dashboard'), 100);
       } else {
         router.push('/rider-dashboard');
       }
     } catch (err: any) {
+      console.error('Login error:', err);
       setError(err.message || 'Failed to sign in. Please check your credentials.');
     } finally {
       setLoading(false);

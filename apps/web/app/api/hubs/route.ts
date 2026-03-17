@@ -5,6 +5,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const action = searchParams.get('action');
+    const id = searchParams.get('id');
 
     if (action === 'count') {
       const result = await sql`SELECT COUNT(*) as count FROM hubs`;
@@ -23,6 +24,12 @@ export async function GET(request: NextRequest) {
         ORDER BY h.created_at DESC
       `;
       return NextResponse.json(hubs);
+    }
+
+    // If specific ID is requested, return only that hub
+    if (id) {
+      const hub = await sql`SELECT * FROM hubs WHERE id = ${parseInt(id)}`;
+      return NextResponse.json(hub);
     }
 
     const hubs = await sql`SELECT * FROM hubs ORDER BY created_at DESC`;

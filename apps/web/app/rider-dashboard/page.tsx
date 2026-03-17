@@ -200,6 +200,14 @@ export default function RiderDashboard() {
       const ceeId = data.rider.ceeId || data.rider.cee_id;
       console.log('Calling fetchAllData with:', { riderId: data.rider.user_id, ceeId });
       
+      // Store rider session in sessionStorage for NotificationBell to access
+      sessionStorage.setItem('riderSession', JSON.stringify({
+        id: data.rider.id,
+        user_id: data.rider.user_id,
+        cee_id: ceeId,
+        full_name: data.rider.full_name
+      }));
+      
       // Check if this is rider's first login (onboarding not completed)
       if (data.rider && data.rider.onboarding_completed === false) {
         // Mark onboarding as completed in database

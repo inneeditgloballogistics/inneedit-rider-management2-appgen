@@ -64,10 +64,21 @@ export default function HubsManagement() {
   const [technicianSuccess, setTechnicianSuccess] = useState('');
   const [showTechPassword, setShowTechPassword] = useState(false);
   const [generatedTechPassword, setGeneratedTechPassword] = useState('');
+  const [technicianCounts, setTechnicianCounts] = useState<{ [hubId: number]: number }>({});
+  const [showTechniciansList, setShowTechniciansList] = useState(false);
+  const [selectedHubTechnicians, setSelectedHubTechnicians] = useState<any[]>([]);
+  const [selectedHubForTechs, setSelectedHubForTechs] = useState<any>(null);
 
   useEffect(() => {
     fetchHubs();
   }, []);
+
+  useEffect(() => {
+    // Fetch technician counts for all hubs
+    hubs.forEach(hub => {
+      fetchTechnicianCount(hub.id);
+    });
+  }, [hubs]);
 
   const fetchHubs = async () => {
     try {
@@ -76,6 +87,29 @@ export default function HubsManagement() {
       setHubs(data);
     } catch (error) {
       console.error('Error fetching hubs:', error);
+    }
+  };
+
+  const fetchTechnicianCount = async (hubId: number) => {
+    try {
+      const res = await fetch(`/api/technicians?hub_id=${hubId}&action=count`);
+      const data = await res.json();
+      setTechnicianCounts(prev => ({...prev, [hubId]: data.count || 0}));
+    } catch (error) {
+      console.error('Error fetching technician count:', error);
+    }
+  };
+
+  const fetchTechniciansList = async (hubId: number, hubName: string) => {
+    try {
+      const res = await fetch(`/api/technicians?hub_id=${hubId}`);
+      const data = await res.json();
+      setSelectedHubTechnicians(Array.isArray(data) ? data : []);
+      setSelectedHubForTechs({ id: hubId, hub_name: hubName });
+      setShowTechniciansList(true);
+    } catch (error) {
+      console.error('Error fetching technicians:', error);
+      setSelectedHubTechnicians([]);
     }
   };
 
@@ -269,6 +303,7 @@ export default function HubsManagement() {
                     <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Hub In-charge</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Manager Email</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Phone</th>
+                    <th className="px-6 py-4 text-center text-sm font-semibold text-slate-900">Technicians</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Status</th>
                     <th className="px-6 py-4 text-right text-sm font-semibold text-slate-900">Actions</th>
                   </tr>
@@ -276,7 +311,7 @@ export default function HubsManagement() {
                 <tbody>
                   {filteredHubs.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="px-6 py-8 text-center text-slate-500">
+                      <td colSpan={9} className="px-6 py-8 text-center text-slate-500">
                         No hubs found
                       </td>
                     </tr>
@@ -289,6 +324,14 @@ export default function HubsManagement() {
                         <td className="px-6 py-4 text-sm text-slate-600">{hub.manager_name}</td>
                         <td className="px-6 py-4 text-sm text-slate-600">{hub.manager_email || '-'}</td>
                         <td className="px-6 py-4 text-sm text-slate-600">{hub.manager_phone}</td>
+                        <td className="px-6 py-4 text-sm text-center">
+                          <button
+                            onClick={() => fetchTechniciansList(hub.id, hub.hub_name)}
+                            className="inline-block px-3 py-1 bg-purple-100 text-purple-700 rounded-full font-semibold hover:bg-purple-200 transition-colors cursor-pointer text-xs"
+                          >
+                            {technicianCounts[hub.id] || 0}
+                          </button>
+                        </td>
                         <td className="px-6 py-4 text-sm">
                           <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                             hub.status === 'active'
@@ -448,7 +491,7 @@ export default function HubsManagement() {
                           city = parts[parts.length - 3] || '';
                           state = parts[parts.length - 2] || '';
                           const lastPart = parts[parts.length - 1];
-                          pincode = lastPart?.match(/\\d{6}/) ? lastPart : '';
+                          pincode = lastPart?.match(/\d{6}/) ? lastPart : '';
                         }
                         
                         setNewHub({
@@ -662,7 +705,7 @@ export default function HubsManagement() {
                           city = parts[parts.length - 3] || '';
                           state = parts[parts.length - 2] || '';
                           const lastPart = parts[parts.length - 1];
-                          pincode = lastPart?.match(/\\d{6}/) ? lastPart : '';
+                          pincode = lastPart?.match(/\d{6}/) ? lastPart : '';
                         }
                         
                         setEditItem({
@@ -959,15 +1002,15 @@ export default function HubsManagement() {
                       <p className="text-xs font-semibold text-slate-600 mb-2">Login Instructions</p>
                       <ol className="text-xs text-slate-700 space-y-1 list-decimal list-inside">
                         <li>Go to <span className="font-mono bg-slate-100 px-1 rounded">inneedit.app/login</span></li>
-                        <li>Select <strong>"Technician"</strong> tab</li>
+                        <li>Select <strong>Technician</strong> tab</li>
                         <li>Enter the email and password above</li>
-                        <li>Click "Sign In"</li>
+                        <li>Click Sign In</li>
                       </ol>
                     </div>
                   </div>
                   
                   <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-xs">
-                    <p className="font-semibold mb-1">⚠️ Important</p>
+                    <p className="font-semibold mb-1">Important</p>
                     <ul className="list-disc list-inside space-y-0.5">
                       <li>Share these credentials securely with the technician</li>
                       <li>The technician should change the password after first login</li>
@@ -1144,6 +1187,83 @@ export default function HubsManagement() {
         </div>
       )}
 
+      {/* Technicians List Modal */}
+      {showTechniciansList && selectedHubForTechs && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[95vh] overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="p-6 border-b border-slate-200 flex items-center justify-between bg-gradient-to-r from-purple-50 to-white sticky top-0">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <i className="ph-bold ph-users-three text-purple-600 text-lg"></i>
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900">Technicians</h3>
+                  <p className="text-xs text-slate-500">{selectedHubForTechs.hub_name}</p>
+                </div>
+              </div>
+              <button onClick={() => setShowTechniciansList(false)} className="p-1 hover:bg-slate-200 rounded-lg transition-colors">
+                <i className="ph-bold ph-x text-xl text-slate-600"></i>
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="overflow-y-auto flex-1">
+              {selectedHubTechnicians.length === 0 ? (
+                <div className="p-12 text-center">
+                  <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i className="ph-duotone ph-users-three text-3xl text-slate-400"></i>
+                  </div>
+                  <p className="text-slate-600 font-medium mb-1">No technicians registered</p>
+                  <p className="text-xs text-slate-500">Register technicians to manage service tickets and maintenance</p>
+                </div>
+              ) : (
+                <div className="p-6">
+                  <div className="grid gap-4">
+                    {selectedHubTechnicians.map((tech) => (
+                      <div key={tech.id} className="p-4 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-start gap-3 flex-1">
+                            <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                              <i className="ph-bold ph-user text-purple-600 text-lg"></i>
+                            </div>
+                            <div className="flex-1">
+                              <p className="font-semibold text-slate-900">{tech.name}</p>
+                              <p className="text-xs text-slate-500 mt-0.5">{tech.email}</p>
+                            </div>
+                          </div>
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ml-2 ${
+                            tech.status === 'active'
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-slate-100 text-slate-700'
+                          }`}>
+                            {tech.status || 'active'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-slate-600">
+                          <i className="ph-bold ph-phone"></i>
+                          {tech.phone}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-6 border-t border-slate-200 bg-slate-50 flex gap-3 justify-end">
+              <button
+                onClick={() => setShowTechniciansList(false)}
+                className="px-6 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium transition-colors flex items-center gap-2"
+              >
+                <i className="ph-bold ph-check"></i>Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Hub Manager Credentials Modal */}
       {showCredentialsModal && credentialsHub && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -1229,20 +1349,20 @@ export default function HubsManagement() {
                       <p className="text-xs font-semibold text-slate-600 mb-2">Login Instructions</p>
                       <ol className="text-xs text-slate-700 space-y-1 list-decimal list-inside">
                         <li>Go to <span className="font-mono bg-slate-100 px-1 rounded">inneedit.app/login</span></li>
-                        <li>Select <strong>"Hub Manager"</strong> tab</li>
+                        <li>Select <strong>Hub Manager</strong> tab</li>
                         <li>Enter the email and password above</li>
-                        <li>Click "Sign In"</li>
+                        <li>Click Sign In</li>
                       </ol>
                     </div>
                   </div>
                   
                   <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-xs">
-                    <p className="font-semibold mb-1">⚠️ Important</p>
+                    <p className="font-semibold mb-1">Important</p>
                     <ul className="list-disc list-inside space-y-0.5">
                       <li>Share these credentials securely with the hub manager</li>
                       <li>The manager should change the password after first login</li>
                       <li>Do not share publicly or via email</li>
-                  </ul>
+                    </ul>
                   </div>
                 </div>
               )}

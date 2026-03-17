@@ -10,33 +10,59 @@ function hashPassword(password: string): string {
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const hubId = searchParams.get("hubId");
+    const hubId = searchParams.get("hub_id");
+    const action = searchParams.get("action");
 
-    let query = `
-      SELECT 
-        id,
-        user_id,
-        hub_id,
-        name,
-        email,
-        phone,
-        status,
-        created_at,
-        updated_at
-      FROM technicians
-      WHERE 1=1
-    `;
-
-    const params: any[] = [];
-
-    if (hubId) {
-      query += ` AND hub_id = $${params.length + 1}`;
-      params.push(parseInt(hubId));
+    // If action is count, return count instead of data
+    if (action === "count") {
+      if (hubId) {
+        const result = await sql`
+          SELECT COUNT(*) as count FROM technicians WHERE hub_id = ${parseInt(hubId)}
+        `;
+        return NextResponse.json({ count: result[0].count });
+      } else {
+        const result = await sql`
+          SELECT COUNT(*) as count FROM technicians
+        `;
+        return NextResponse.json({ count: result[0].count });
+      }
     }
 
-    query += ` ORDER BY created_at DESC`;
+    let technicians;
 
-    const technicians = await sql(query, params);
+    if (hubId) {
+      technicians = await sql`
+        SELECT 
+          id,
+          user_id,
+          hub_id,
+          name,
+          email,
+          phone,
+          status,
+          created_at,
+          updated_at
+        FROM technicians
+        WHERE hub_id = ${parseInt(hubId)}
+        ORDER BY created_at DESC
+      `;
+    } else {
+      technicians = await sql`
+        SELECT 
+          id,
+          user_id,
+          hub_id,
+          name,
+          email,
+          phone,
+          status,
+          created_at,
+          updated_at
+        FROM technicians
+        ORDER BY created_at DESC
+      `;
+    }
+
     return NextResponse.json(technicians);
   } catch (error) {
     console.error("Error fetching technicians:", error);

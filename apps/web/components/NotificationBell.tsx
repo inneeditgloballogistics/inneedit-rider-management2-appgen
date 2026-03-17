@@ -19,7 +19,36 @@ export default function NotificationBell() {
   const fetchNotifications = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/notifications');
+      
+      // Check if there's a logged-in user/role to fetch role-specific notifications
+      let queryParams = '';
+      
+      const hubManager = localStorage.getItem('hubManager');
+      if (hubManager) {
+        const manager = JSON.parse(hubManager);
+        queryParams = `?hubManagerId=${manager.id}`;
+      } else {
+        // Check if it's a rider (from rider dashboard session)
+        const riderSession = sessionStorage.getItem('riderSession');
+        if (riderSession) {
+          try {
+            const riderData = JSON.parse(riderSession);
+            // For riders, filter by type: only show rider-specific notifications
+            queryParams = `?riderId=${riderData.id}&type=rider`;
+          } catch (e) {
+            console.error('Error parsing rider session:', e);
+          }
+        } else {
+          // Check for admin user
+          const storedUser = localStorage.getItem('currentUser');
+          if (storedUser) {
+            const user = JSON.parse(storedUser);
+            queryParams = `?userId=${user.id}`;
+          }
+        }
+      }
+      
+      const response = await fetch(`/api/notifications${queryParams}`);
       if (response.ok) {
         const data = await response.json();
         setNotifications(data.notifications || []);
@@ -68,6 +97,10 @@ export default function NotificationBell() {
     switch (type) {
       case 'new_rider_onboarding':
         return '👤';
+      case 'rider_assignment':
+        return '🚗';
+      case 'vehicle_handover_complete':
+        return '✅';
       case 'referral':
         return '🎁';
       case 'referral_approved':

@@ -1,8 +1,6 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import ProtectedRoute from '@/components/ProtectedRoute';
-import { useAuth } from '@/hooks/useAuth';
 import { useState, useEffect } from 'react';
 import { VehicleList, HubList, StoreList } from '@/components/VehicleHubStoreManagement';
 import { AddModal } from '@/components/AddModal';
@@ -247,7 +245,7 @@ function TechnicianDashboardContent() {
                     <span className="text-xs text-slate-500">Urgent</span>
                   </div>
                   <h3 className="text-3xl font-bold text-slate-900">
-                    {serviceTickets.filter(t => t.priority === 'Critical').length}
+                    {Array.isArray(serviceTickets) ? serviceTickets.filter(t => t.priority === 'Critical').length : 0}
                   </h3>
                   <p className="text-sm text-slate-500 mt-1">Critical Issues</p>
                 </div>
@@ -260,7 +258,7 @@ function TechnicianDashboardContent() {
                     <span className="text-xs text-slate-500">Active</span>
                   </div>
                   <h3 className="text-3xl font-bold text-slate-900">
-                    {serviceTickets.filter(t => t.status === 'In Progress').length}
+                    {Array.isArray(serviceTickets) ? serviceTickets.filter(t => t.status === 'In Progress').length : 0}
                   </h3>
                   <p className="text-sm text-slate-500 mt-1">In Progress</p>
                 </div>
@@ -273,7 +271,7 @@ function TechnicianDashboardContent() {
                     <span className="text-xs text-slate-500">Today</span>
                   </div>
                   <h3 className="text-3xl font-bold text-slate-900">
-                    {serviceTickets.filter(t => t.status === 'Completed').length}
+                    {Array.isArray(serviceTickets) ? serviceTickets.filter(t => t.status === 'Completed').length : 0}
                   </h3>
                   <p className="text-sm text-slate-500 mt-1">Completed</p>
                 </div>
@@ -286,7 +284,7 @@ function TechnicianDashboardContent() {
                     <span className="text-xs text-slate-500">Queue</span>
                   </div>
                   <h3 className="text-3xl font-bold text-slate-900">
-                    {serviceTickets.filter(t => t.status === 'Open').length}
+                    {Array.isArray(serviceTickets) ? serviceTickets.filter(t => t.status === 'Open').length : 0}
                   </h3>
                   <p className="text-sm text-slate-500 mt-1">Pending</p>
                 </div>
@@ -376,7 +374,7 @@ function TechnicianDashboardContent() {
                       Parts Inventory
                     </h3>
                     <div className="space-y-3">
-                      {partsInventory.slice(0, 3).map((part) => {
+                      {Array.isArray(partsInventory) && partsInventory.slice(0, 3).map((part) => {
                         const getStatusColor = (status: string, quantity: number) => {
                           if (quantity === 0) return 'bg-red-100 text-red-700';
                           if (status === 'Low Stock') return 'bg-amber-100 text-amber-700';
@@ -395,7 +393,7 @@ function TechnicianDashboardContent() {
                           </div>
                         );
                       })}
-                      {partsInventory.length === 0 && (
+                      {(!Array.isArray(partsInventory) || partsInventory.length === 0) && (
                         <p className="text-slate-500 text-sm text-center py-4">No parts in inventory</p>
                       )}
                     </div>
@@ -429,7 +427,7 @@ function TechnicianDashboardContent() {
                     <div className="space-y-3">
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-amber-100">Tickets Closed</span>
-                        <span className="text-2xl font-bold">{serviceTickets.filter(t => t.status === 'Completed').length}</span>
+                        <span className="text-2xl font-bold">{Array.isArray(serviceTickets) ? serviceTickets.filter(t => t.status === 'Completed').length : 0}</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-amber-100">Hours Worked</span>
@@ -491,9 +489,5 @@ function TechnicianDashboardContent() {
 }
 
 export default function TechnicianDashboardPage() {
-  return (
-    <ProtectedRoute>
-      <TechnicianDashboardContent />
-    </ProtectedRoute>
-  );
+  return <TechnicianDashboardContent />;
 }

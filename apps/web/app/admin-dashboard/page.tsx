@@ -175,11 +175,18 @@ function AdminDashboardContent() {
     setModalType(type);
     if (type === 'hub') {
       setFormData({ status: 'active' });
+    } else if (type === 'vehicle') {
+      // Fetch hubs for vehicle assignment
+      try {
+        const hubs = await fetchHubs();
+        setHubsList(hubs || []);
+      } catch (error) {
+        console.error('Error fetching hubs:', error);
+      }
+      setFormData({});
     } else {
       setFormData({});
     }
-    
-
     
     setShowAddModal(true);
   };
@@ -228,6 +235,13 @@ function AdminDashboardContent() {
   const handleEdit = async (item: any, type: string) => {
     setEditItem({ ...item, type });
     if (type === 'vehicle') {
+      // Fetch hubs for vehicle assignment
+      try {
+        const hubs = await fetchHubs();
+        setHubsList(hubs || []);
+      } catch (error) {
+        console.error('Error fetching hubs:', error);
+      }
       // Fetch all riders for assigning
       if (item.showAssignModal) {
         try {
@@ -564,6 +578,7 @@ function AdminDashboardContent() {
                         <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Vehicle Number</th>
                         <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Type</th>
                         <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Model</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Hub</th>
                         <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Status</th>
                         <th className="px-6 py-4 text-right text-sm font-semibold text-slate-900">Actions</th>
                       </tr>
@@ -574,6 +589,7 @@ function AdminDashboardContent() {
                           <td className="px-6 py-4 text-sm font-medium text-slate-900">{vehicle.vehicle_number}</td>
                           <td className="px-6 py-4 text-sm text-slate-600">{vehicle.vehicle_type}</td>
                           <td className="px-6 py-4 text-sm text-slate-600">{vehicle.model}</td>
+                          <td className="px-6 py-4 text-sm text-slate-600">{vehicle.hub_name || 'Not assigned'}</td>
                           <td className="px-6 py-4 text-sm">
                             <span className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
                               vehicle.status === 'available' ? 'bg-green-100 text-green-700' :
@@ -1168,6 +1184,21 @@ function AdminDashboardContent() {
                 </div>
 
                 <div>
+                  <label className="block text-sm font-semibold text-slate-900 mb-2">Assign Hub <span className="text-red-600">*</span></label>
+                  <select
+                    value={formData.hub_id || ''}
+                    onChange={(e) => setFormData({...formData, hub_id: e.target.value ? parseInt(e.target.value) : null})}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
+                    required
+                  >
+                    <option value="">Select Hub</option>
+                    {hubsList.map((hub: any) => (
+                      <option key={hub.id} value={hub.id}>{hub.hub_name} ({hub.hub_code})</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
                   <label className="block text-sm font-semibold text-slate-900 mb-2">Status</label>
                   <select
                     value={formData.status || 'available'}
@@ -1525,6 +1556,7 @@ function AdminDashboardContent() {
                               <div className="flex gap-2 mt-3 flex-wrap">
                                 <span className="px-3 py-1 bg-blue-200 text-blue-900 text-xs font-semibold rounded-full">{editItem.vehicle_type}</span>
                                 <span className="px-3 py-1 bg-blue-200 text-blue-900 text-xs font-semibold rounded-full">{editItem.model}</span>
+                                <span className="px-3 py-1 bg-blue-200 text-blue-900 text-xs font-semibold rounded-full">Hub ID: {editItem.hub_id || 'Not assigned'}</span>
                               </div>
                             </div>
                             <div className="text-right">
@@ -1719,6 +1751,20 @@ function AdminDashboardContent() {
                             placeholder="Year" 
                             className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
                           />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-semibold text-slate-900 mb-2">Assign Hub <span className="text-red-600">*</span></label>
+                          <select 
+                            value={editItem.hub_id || ''} 
+                            onChange={(e) => setEditItem({...editItem, hub_id: e.target.value ? parseInt(e.target.value) : null})} 
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
+                          >
+                            <option value="">Select Hub</option>
+                            {hubsList.map((hub: any) => (
+                              <option key={hub.id} value={hub.id}>{hub.hub_name} ({hub.hub_code})</option>
+                            ))}
+                          </select>
                         </div>
 
                         <div>
