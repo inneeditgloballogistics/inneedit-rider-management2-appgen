@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { LogOut, Package, Warehouse, AlertCircle } from 'lucide-react';
+import NotificationBell from '@/components/NotificationBell';
 
 function HubManagerDashboardContent() {
   const router = useRouter();
@@ -111,10 +112,7 @@ function HubManagerDashboardContent() {
 
           {/* Actions */}
           <div className="flex items-center gap-4">
-            <button className="relative p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-all">
-              <i className="ph ph-bell text-xl"></i>
-              <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
-            </button>
+            <NotificationBell />
             <div className="flex items-center gap-3 pl-4 border-l border-slate-200">
             <div className="text-right hidden sm:block">
               <p className="text-sm font-semibold text-slate-900">{managerData?.name || 'Hub Manager'}</p>

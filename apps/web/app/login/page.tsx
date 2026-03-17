@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Bell } from 'lucide-react';
+import NotificationBell from '@/components/NotificationBell';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -35,9 +35,12 @@ export default function LoginPage() {
 
     try {
       // Determine which endpoint to use based on login type
-      const endpoint = loginType === 'hub_manager' 
-        ? '/api/hub-manager-auth/login'
-        : '/api/rider-auth/login';
+      let endpoint = '/api/rider-auth/login';
+      if (loginType === 'hub_manager') {
+        endpoint = '/api/hub-manager-auth/login';
+      } else if (loginType === 'technician') {
+        endpoint = '/api/technician-auth/login';
+      }
 
       // Make API call to authenticate
       const response = await fetch(endpoint, {
@@ -51,9 +54,15 @@ export default function LoginPage() {
         throw new Error(errorData.error || 'Failed to sign in. Please check your credentials.');
       }
 
-      // Redirect based on login type
+      const data = await response.json();
+
+      // Store data based on login type
       if (loginType === 'hub_manager') {
+        localStorage.setItem('hubManager', JSON.stringify(data.hub_manager));
         router.push('/hub-manager-dashboard');
+      } else if (loginType === 'technician') {
+        localStorage.setItem('technician', JSON.stringify(data.technician));
+        router.push('/technician-dashboard');
       } else {
         router.push('/rider-dashboard');
       }
@@ -67,13 +76,8 @@ export default function LoginPage() {
   return (
     <div className="mesh-bg min-h-screen flex items-center justify-center px-6 py-12">
       {/* Notification Bell - Top Right */}
-      <div className="fixed top-8 right-8 cursor-pointer group">
-        <div className="relative">
-          <Bell size={24} className="text-slate-600 group-hover:text-slate-900 transition-colors" />
-          <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs flex items-center justify-center rounded-full font-bold">
-            0
-          </span>
-        </div>
+      <div className="fixed top-8 right-8">
+        <NotificationBell />
       </div>
 
       <div className="w-full max-w-md">
@@ -221,14 +225,14 @@ export default function LoginPage() {
               <form onSubmit={handleRiderLogin} className="space-y-5">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
-                    {loginType === 'hub_manager' ? 'Manager Email' : 'Email Address'}
+                    {loginType === 'hub_manager' ? 'Manager Email' : loginType === 'technician' ? 'Technician Email' : 'Email Address'}
                   </label>
                   <input
                     type="email"
                     value={phoneOrCeeId}
                     onChange={(e) => setPhoneOrCeeId(e.target.value)}
                     required
-                    placeholder={loginType === 'hub_manager' ? 'manager@hub.com' : 'you@company.com'}
+                    placeholder={loginType === 'hub_manager' ? 'manager@hub.com' : loginType === 'technician' ? 'technician@hub.com' : 'you@company.com'}
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
                   />
                 </div>

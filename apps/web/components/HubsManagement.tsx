@@ -51,6 +51,19 @@ export default function HubsManagement() {
   const [credentialsError, setCredentialsError] = useState('');
   const [showGeneratedPassword, setShowGeneratedPassword] = useState(false);
   const [generatedCredentials, setGeneratedCredentials] = useState<any>(null);
+  const [showTechnicianModal, setShowTechnicianModal] = useState(false);
+  const [selectedHubForTech, setSelectedHubForTech] = useState<any>(null);
+  const [technicianForm, setTechnicianForm] = useState<any>({
+    name: '',
+    email: '',
+    phone: '',
+    password: ''
+  });
+  const [technicianLoading, setTechnicianLoading] = useState(false);
+  const [technicianError, setTechnicianError] = useState('');
+  const [technicianSuccess, setTechnicianSuccess] = useState('');
+  const [showTechPassword, setShowTechPassword] = useState(false);
+  const [generatedTechPassword, setGeneratedTechPassword] = useState('');
 
   useEffect(() => {
     fetchHubs();
@@ -312,6 +325,19 @@ export default function HubsManagement() {
                             className="px-3 py-1 text-green-600 text-sm font-medium border border-green-200 rounded hover:bg-green-50"
                           >
                             Credentials
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSelectedHubForTech(hub);
+                              setTechnicianForm({ name: '', email: '', phone: '', password: '' });
+                              setTechnicianError('');
+                              setTechnicianSuccess('');
+                              setGeneratedTechPassword('');
+                              setShowTechnicianModal(true);
+                            }}
+                            className="px-3 py-1 text-purple-600 text-sm font-medium border border-purple-200 rounded hover:bg-purple-50"
+                          >
+                            Register Technician
                           </button>
                           <button
                             onClick={() => handleDelete(hub.id)}
@@ -832,6 +858,291 @@ export default function HubsManagement() {
         type="hubs"
         onSuccess={fetchHubs}
       />
+
+      {/* Technician Registration Modal */}
+      {showTechnicianModal && selectedHubForTech && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full">
+            {/* Header */}
+            <div className="p-6 border-b border-slate-200 flex items-center justify-between bg-gradient-to-r from-purple-50 to-white">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <i className="ph-bold ph-plus text-purple-600 text-lg"></i>
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900">Register Technician</h3>
+                  <p className="text-xs text-slate-500">{selectedHubForTech.hub_name}</p>
+                </div>
+              </div>
+              <button onClick={() => setShowTechnicianModal(false)} className="p-1 hover:bg-slate-200 rounded-lg transition-colors">
+                <i className="ph-bold ph-x text-xl text-slate-600"></i>
+              </button>
+            </div>
+            
+            {/* Content */}
+            <div className="p-6 space-y-6">
+              {/* Error Message */}
+              {technicianError && (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm flex items-start gap-3">
+                  <i className="ph-bold ph-warning-circle text-lg flex-shrink-0 mt-0.5"></i>
+                  <div>
+                    <p className="font-semibold">Error</p>
+                    <p>{technicianError}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Success Message */}
+              {technicianSuccess && (
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-start gap-3 mb-4">
+                    <i className="ph-bold ph-check-circle text-lg text-green-600 mt-0.5"></i>
+                    <div>
+                      <p className="font-semibold text-green-900">Technician Registered Successfully!</p>
+                      <p className="text-sm text-green-700 mt-1">Share these credentials with the technician</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3 bg-white rounded-lg p-4 border border-green-100">
+                    <div>
+                      <p className="text-xs font-semibold text-slate-600 mb-1">Name</p>
+                      <div className="flex items-center gap-2">
+                        <code className="flex-1 px-3 py-2 bg-slate-100 rounded text-sm font-mono text-slate-900 break-all">
+                          {technicianForm.name}
+                        </code>
+                        <button
+                          onClick={() => navigator.clipboard.writeText(technicianForm.name)}
+                          className="p-2 hover:bg-slate-200 rounded transition-colors"
+                        >
+                          <i className="ph-bold ph-copy text-slate-600"></i>
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <p className="text-xs font-semibold text-slate-600 mb-1">Email Address</p>
+                      <div className="flex items-center gap-2">
+                        <code className="flex-1 px-3 py-2 bg-slate-100 rounded text-sm font-mono text-slate-900 break-all">
+                          {technicianForm.email}
+                        </code>
+                        <button
+                          onClick={() => navigator.clipboard.writeText(technicianForm.email)}
+                          className="p-2 hover:bg-slate-200 rounded transition-colors"
+                        >
+                          <i className="ph-bold ph-copy text-slate-600"></i>
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <p className="text-xs font-semibold text-slate-600 mb-1">Password</p>
+                      <div className="flex items-center gap-2">
+                        <code className="flex-1 px-3 py-2 bg-slate-100 rounded text-sm font-mono text-slate-900 break-all">
+                          {showTechPassword ? technicianForm.password : '••••••••'}
+                        </code>
+                        <button
+                          onClick={() => setShowTechPassword(!showTechPassword)}
+                          className="p-2 hover:bg-slate-200 rounded transition-colors"
+                        >
+                          <i className={`ph-bold ${showTechPassword ? 'ph-eye-slash' : 'ph-eye'} text-slate-600`}></i>
+                        </button>
+                        <button
+                          onClick={() => navigator.clipboard.writeText(technicianForm.password)}
+                          className="p-2 hover:bg-slate-200 rounded transition-colors"
+                        >
+                          <i className="ph-bold ph-copy text-slate-600"></i>
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div className="pt-3 border-t border-green-100">
+                      <p className="text-xs font-semibold text-slate-600 mb-2">Login Instructions</p>
+                      <ol className="text-xs text-slate-700 space-y-1 list-decimal list-inside">
+                        <li>Go to <span className="font-mono bg-slate-100 px-1 rounded">inneedit.app/login</span></li>
+                        <li>Select <strong>"Technician"</strong> tab</li>
+                        <li>Enter the email and password above</li>
+                        <li>Click "Sign In"</li>
+                      </ol>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-xs">
+                    <p className="font-semibold mb-1">⚠️ Important</p>
+                    <ul className="list-disc list-inside space-y-0.5">
+                      <li>Share these credentials securely with the technician</li>
+                      <li>The technician should change the password after first login</li>
+                      <li>Do not share publicly or via email</li>
+                    </ul>
+                  </div>
+                </div>
+              )}
+
+              {/* Form (shown when not yet submitted) */}
+              {!technicianSuccess && (
+                <form onSubmit={async (e) => {
+                  e.preventDefault();
+                  setTechnicianLoading(true);
+                  setTechnicianError('');
+
+                  try {
+                    if (!technicianForm.name || !technicianForm.email || !technicianForm.phone || !technicianForm.password) {
+                      throw new Error('All fields are required');
+                    }
+
+                    if (technicianForm.password.length < 6) {
+                      throw new Error('Password must be at least 6 characters');
+                    }
+
+                    const res = await fetch('/api/technicians', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        name: technicianForm.name,
+                        email: technicianForm.email,
+                        phone: technicianForm.phone,
+                        hub_id: selectedHubForTech.id,
+                        password: technicianForm.password
+                      })
+                    });
+
+                    if (!res.ok) {
+                      const error = await res.json();
+                      throw new Error(error.error || 'Failed to register technician');
+                    }
+
+                    setTechnicianSuccess('Technician registered successfully!');
+                  } catch (error: any) {
+                    setTechnicianError(error.message);
+                  } finally {
+                    setTechnicianLoading(false);
+                  }
+                }} className="space-y-5">
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-900 mb-2">Full Name <span className="text-red-500">*</span></label>
+                    <input
+                      type="text"
+                      value={technicianForm.name}
+                      onChange={(e) => setTechnicianForm({...technicianForm, name: e.target.value})}
+                      placeholder="e.g., John Smith"
+                      required
+                      className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600 text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-900 mb-2">Email Address <span className="text-red-500">*</span></label>
+                    <input
+                      type="email"
+                      value={technicianForm.email}
+                      onChange={(e) => setTechnicianForm({...technicianForm, email: e.target.value})}
+                      placeholder="technician@inneedit.com"
+                      required
+                      className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600 text-sm"
+                    />
+                    <p className="text-xs text-slate-500 mt-1.5">This will be the login email for the technician</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-900 mb-2">Phone Number <span className="text-red-500">*</span></label>
+                    <input
+                      type="tel"
+                      value={technicianForm.phone}
+                      onChange={(e) => setTechnicianForm({...technicianForm, phone: e.target.value})}
+                      placeholder="10-digit phone number"
+                      required
+                      className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600 text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-sm font-semibold text-slate-900">Password <span className="text-red-500">*</span></label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+                          let pass = '';
+                          for (let i = 0; i < 12; i++) {
+                            pass += chars.charAt(Math.floor(Math.random() * chars.length));
+                          }
+                          setTechnicianForm({...technicianForm, password: pass});
+                        }}
+                        className="text-xs px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded transition-colors"
+                      >
+                        <i className="ph-bold ph-shuffle inline mr-1"></i>Auto-Generate
+                      </button>
+                    </div>
+                    <div className="relative">
+                      <input
+                        type={showTechPassword ? 'text' : 'password'}
+                        value={technicianForm.password}
+                        onChange={(e) => setTechnicianForm({...technicianForm, password: e.target.value})}
+                        placeholder="Enter or generate a password"
+                        required
+                        minLength={6}
+                        className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600 text-sm pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowTechPassword(!showTechPassword)}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-500 hover:text-slate-700"
+                      >
+                        <i className={`ph-bold ${showTechPassword ? 'ph-eye-slash' : 'ph-eye'}`}></i>
+                      </button>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1.5">Minimum 6 characters. Use auto-generate for a strong password.</p>
+                  </div>
+
+                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-xs text-blue-800">
+                      <i className="ph-bold ph-info inline mr-1"></i>
+                      Once registered, the technician can log in at <span className="font-mono bg-blue-100 px-1 rounded">inneedit.app/login</span> using the credentials above.
+                    </p>
+                  </div>
+
+                  <div className="flex gap-3 justify-end pt-4 border-t border-slate-200">
+                    <button 
+                      type="button" 
+                      onClick={() => setShowTechnicianModal(false)} 
+                      className="px-6 py-2.5 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 font-medium transition-colors flex items-center gap-2"
+                    >
+                      <i className="ph-bold ph-x"></i>Cancel
+                    </button>
+                    <button 
+                      type="submit" 
+                      disabled={technicianLoading}
+                      className="px-6 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {technicianLoading ? (
+                        <>
+                          <i className="ph ph-circle-notch animate-spin"></i>Registering...
+                        </>
+                      ) : (
+                        <>
+                          <i className="ph-bold ph-plus"></i>Register Technician
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              )}
+              
+              {/* Success Footer */}
+              {technicianSuccess && (
+                <div className="flex gap-3 justify-end pt-4 border-t border-slate-200">
+                  <button 
+                    type="button" 
+                    onClick={() => setShowTechnicianModal(false)} 
+                    className="px-6 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium transition-colors flex items-center gap-2"
+                  >
+                    <i className="ph-bold ph-check"></i>Done
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Hub Manager Credentials Modal */}
       {showCredentialsModal && credentialsHub && (

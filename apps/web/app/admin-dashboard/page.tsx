@@ -12,6 +12,7 @@ import HubsManagement from '@/components/HubsManagement';
 import WeatherBadge from '@/components/WeatherBadge';
 import BulkUploadModal from '@/components/BulkUploadModal';
 import HubManagerCredentialsGenerator from '@/components/HubManagerCredentialsGenerator';
+import NotificationBell from '@/components/NotificationBell';
 
 const StoreMapView = dynamic(() => import('@/components/StoreMapView'), {
   ssr: false,
@@ -409,10 +410,7 @@ function AdminDashboardContent() {
               <div className="hidden md:block">
                 <WeatherBadge latitude={12.9716} longitude={77.5946} locationName="HQ" />
               </div>
-              <button className="relative p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-all" title="Notifications">
-                <i className="ph ph-bell text-xl"></i>
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
-              </button>
+              <NotificationBell />
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-slate-700 to-slate-900 flex items-center justify-center text-white text-sm font-bold">A</div>
                 <div className="hidden md:block">

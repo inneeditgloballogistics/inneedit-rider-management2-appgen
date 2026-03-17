@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Bell, LogOut, Package, TrendingUp, Users, Wallet, AlertCircle, Gift, DollarSign, Download, TrendingDown, CheckCircle, User } from 'lucide-react';
+import { LogOut, Package, TrendingUp, Users, Wallet, AlertCircle, Gift, DollarSign, Download, TrendingDown, CheckCircle, User } from 'lucide-react';
 import WeatherBadge from '@/components/WeatherBadge';
 import RequestAdvanceModal from '@/components/RequestAdvanceModal';
 import ReferRiderModal from '@/components/ReferRiderModal';
+import NotificationBell from '@/components/NotificationBell';
 
 import html2canvas from 'html2canvas';
 
@@ -626,10 +627,7 @@ export default function RiderDashboard() {
                 locationName={rider.city || 'Your Location'}
               />
             )}
-            <button className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition" title="Notifications">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
-            </button>
+            <NotificationBell />
             <button
               onClick={() => router.push('/rider-profile')}
               className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition"
