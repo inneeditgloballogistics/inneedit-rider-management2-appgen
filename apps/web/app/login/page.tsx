@@ -34,22 +34,29 @@ export default function LoginPage() {
     setError('');
 
     try {
-      // For now, use the phone/CEE ID as email format for authentication
-      // In production, you'd have a separate rider authentication endpoint
-      const loginEmail = phoneOrCeeId.includes('@') ? phoneOrCeeId : `${phoneOrCeeId}@rider.internal`;
-      
-      // Make API call to authenticate rider
-      const response = await fetch('/api/rider-auth', {
+      // Determine which endpoint to use based on login type
+      const endpoint = loginType === 'hub_manager' 
+        ? '/api/hub-manager-auth/login'
+        : '/api/rider-auth/login';
+
+      // Make API call to authenticate
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: loginEmail, password: riderPassword })
+        body: JSON.stringify({ email: phoneOrCeeId, password: riderPassword })
       });
 
       if (!response.ok) {
-        throw new Error('Failed to sign in. Please check your credentials.');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to sign in. Please check your credentials.');
       }
 
-      router.push('/rider-dashboard'); // Redirect to rider dashboard
+      // Redirect based on login type
+      if (loginType === 'hub_manager') {
+        router.push('/hub-manager-dashboard');
+      } else {
+        router.push('/rider-dashboard');
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to sign in. Please check your credentials.');
     } finally {
@@ -214,14 +221,14 @@ export default function LoginPage() {
               <form onSubmit={handleRiderLogin} className="space-y-5">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Email Address
+                    {loginType === 'hub_manager' ? 'Manager Email' : 'Email Address'}
                   </label>
                   <input
                     type="email"
                     value={phoneOrCeeId}
                     onChange={(e) => setPhoneOrCeeId(e.target.value)}
                     required
-                    placeholder="you@company.com"
+                    placeholder={loginType === 'hub_manager' ? 'manager@hub.com' : 'you@company.com'}
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
                   />
                 </div>

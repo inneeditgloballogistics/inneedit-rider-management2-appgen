@@ -15,7 +15,7 @@ function HomeContent() {
       if (user.role === 'admin') {
         router.push('/admin-dashboard');
       } else if (user.role === 'hub_manager') {
-        router.push('/hub-management');
+        router.push('/hub-manager-dashboard');
       } else if (user.role === 'technician') {
         router.push('/technician-dashboard');
       } else if (user.role === 'rider') {

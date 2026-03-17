@@ -1,550 +1,383 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Bell, MapPin, Phone, Users, CheckCircle, Clock, Camera, FileText, ArrowLeft, AlertCircle, Upload } from 'lucide-react';
+import ProtectedRoute from '@/components/ProtectedRoute';
+import { useAuth } from '@/hooks/useAuth';
+import { useState, useEffect } from 'react';
+import { LogOut, Users, Package, TrendingUp, Warehouse, AlertCircle } from 'lucide-react';
 
-interface Notification {
-  id: number;
-  type: string;
-  title: string;
-  message: string;
-  related_id: number;
-  is_read: boolean;
-  created_at: string;
-}
-
-interface RiderOnboarding {
-  id: number;
-  cee_id: string;
-  full_name: string;
-  phone: string;
-  client: string;
-  assigned_hub_id: number;
-  assigned_vehicle_id: number | null;
-  driving_license_url?: string;
-  aadhar_url?: string;
-  status: string;
-}
-
-interface Vehicle {
-  id: number;
-  vehicle_number: string;
-  vehicle_type: string;
-  assigned_rider_id?: string;
-}
-
-export default function HubManagerDashboard() {
+function HubManagerDashboardContent() {
   const router = useRouter();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [riders, setRiders] = useState<RiderOnboarding[]>([]);
-  const [selectedRider, setSelectedRider] = useState<RiderOnboarding | null>(null);
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const { user, signOut } = useAuth();
+  const [hubData, setHubData] = useState<any>(null);
+  const [riders, setRiders] = useState<any[]>([]);
+  const [vehicles, setVehicles] = useState<any[]>([]);
+  const [orders, setOrders] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [vehiclePhotos, setVehiclePhotos] = useState<File[]>([]);
-  const [riderPhotos, setRiderPhotos] = useState<File[]>([]);
-  const [signature, setSignature] = useState<string | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [showHandoverForm, setShowHandoverForm] = useState(false);
 
+  // Role-based access control
   useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 30000); // Refresh every 30 seconds
-    return () => clearInterval(interval);
-  }, []);
-
-  const fetchData = async () => {
-    try {
-      // Fetch notifications
-      const notificationsRes = await fetch('/api/notifications?isRead=false');
-      if (notificationsRes.ok) {
-        const data = await notificationsRes.json();
-        const onboardingNotifications = data.notifications.filter(
-          (n: Notification) => n.type === 'new_rider_onboarding'
-        );
-        setNotifications(onboardingNotifications);
-      }
-
-      // Fetch all riders (for hub manager's hub)
-      const ridersRes = await fetch('/api/riders');
-      if (ridersRes.ok) {
-        const data = await ridersRes.json();
-        setRiders(data.riders || []);
-      }
-
-      // Fetch vehicles
-      const vehiclesRes = await fetch('/api/vehicles');
-      if (vehiclesRes.ok) {
-        const data = await vehiclesRes.json();
-        setVehicles(data || []);
-      }
-    } catch (err) {
-      console.error('Error fetching data:', err);
-      setError('Failed to load dashboard data');
-    } finally {
-      setLoading(false);
+    if (user && user.role !== 'hub_manager' && user.role !== 'admin') {
+      router.push('/login');
     }
-  };
+  }, [user, router]);
 
-  const handleMarkNotificationRead = async (notificationId: number) => {
-    try {
-      await fetch('/api/notifications', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: notificationId, isRead: true })
-      });
-      setNotifications(notifications.filter(n => n.id !== notificationId));
-    } catch (err) {
-      console.error('Error marking notification as read:', err);
-    }
-  };
+  // Fetch hub manager data
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        
+        // Get hub manager's hub info
+        const hubResponse = await fetch('/api/hub-managers/dashboard');
+        if (hubResponse.ok) {
+          const hubInfo = await hubResponse.json();
+          setHubData(hubInfo);
 
-  const getRiderById = (riderId: number) => {
-    return riders.find(r => r.id === riderId);
-  };
+          // Get riders assigned to this hub
+          const ridersResponse = await fetch(`/api/hub-managers/riders?hubId=${hubInfo.hubId}`);
+          if (ridersResponse.ok) {
+            const ridersData = await ridersResponse.json();
+            setRiders(ridersData);
+          }
 
-  const handleVehiclePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setVehiclePhotos(Array.from(e.target.files));
-    }
-  };
+          // Get vehicles at this hub
+          const vehiclesResponse = await fetch(`/api/hub-managers/vehicles?hubId=${hubInfo.hubId}`);
+          if (vehiclesResponse.ok) {
+            const vehiclesData = await vehiclesResponse.json();
+            setVehicles(vehiclesData);
+          }
 
-  const handleRiderPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setRiderPhotos(Array.from(e.target.files));
-    }
-  };
-
-  const handleSignatureCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setSignature(event.target?.result as string);
-      };
-      reader.readAsDataURL(e.target.files[0]);
-    }
-  };
-
-  const handleCompleteHandover = async () => {
-    if (!selectedRider) return;
-
-    setIsProcessing(true);
-    try {
-      // Upload all photos
-      const uploadedUrls = [];
-
-      // Upload vehicle photos
-      for (const photo of vehiclePhotos) {
-        const formData = new FormData();
-        formData.append('file', photo);
-        const uploadRes = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData
-        });
-        const uploadData = await uploadRes.json();
-        if (uploadData.url) uploadedUrls.push(uploadData.url);
+          // Get order statistics for hub
+          const ordersResponse = await fetch(`/api/hub-managers/orders?hubId=${hubInfo.hubId}`);
+          if (ordersResponse.ok) {
+            const ordersData = await ordersResponse.json();
+            setOrders(ordersData);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      } finally {
+        setLoading(false);
       }
+    };
 
-      // Upload rider photos
-      for (const photo of riderPhotos) {
-        const formData = new FormData();
-        formData.append('file', photo);
-        const uploadRes = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData
-        });
-        const uploadData = await uploadRes.json();
-        if (uploadData.url) uploadedUrls.push(uploadData.url);
-      }
-
-      // Upload signature
-      if (signature) {
-        const signatureBlob = await fetch(signature).then(r => r.blob());
-        const formData = new FormData();
-        formData.append('file', signatureBlob, 'signature.png');
-        const uploadRes = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData
-        });
-        const uploadData = await uploadRes.json();
-        if (uploadData.url) uploadedUrls.push(uploadData.url);
-      }
-
-      // Create notification for rider
-      await fetch('/api/notifications', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'vehicle_handover_complete',
-          title: 'Vehicle Handed Over Successfully',
-          message: `Your vehicle has been handed over. You are now ready to start deliveries. Welcome to inneedit!`,
-          related_id: selectedRider.id
-        })
-      });
-
-      // Update rider status
-      await fetch('/api/riders', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: selectedRider.id,
-          status: 'active'
-        })
-      });
-
-      alert('Vehicle handover completed successfully!');
-      setShowHandoverForm(false);
-      setSelectedRider(null);
-      setVehiclePhotos([]);
-      setRiderPhotos([]);
-      setSignature(null);
+    if (user?.role === 'hub_manager') {
       fetchData();
-    } catch (err) {
-      console.error('Error completing handover:', err);
-      alert('Failed to complete handover. Please try again.');
-    } finally {
-      setIsProcessing(false);
     }
+  }, [user]);
+
+  const handleLogout = async () => {
+    await signOut();
+    router.push('/login');
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading hub dashboard...</p>
+          <div className="w-16 h-16 border-4 border-slate-200 border-t-indigo-600 rounded-full animate-spin mx-auto"></div>
+          <p className="mt-4 text-sm font-medium text-slate-600">Loading dashboard...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100">
+    <div className="mesh-bg min-h-screen flex flex-col">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => router.back()}
-              className="p-2 hover:bg-gray-100 rounded-lg transition"
-            >
-              <ArrowLeft className="w-5 h-5 text-gray-600" />
-            </button>
+      <header className="fixed top-0 left-0 right-0 z-50 glass-panel border-b border-slate-200">
+        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+          {/* Brand */}
+          <div className="flex items-center gap-3">
+            <div className="h-10">
+              <img 
+                src="https://app-cdn.appgen.com/c8d1da7a-8da9-4a1f-8aaa-2cb65f828731/assets/uploaded_1772434426357_uwdii.png" 
+                alt="inneedit" 
+                className="h-full w-auto" 
+              />
+            </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Hub Manager Dashboard</h1>
-              <p className="text-sm text-gray-600 mt-1">Manage rider onboarding and vehicle handovers</p>
+              <h1 className="font-display font-bold text-base leading-none text-slate-900">
+                inneedit Global Logistics
+              </h1>
+              <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                Hub Manager Dashboard
+              </span>
             </div>
           </div>
-          <div className="relative">
-            <Bell className="w-6 h-6 text-gray-600" />
-            {notifications.length > 0 && (
-              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                {notifications.length}
-              </span>
-            )}
+
+          {/* Hub Info */}
+          {hubData && (
+            <div className="hidden md:block">
+              <h2 className="text-sm font-semibold text-slate-900">{hubData.hubName}</h2>
+              <p className="text-xs text-slate-500">{hubData.city}, {hubData.state}</p>
+            </div>
+          )}
+
+          {/* Actions */}
+          <div className="flex items-center gap-4">
+            <button className="relative p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-all">
+              <i className="ph ph-bell text-xl"></i>
+              <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
+            </button>
+            <div className="flex items-center gap-3 pl-4 border-l border-slate-200">
+              <div className="text-right hidden sm:block">
+                <p className="text-sm font-semibold text-slate-900">{user?.name || 'Hub Manager'}</p>
+                <p className="text-xs text-slate-500">{hubData?.hubCode || 'HUB'}</p>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="p-2 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+              >
+                <LogOut className="w-5 h-5" />
+              </button>
+            </div>
           </div>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex gap-3">
-            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-            <div>
-              <h3 className="font-semibold text-red-900">Error</h3>
-              <p className="text-sm text-red-700">{error}</p>
-            </div>
-          </div>
-        )}
-
-        {selectedRider ? (
-          // Rider Details View
-          <div className="space-y-6">
-            <button
-              onClick={() => setSelectedRider(null)}
-              className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 font-medium"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back to List
-            </button>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Rider Information */}
-              <div className="lg:col-span-2 bg-white rounded-lg shadow-md p-6 space-y-6">
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900">{selectedRider.full_name}</h2>
-                  <p className="text-gray-600 mt-1">CEE ID: <span className="font-mono font-semibold">{selectedRider.cee_id}</span></p>
-                  <p className="text-gray-600">Client: <span className="font-semibold">{selectedRider.client}</span></p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <p className="text-sm text-gray-600">Phone</p>
-                    <a href={`tel:${selectedRider.phone}`} className="text-lg font-semibold text-indigo-600 hover:text-indigo-700">
-                      {selectedRider.phone}
-                    </a>
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <p className="text-sm text-gray-600">Status</p>
-                    <span className="inline-block px-3 py-1 rounded-full text-sm font-semibold bg-yellow-100 text-yellow-800 mt-1">
-                      Pending Handover
-                    </span>
-                  </div>
-                </div>
-
-                {/* Documents */}
-                {(selectedRider.driving_license_url || selectedRider.aadhar_url) && (
-                  <div className="border-t pt-6">
-                    <h3 className="text-lg font-bold text-gray-900 mb-4">Documents</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      {selectedRider.driving_license_url && (
-                        <a
-                          href={selectedRider.driving_license_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="p-4 border border-blue-200 rounded-lg bg-blue-50 hover:bg-blue-100 transition"
-                        >
-                          <FileText className="w-6 h-6 text-blue-600 mb-2" />
-                          <p className="font-semibold text-gray-900 text-sm">Driving License</p>
-                        </a>
-                      )}
-                      {selectedRider.aadhar_url && (
-                        <a
-                          href={selectedRider.aadhar_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="p-4 border border-green-200 rounded-lg bg-green-50 hover:bg-green-100 transition"
-                        >
-                          <FileText className="w-6 h-6 text-green-600 mb-2" />
-                          <p className="font-semibold text-gray-900 text-sm">Aadhar Card</p>
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Handover Form */}
-                {showHandoverForm && (
-                  <div className="border-t pt-6 space-y-6">
-                    <h3 className="text-lg font-bold text-gray-900">Vehicle Handover Checklist</h3>
-
-                    {/* Vehicle Photos */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-3">
-                        <Camera className="w-4 h-4 inline mr-2" />
-                        Vehicle Photos (All 4 Sides)
-                      </label>
-                      <input
-                        type="file"
-                        multiple
-                        accept="image/*"
-                        onChange={handleVehiclePhotoChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                      />
-                      <p className="text-xs text-gray-600 mt-2">Upload front, back, left side, right side photos</p>
-                      {vehiclePhotos.length > 0 && (
-                        <p className="text-sm text-green-600 mt-2">{vehiclePhotos.length} photo(s) selected</p>
-                      )}
-                    </div>
-
-                    {/* Rider Photos */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-3">
-                        <Camera className="w-4 h-4 inline mr-2" />
-                        Rider & Vehicle Photos (Handover Moment)
-                      </label>
-                      <input
-                        type="file"
-                        multiple
-                        accept="image/*"
-                        onChange={handleRiderPhotoChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                      />
-                      <p className="text-xs text-gray-600 mt-2">Photos of rider with vehicle, rider's ID verification</p>
-                      {riderPhotos.length > 0 && (
-                        <p className="text-sm text-green-600 mt-2">{riderPhotos.length} photo(s) selected</p>
-                      )}
-                    </div>
-
-                    {/* Signature */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-3">
-                        Rider's Signature
-                      </label>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleSignatureCapture}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                      />
-                      <p className="text-xs text-gray-600 mt-2">Upload a clear photo or document of rider's signature</p>
-                      {signature && <p className="text-sm text-green-600 mt-2">Signature captured</p>}
-                    </div>
-
-                    {/* Checklist Items */}
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-2">
-                      <p className="font-semibold text-blue-900 text-sm">Before completing handover, ensure:</p>
-                      <ul className="space-y-1 text-sm text-blue-800">
-                        <li>✓ Vehicle condition checked and photos taken</li>
-                        <li>✓ All vehicle documents verified</li>
-                        <li>✓ Rider has signed handover form</li>
-                        <li>✓ Rider's phone number verified</li>
-                        <li>✓ EV charging instructions provided (if applicable)</li>
-                      </ul>
-                    </div>
-
-                    {/* Submit Button */}
-                    <button
-                      onClick={handleCompleteHandover}
-                      disabled={isProcessing || vehiclePhotos.length === 0 || riderPhotos.length === 0 || !signature}
-                      className="w-full py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all"
-                    >
-                      {isProcessing ? 'Processing...' : 'Complete Handover & Approve Rider'}
-                    </button>
-                  </div>
-                )}
-
-                {!showHandoverForm && (
-                  <button
-                    onClick={() => setShowHandoverForm(true)}
-                    className="w-full py-3 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition-all flex items-center justify-center gap-2"
-                  >
-                    <Upload className="w-5 h-5" />
-                    Start Vehicle Handover
-                  </button>
-                )}
-              </div>
-
-              {/* Vehicle Assignment */}
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">Vehicle Assignment</h3>
-                {selectedRider.assigned_vehicle_id ? (
-                  <>
-                    {vehicles.find(v => v.id === selectedRider.assigned_vehicle_id) && (
-                      <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
-                        <p className="text-sm text-indigo-600 font-medium">Assigned Vehicle</p>
-                        <p className="text-2xl font-bold text-indigo-900 mt-2 font-mono">
-                          {vehicles.find(v => v.id === selectedRider.assigned_vehicle_id)?.vehicle_number}
-                        </p>
-                        <p className="text-sm text-indigo-700 mt-1">
-                          {vehicles.find(v => v.id === selectedRider.assigned_vehicle_id)?.vehicle_type}
-                        </p>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <p className="text-gray-600">No vehicle assigned yet</p>
-                )}
-              </div>
-            </div>
-          </div>
-        ) : (
-          // Notifications & Riders List
-          <div className="space-y-6">
-            {/* Notifications Section */}
-            {notifications.length > 0 && (
-              <div className="space-y-4">
-                <h2 className="text-xl font-bold text-gray-900">New Rider Notifications</h2>
-                <div className="grid grid-cols-1 gap-4">
-                  {notifications.map((notification) => {
-                    const rider = getRiderById(notification.related_id);
-                    if (!rider) return null;
-
-                    return (
-                      <div key={notification.id} className="bg-white rounded-lg shadow-md p-6 border-l-4 border-yellow-500">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <Clock className="w-5 h-5 text-yellow-600" />
-                              <h3 className="font-bold text-gray-900">{notification.title}</h3>
-                            </div>
-                            <p className="text-gray-600 text-sm mb-4">{notification.message}</p>
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => {
-                                  handleMarkNotificationRead(notification.id);
-                                  setSelectedRider(rider);
-                                }}
-                                className="px-4 py-2 bg-yellow-100 text-yellow-900 font-semibold rounded-lg hover:bg-yellow-200 transition-all text-sm"
-                              >
-                                View Rider Details
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* All Riders Section */}
-            <div className="space-y-4">
+      {/* Main Content */}
+      <main className="flex-grow pt-28 pb-12 px-6">
+        <div className="max-w-7xl mx-auto space-y-8">
+          
+          {/* Quick Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                  <Users className="w-6 h-6 text-indigo-600" />
-                  Assigned Riders
-                </h2>
-                <span className="bg-indigo-100 text-indigo-900 px-3 py-1 rounded-full text-sm font-semibold">
-                  {riders.length} total
-                </span>
+                <div>
+                  <p className="text-sm text-slate-600 font-medium">Active Riders</p>
+                  <p className="text-3xl font-bold text-slate-900 mt-2">
+                    {riders.filter((r: any) => r.status === 'active').length}
+                  </p>
+                </div>
+                <Users className="w-12 h-12 text-blue-100" />
               </div>
+            </div>
 
-              {riders.length === 0 ? (
-                <div className="bg-white rounded-lg shadow-md p-8 text-center">
-                  <Users className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-600">No riders assigned to your hub yet</p>
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-600 font-medium">Total Vehicles</p>
+                  <p className="text-3xl font-bold text-slate-900 mt-2">
+                    {vehicles.length}
+                  </p>
                 </div>
-              ) : (
-                <div className="grid grid-cols-1 gap-4">
-                  {riders.map((rider) => (
-                    <div
-                      key={rider.id}
-                      className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-all cursor-pointer border border-gray-200"
-                      onClick={() => setSelectedRider(rider)}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h3 className="font-bold text-gray-900">{rider.full_name}</h3>
-                          <p className="text-sm text-gray-600 mt-1">CEE ID: <span className="font-mono font-semibold">{rider.cee_id}</span></p>
-                          <div className="flex items-center gap-4 mt-3 text-sm text-gray-600">
-                            <span className="flex items-center gap-1">
-                              <Phone className="w-4 h-4" />
-                              {rider.phone}
-                            </span>
-                            <span>{rider.client}</span>
-                          </div>
-                        </div>
-                        <div className="flex flex-col items-end gap-2">
-                          {rider.assigned_vehicle_id ? (
-                            <span className="flex items-center gap-1 text-sm font-semibold text-green-700 bg-green-50 px-3 py-1 rounded-full">
-                              <CheckCircle className="w-4 h-4" />
-                              Vehicle Assigned
-                            </span>
-                          ) : (
-                            <span className="text-sm font-semibold text-red-700 bg-red-50 px-3 py-1 rounded-full">
-                              No Vehicle
-                            </span>
-                          )}
-                          <span className={`text-xs font-semibold px-3 py-1 rounded-full ${
-                            rider.status === 'active'
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {rider.status === 'active' ? 'Active' : 'Pending Handover'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                <Package className="w-12 h-12 text-green-100" />
+              </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-600 font-medium">Orders Today</p>
+                  <p className="text-3xl font-bold text-slate-900 mt-2">
+                    {orders?.todayOrders || 0}
+                  </p>
                 </div>
-              )}
+                <TrendingUp className="w-12 h-12 text-purple-100" />
+              </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-600 font-medium">Hub Capacity</p>
+                  <p className="text-3xl font-bold text-slate-900 mt-2">
+                    {Math.round((riders.length / 100) * 100)}%
+                  </p>
+                </div>
+                <Warehouse className="w-12 h-12 text-orange-100" />
+              </div>
             </div>
           </div>
-        )}
-      </div>
+
+          {/* Hub Information */}
+          {hubData && (
+            <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-8">
+              <h2 className="text-xl font-bold text-slate-900 mb-6">Hub Information</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                  <h3 className="text-sm font-medium text-slate-600 mb-4">Basic Details</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-xs text-slate-500">Hub Name</p>
+                      <p className="text-sm font-medium text-slate-900">{hubData.hubName}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500">Hub Code</p>
+                      <p className="text-sm font-medium text-slate-900">{hubData.hubCode}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500">Location</p>
+                      <p className="text-sm font-medium text-slate-900">{hubData.location}, {hubData.city}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500">State</p>
+                      <p className="text-sm font-medium text-slate-900">{hubData.state}</p>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-slate-600 mb-4">Manager Details</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-xs text-slate-500">Manager Name</p>
+                      <p className="text-sm font-medium text-slate-900">{user?.name}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500">Manager Email</p>
+                      <p className="text-sm font-medium text-slate-900">{user?.email}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500">Pincode</p>
+                      <p className="text-sm font-medium text-slate-900">{hubData.pincode}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Riders List */}
+          <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+            <div className="px-8 py-6 border-b border-slate-200">
+              <h2 className="text-xl font-bold text-slate-900">Hub Riders</h2>
+              <p className="text-sm text-slate-600 mt-1">{riders.length} riders assigned to this hub</p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-slate-50 border-b border-slate-200">
+                  <tr>
+                    <th className="px-8 py-4 text-left text-xs font-semibold text-slate-600 uppercase">Name</th>
+                    <th className="px-8 py-4 text-left text-xs font-semibold text-slate-600 uppercase">CEE ID</th>
+                    <th className="px-8 py-4 text-left text-xs font-semibold text-slate-600 uppercase">Phone</th>
+                    <th className="px-8 py-4 text-left text-xs font-semibold text-slate-600 uppercase">Vehicle</th>
+                    <th className="px-8 py-4 text-left text-xs font-semibold text-slate-600 uppercase">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {riders.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-8 py-8 text-center">
+                        <AlertCircle className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                        <p className="text-slate-500">No riders assigned to this hub yet</p>
+                      </td>
+                    </tr>
+                  ) : (
+                    riders.map((rider: any) => (
+                      <tr key={rider.id} className="border-b border-slate-200 hover:bg-slate-50 transition">
+                        <td className="px-8 py-4">
+                          <p className="font-medium text-slate-900">{rider.full_name}</p>
+                        </td>
+                        <td className="px-8 py-4">
+                          <p className="text-sm text-slate-600">{rider.cee_id}</p>
+                        </td>
+                        <td className="px-8 py-4">
+                          <p className="text-sm text-slate-600">{rider.phone}</p>
+                        </td>
+                        <td className="px-8 py-4">
+                          <p className="text-sm text-slate-600">{rider.vehicle_type || 'N/A'}</p>
+                        </td>
+                        <td className="px-8 py-4">
+                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                            rider.status === 'active' 
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-slate-100 text-slate-700'
+                          }`}>
+                            {rider.status || 'inactive'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Vehicles List */}
+          <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+            <div className="px-8 py-6 border-b border-slate-200">
+              <h2 className="text-xl font-bold text-slate-900">Hub Vehicles</h2>
+              <p className="text-sm text-slate-600 mt-1">{vehicles.length} vehicles at this hub</p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-slate-50 border-b border-slate-200">
+                  <tr>
+                    <th className="px-8 py-4 text-left text-xs font-semibold text-slate-600 uppercase">Vehicle Number</th>
+                    <th className="px-8 py-4 text-left text-xs font-semibold text-slate-600 uppercase">Type</th>
+                    <th className="px-8 py-4 text-left text-xs font-semibold text-slate-600 uppercase">Model</th>
+                    <th className="px-8 py-4 text-left text-xs font-semibold text-slate-600 uppercase">Year</th>
+                    <th className="px-8 py-4 text-left text-xs font-semibold text-slate-600 uppercase">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {vehicles.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-8 py-8 text-center">
+                        <AlertCircle className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                        <p className="text-slate-500">No vehicles at this hub yet</p>
+                      </td>
+                    </tr>
+                  ) : (
+                    vehicles.map((vehicle: any) => (
+                      <tr key={vehicle.id} className="border-b border-slate-200 hover:bg-slate-50 transition">
+                        <td className="px-8 py-4">
+                          <p className="font-medium text-slate-900">{vehicle.vehicle_number}</p>
+                        </td>
+                        <td className="px-8 py-4">
+                          <p className="text-sm text-slate-600">{vehicle.vehicle_type}</p>
+                        </td>
+                        <td className="px-8 py-4">
+                          <p className="text-sm text-slate-600">{vehicle.model}</p>
+                        </td>
+                        <td className="px-8 py-4">
+                          <p className="text-sm text-slate-600">{vehicle.year}</p>
+                        </td>
+                        <td className="px-8 py-4">
+                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                            vehicle.status === 'active' 
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-slate-100 text-slate-700'
+                          }`}>
+                            {vehicle.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="bg-white border-t border-slate-200 py-8 mt-auto">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="text-sm text-slate-500">
+              © 2024 inneedit Global Logistics Private Limited. All rights reserved.
+            </div>
+            <div className="flex gap-6 text-sm font-medium text-slate-600">
+              <a href="#" className="hover:text-slate-900 transition-colors">Help Center</a>
+              <a href="#" className="hover:text-slate-900 transition-colors">Contact Support</a>
+              <a href="#" className="hover:text-slate-900 transition-colors">Terms of Service</a>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
+  );
+}
+
+export default function HubManagerDashboardPage() {
+  return (
+    <ProtectedRoute>
+      <HubManagerDashboardContent />
+    </ProtectedRoute>
   );
 }

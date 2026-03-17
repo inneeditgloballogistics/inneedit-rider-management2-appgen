@@ -330,14 +330,14 @@ export default function HubsManagement() {
               <div><strong>Hub In-charge Phone:</strong> {viewItem.manager_phone}</div>
               <div><strong>Status:</strong> {viewItem.status}</div>
               {viewItem.latitude && viewItem.longitude && (
-                <div><strong>Coordinates:</strong> Lat: {viewItem.latitude.toFixed(4)}, Lng: {viewItem.longitude.toFixed(4)}</div>
+                <div><strong>Coordinates:</strong> Lat: {Number(viewItem.latitude).toFixed(4)}, Lng: {Number(viewItem.longitude).toFixed(4)}</div>
               )}
               {viewItem.latitude && viewItem.longitude && (
                 <div className="pt-4 border-t border-slate-200">
                   <p className="text-sm font-semibold text-slate-900 mb-2">Current Weather</p>
                   <WeatherCard 
-                    latitude={viewItem.latitude} 
-                    longitude={viewItem.longitude}
+                    latitude={Number(viewItem.latitude)} 
+                    longitude={Number(viewItem.longitude)}
                     locationName={viewItem.hub_name}
                     showDetails={true}
                   />
