@@ -13,26 +13,31 @@ function verifyPassword(password: string, hash: string): boolean {
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password } = await request.json();
+    const { phoneOrCeeId, email, password } = await request.json();
+    
+    // Support both new format (phoneOrCeeId) and old format (email) for backward compatibility
+    const loginIdentifier = phoneOrCeeId || email;
 
-    if (!email || !password) {
+    if (!loginIdentifier || !password) {
       return NextResponse.json(
-        { error: 'Email and password are required' },
+        { error: 'Phone number, CEE ID, or email and password are required' },
         { status: 400 }
       );
     }
 
-    // Find rider by email
+    // Find rider by phone, CEE ID, or email
     const riders = await sql`
       SELECT id, user_id, cee_id, full_name, phone, email, status, password_hash
       FROM riders
-      WHERE LOWER(email) = LOWER(${email})
+      WHERE LOWER(phone) = LOWER(${loginIdentifier})
+         OR LOWER(cee_id) = LOWER(${loginIdentifier})
+         OR LOWER(email) = LOWER(${loginIdentifier})
       LIMIT 1
     `;
 
     if (riders.length === 0) {
       return NextResponse.json(
-        { error: 'Email not found. Please contact your administrator.' },
+        { error: 'Phone number, CEE ID, or email not found. Please contact your administrator.' },
         { status: 404 }
       );
     }

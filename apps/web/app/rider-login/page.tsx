@@ -7,7 +7,7 @@ import { Eye, EyeOff, Mail, Lock, Bell } from 'lucide-react';
 
 export default function RiderLoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
+  const [phoneOrCeeId, setPhoneOrCeeId] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -19,8 +19,8 @@ export default function RiderLoginPage() {
     setError('');
 
     try {
-      if (!email || !password) {
-        setError('Please enter both email and password');
+      if (!phoneOrCeeId || !password) {
+        setError('Please enter both phone/CEE ID and password');
         setLoading(false);
         return;
       }
@@ -33,7 +33,7 @@ export default function RiderLoginPage() {
         },
         credentials: 'include',
         body: JSON.stringify({
-          email: email.toLowerCase(),
+          phoneOrCeeId: phoneOrCeeId.trim(),
           password,
         }),
       });
@@ -110,24 +110,24 @@ export default function RiderLoginPage() {
           )}
 
           <form onSubmit={handleLogin} className="space-y-5">
-            {/* Email Input */}
+            {/* Phone / CEE ID Input */}
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
-                Email Address
+                Phone Number or CEE ID
               </label>
               <div className="relative">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                 <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  type="text"
+                  value={phoneOrCeeId}
+                  onChange={(e) => setPhoneOrCeeId(e.target.value)}
                   required
-                  placeholder="rider@example.com"
+                  placeholder="9876543210 or CEE12345"
                   className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                 />
               </div>
               <p className="text-xs text-slate-500 mt-1.5">
-                Enter your registered email address
+                Enter your phone number or CEE ID
               </p>
             </div>
 
@@ -166,7 +166,7 @@ export default function RiderLoginPage() {
             {/* Login Button */}
             <button
               type="submit"
-              disabled={loading || !email || !password}
+              disabled={loading || !phoneOrCeeId || !password}
               className="w-full px-4 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-600/25 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading ? (

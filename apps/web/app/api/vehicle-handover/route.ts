@@ -57,54 +57,89 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    console.log('Handover request body keys:', Object.keys(body));
+    
     const { riderId, hubManagerId, vehicleId, hubId, vehiclePhotos, riderSignature, odometerReading, fuelLevel, notes } = body;
 
-    // Create handover record
+    // Validate required fields
+    if (!riderId || !vehicleId || !hubId) {
+      console.error('Missing required fields:', { riderId, vehicleId, hubId });
+      return NextResponse.json(
+        { error: 'Missing required fields: riderId, vehicleId, hubId' },
+        { status: 400 }
+      );
+    }
+
+    console.log('Creating handover record for rider:', riderId);
+
+    // Create handover record (WITHOUT photos array)
     const handoverResult = await sql`
       INSERT INTO vehicle_handovers (
         rider_id,
         hub_manager_id,
         vehicle_id,
         hub_id,
-        vehicle_photos,
         rider_signature_url,
         odometer_reading,
         fuel_level,
         notes,
-        status
+        status,
+        created_at,
+        updated_at
       ) VALUES (
         ${riderId},
-        ${hubManagerId},
+        ${hubManagerId || null},
         ${vehicleId},
         ${hubId},
-        ${vehiclePhotos ? JSON.stringify(vehiclePhotos) : null},
-        ${riderSignature},
-        ${odometerReading},
-        ${fuelLevel},
-        ${notes},
-        'completed'
+        ${riderSignature || null},
+        ${odometerReading || ''},
+        ${fuelLevel || 'full'},
+        ${notes || ''},
+        'completed',
+        NOW(),
+        NOW()
       )
       RETURNING *
     `;
 
     const handover = handoverResult[0];
+    console.log('Handover created:', handover.id);
 
-    // Get rider and hub details for notification
+    // Save photos separately if provided
+    if (vehiclePhotos && Array.isArray(vehiclePhotos) && vehiclePhotos.length > 0) {
+      console.log('Saving', vehiclePhotos.length, 'photos');
+      for (let i = 0; i < vehiclePhotos.length; i++) {
+        await sql`
+          INSERT INTO handover_photos (
+            handover_id,
+            photo_data,
+            photo_order,
+            created_at
+          ) VALUES (
+            ${handover.id},
+            ${vehiclePhotos[i]},
+            ${i + 1},
+            NOW()
+          )
+        `;
+      }
+      console.log('Photos saved successfully');
+    }
+
+    // Get rider and vehicle details for notification
     const riderDetails = await sql`
-      SELECT full_name, cee_id, user_id FROM riders WHERE id = ${riderId}
+      SELECT r.full_name, r.cee_id, r.user_id, v.vehicle_number
+      FROM riders r
+      LEFT JOIN vehicles v ON r.assigned_vehicle_id = v.id
+      WHERE r.id = ${riderId}
     `;
 
     const rider = riderDetails[0];
-
-    // Get store assigned to rider
-    const storeDetails = await sql`
-      SELECT * FROM riders WHERE id = ${riderId}
-    `;
-
-    const riderStore = storeDetails[0];
+    console.log('Rider details retrieved:', rider?.cee_id);
 
     // Create notification for rider
-    if (rider.user_id) {
+    if (rider?.user_id) {
+      console.log('Creating rider notification');
       await sql`
         INSERT INTO notifications (
           type,
@@ -118,7 +153,7 @@ export async function POST(request: NextRequest) {
         ) VALUES (
           'vehicle_handover_complete',
           'Vehicle Handed Over Successfully! 🎉',
-          ${'Congratulations! Your vehicle ' + (handover.vehicle_id) + ' has been handed over. You are all set to start delivering. Welcome to the team! Head to your assigned store and begin working. Best of luck!'},
+          ${'Your vehicle ' + (rider.vehicle_number || vehicleId) + ' is ready. Head to your assigned store and start working. All the best!'},
           ${rider.user_id},
           ${riderId},
           ${handover.id},
@@ -126,7 +161,29 @@ export async function POST(request: NextRequest) {
           NOW()
         )
       `;
+      console.log('Rider notification created');
     }
+
+    // Create notification for admin
+    console.log('Creating admin notification');
+    await sql`
+      INSERT INTO notifications (
+        type,
+        title,
+        message,
+        related_id,
+        is_read,
+        created_at
+      ) VALUES (
+        'vehicle_handover_admin',
+        'Vehicle Handed Over ✓',
+        ${'Rider ' + (rider?.full_name || 'Unknown') + ' (CEE: ' + (rider?.cee_id || 'N/A') + ') handed over vehicle ' + (rider?.vehicle_number || vehicleId) + '. On the way to store to start working.'},
+        ${handover.id},
+        false,
+        NOW()
+      )
+    `;
+    console.log('Admin notification created');
 
     return NextResponse.json({
       success: true,
@@ -134,7 +191,7 @@ export async function POST(request: NextRequest) {
       message: 'Vehicle handover completed successfully'
     });
   } catch (error: any) {
-    console.error('Error completing handover:', error);
+    console.error('Error completing handover:', error.message || error);
     return NextResponse.json(
       { error: error?.message || 'Failed to complete handover' },
       { status: 500 }

@@ -112,45 +112,68 @@ export default function VehicleHandoverModal({
     setIsSubmitting(true);
 
     try {
+      const payload = {
+        riderId: rider.id,
+        hubManagerId,
+        vehicleId: rider.vehicle_id,
+        hubId: rider.assigned_hub_id,
+        vehiclePhotos,
+        riderSignature,
+        odometerReading: formData.odometerReading || '',
+        fuelLevel: formData.fuelLevel,
+        notes: formData.notes || '',
+      };
+
+      console.log('Submitting handover with payload:', {
+        ...payload,
+        vehiclePhotos: `[${payload.vehiclePhotos.length} photos]`,
+        riderSignature: '[signature data]'
+      });
+
       const response = await fetch('/api/vehicle-handover', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          riderId: rider.id,
-          hubManagerId,
-          vehicleId: rider.vehicle_id,
-          hubId: rider.assigned_hub_id,
-          vehiclePhotos,
-          riderSignature,
-          odometerReading: formData.odometerReading,
-          fuelLevel: formData.fuelLevel,
-          notes: formData.notes,
-        }),
+        body: JSON.stringify(payload),
       });
 
+      console.log('Response status:', response.status, 'ok:', response.ok);
+
       if (response.ok) {
+        const result = await response.json();
+        console.log('Success response:', result);
         alert('Vehicle handed over successfully! Rider notification sent.');
         onHandoverComplete();
         onClose();
       } else {
-        const error = await response.json();
-        alert(`Error: ${error.error}`);
+        const text = await response.text();
+        console.error('Error response text:', text);
+        
+        let errorMessage = 'Failed to complete handover';
+        try {
+          const error = JSON.parse(text);
+          errorMessage = error.error || error.message || errorMessage;
+        } catch {
+          errorMessage = text || errorMessage;
+        }
+        
+        console.error('API Error:', errorMessage);
+        alert(`Error: ${errorMessage}`);
       }
     } catch (error) {
       console.error('Error completing handover:', error);
-      alert('Failed to complete handover');
+      alert('Failed to complete handover: ' + (error instanceof Error ? error.message : 'Unknown error'));
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/50" onClick={onClose}></div>
 
       {/* Modal */}
-      <div className="relative bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="relative bg-white rounded-2xl shadow-2xl max-w-2xl w-full my-auto max-h-[95vh] overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-slate-200 px-8 py-6 flex items-center justify-between z-10">
           <div>

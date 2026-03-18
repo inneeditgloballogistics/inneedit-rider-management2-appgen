@@ -13,6 +13,7 @@ import WeatherBadge from '@/components/WeatherBadge';
 import BulkUploadModal from '@/components/BulkUploadModal';
 import HubManagerCredentialsGenerator from '@/components/HubManagerCredentialsGenerator';
 import NotificationBell from '@/components/NotificationBell';
+import VehicleStatusDashboard from '@/components/VehicleStatusDashboard';
 
 const StoreMapView = dynamic(() => import('@/components/StoreMapView'), {
   ssr: false,
@@ -512,6 +513,9 @@ function AdminDashboardContent() {
                   </div>
                 </div>
                 <DashboardMapView />
+                
+                {/* Vehicle Status Overview */}
+                <VehicleStatusDashboard />
               </>
             )}
 

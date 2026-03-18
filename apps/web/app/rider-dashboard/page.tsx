@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { LogOut, Package, TrendingUp, Users, Wallet, AlertCircle, Gift, DollarSign, Download, TrendingDown, CheckCircle, User } from 'lucide-react';
+import { LogOut, Package, TrendingUp, Users, Wallet, AlertCircle, Gift, DollarSign, Download, TrendingDown, CheckCircle, User, Wrench } from 'lucide-react';
 import WeatherBadge from '@/components/WeatherBadge';
 import RequestAdvanceModal from '@/components/RequestAdvanceModal';
 import ReferRiderModal from '@/components/ReferRiderModal';
 import NotificationBell from '@/components/NotificationBell';
+import RiderSupportTickets from '@/components/RiderSupportTickets';
 
 import html2canvas from 'html2canvas';
 
@@ -152,7 +153,7 @@ export default function RiderDashboard() {
   const [riderEntries, setRiderEntries] = useState<PayrollEntry[]>([]);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [entriesLoading, setEntriesLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'hub' | 'store'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'hub' | 'store' | 'support-tickets'>('dashboard');
   const [hub, setHub] = useState<Hub | null>(null);
   const [store, setStore] = useState<Store | null>(null);
   const [tabLoading, setTabLoading] = useState(false);
@@ -505,7 +506,7 @@ export default function RiderDashboard() {
     }
   };
 
-  const handleTabChange = async (tab: 'dashboard' | 'hub' | 'store') => {
+  const handleTabChange = async (tab: 'dashboard' | 'hub' | 'store' | 'support-tickets') => {
     setActiveTab(tab);
     if (tab === 'hub' && !hub && rider?.assigned_hub_id) {
       await fetchHubDetails();
@@ -658,7 +659,7 @@ export default function RiderDashboard() {
           </div>
 
           {/* Tab Navigation */}
-          <div className="flex gap-4 border-t pt-4">
+          <div className="flex gap-4 border-t pt-4 flex-wrap">
             <button
               onClick={() => handleTabChange('dashboard')}
               className={`px-4 py-2 text-sm font-medium rounded-lg transition ${
@@ -688,6 +689,17 @@ export default function RiderDashboard() {
               }`}
             >
               Store
+            </button>
+            <button
+              onClick={() => handleTabChange('support-tickets')}
+              className={`px-4 py-2 text-sm font-medium rounded-lg transition flex items-center gap-2 ${
+                activeTab === 'support-tickets'
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              <Wrench className="w-4 h-4" />
+              Support Tickets
             </button>
           </div>
         </div>
@@ -940,6 +952,11 @@ export default function RiderDashboard() {
               </div>
             )}
           </div>
+        )}
+
+        {/* SUPPORT TICKETS TAB */}
+        {activeTab === 'support-tickets' && (
+          <RiderSupportTickets riderId={rider.ceeId} riderLatitude={rider.latitude} riderLongitude={rider.longitude} />
         )}
 
         {/* DASHBOARD TAB */}

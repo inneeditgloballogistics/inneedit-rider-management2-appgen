@@ -2,30 +2,43 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { LogOut, Package, Warehouse, AlertCircle } from 'lucide-react';
+import { LogOut, Package, Warehouse, AlertCircle, Users, Search, Wrench, RefreshCw } from 'lucide-react';
 import NotificationBell from '@/components/NotificationBell';
+import VehicleHandoverModal from '@/components/VehicleHandoverModal';
+import HubManagerTickets from '@/components/HubManagerTickets';
+import VehicleSwapModal from '@/components/VehicleSwapModal';
 
 function HubManagerDashboardContent() {
   const router = useRouter();
   const [managerData, setManagerData] = useState<any>(null);
   const [hubData, setHubData] = useState<any>(null);
   const [vehicles, setVehicles] = useState<any[]>([]);
+  const [newRiders, setNewRiders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('overview');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [handoverModalOpen, setHandoverModalOpen] = useState(false);
+  const [selectedRider, setSelectedRider] = useState<any>(null);
+  const [vehicleSwapOpen, setVehicleSwapOpen] = useState(false);
+  const [selectedVehicleForSwap, setSelectedVehicleForSwap] = useState<any>(null);
+  const [selectedRiderForSwap, setSelectedRiderForSwap] = useState<any>(null);
 
-  // Check if session exists
+  // Check if hub manager is logged in
   useEffect(() => {
-    const checkSession = async () => {
+    const checkAuth = () => {
       try {
-        const response = await fetch('/api/hub-managers/dashboard');
-        if (!response.ok) {
+        const storedManager = localStorage.getItem('hubManager');
+        if (!storedManager) {
           router.push('/login');
+          return;
         }
+        setManagerData(JSON.parse(storedManager));
       } catch (error) {
         router.push('/login');
       }
     };
 
-    checkSession();
+    checkAuth();
   }, [router]);
 
   // Fetch hub manager data
@@ -34,18 +47,34 @@ function HubManagerDashboardContent() {
       try {
         setLoading(true);
         
-        // Get hub manager's hub info
-        const hubResponse = await fetch('/api/hub-managers/dashboard');
-        if (hubResponse.ok) {
-          const hubInfo = await hubResponse.json();
-          setManagerData(hubInfo);
-          setHubData(hubInfo);
+        // Get hub manager from localStorage
+        const storedManager = localStorage.getItem('hubManager');
+        if (storedManager) {
+          const managerInfo = JSON.parse(storedManager);
+          setManagerData(managerInfo);
 
-          // Get vehicles at this hub
-          const vehiclesResponse = await fetch(`/api/hub-managers/vehicles?hubId=${hubInfo.hubId}`);
-          if (vehiclesResponse.ok) {
-            const vehiclesData = await vehiclesResponse.json();
-            setVehicles(vehiclesData);
+          // Fetch hub details from API
+          const hubResponse = await fetch(`/api/hubs`);
+          if (hubResponse.ok) {
+            const hubs = await hubResponse.json();
+            // Use hubId or hub_id depending on what was stored
+            const hubId = managerInfo.hubId || managerInfo.hub_id;
+            const hubInfo = hubs.find((h: any) => h.id === hubId);
+            setHubData(hubInfo);
+
+            // Get vehicles at this hub
+            const vehiclesResponse = await fetch(`/api/vehicles?hubId=${hubId}`);
+            if (vehiclesResponse.ok) {
+              const vehiclesData = await vehiclesResponse.json();
+              setVehicles(vehiclesData);
+            }
+
+            // Get new riders at this hub
+            const ridersResponse = await fetch(`/api/vehicle-handover?action=new-riders&hubId=${hubId}`);
+            if (ridersResponse.ok) {
+              const ridersData = await ridersResponse.json();
+              setNewRiders(ridersData);
+            }
           }
         }
       } catch (error) {
@@ -60,12 +89,51 @@ function HubManagerDashboardContent() {
 
   const handleLogout = async () => {
     try {
+      localStorage.removeItem('hubManager');
       await fetch('/api/hub-managers/logout', { method: 'POST' });
     } catch (error) {
       console.error('Logout error:', error);
     }
     router.push('/login');
   };
+
+  const handleOpenHandover = (rider: any) => {
+    setSelectedRider(rider);
+    setHandoverModalOpen(true);
+  };
+
+  const handleHandoverComplete = () => {
+    // Refresh riders list
+    if (managerData && (managerData.hubId || managerData.hub_id)) {
+      const hubId = managerData.hubId || managerData.hub_id;
+      fetch(`/api/vehicle-handover?action=new-riders&hubId=${hubId}`)
+        .then(res => res.json())
+        .then(data => setNewRiders(data));
+    }
+  };
+
+  const handleOpenVehicleSwap = (vehicle: any, rider: any) => {
+    setSelectedVehicleForSwap(vehicle);
+    setSelectedRiderForSwap(rider);
+    setVehicleSwapOpen(true);
+  };
+
+  const handleSwapComplete = () => {
+    // Refresh vehicles list
+    if (managerData && (managerData.hubId || managerData.hub_id)) {
+      const hubId = managerData.hubId || managerData.hub_id;
+      fetch(`/api/vehicles?hubId=${hubId}`)
+        .then(res => res.json())
+        .then(data => setVehicles(data));
+    }
+  };
+
+  const filteredRiders = newRiders.filter(rider =>
+    rider.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    rider.cee_id?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const hubId = managerData?.hubId || managerData?.hub_id;
 
   if (loading) {
     return (
@@ -105,7 +173,7 @@ function HubManagerDashboardContent() {
           {/* Hub Info */}
           {hubData && (
             <div className="hidden md:block">
-              <h2 className="text-sm font-semibold text-slate-900">{hubData.hubName}</h2>
+              <h2 className="text-sm font-semibold text-slate-900">{hubData.hub_name}</h2>
               <p className="text-xs text-slate-500">{hubData.city}, {hubData.state}</p>
             </div>
           )}
@@ -114,10 +182,10 @@ function HubManagerDashboardContent() {
           <div className="flex items-center gap-4">
             <NotificationBell />
             <div className="flex items-center gap-3 pl-4 border-l border-slate-200">
-            <div className="text-right hidden sm:block">
-              <p className="text-sm font-semibold text-slate-900">{managerData?.name || 'Hub Manager'}</p>
-              <p className="text-xs text-slate-500">{hubData?.hubCode || 'HUB'}</p>
-            </div>
+              <div className="text-right hidden sm:block">
+                <p className="text-sm font-semibold text-slate-900">{managerData?.name || 'Hub Manager'}</p>
+                <p className="text-xs text-slate-500">{hubData?.hub_code || 'HUB'}</p>
+              </div>
               <button
                 onClick={handleLogout}
                 className="p-2 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
@@ -133,138 +201,313 @@ function HubManagerDashboardContent() {
       <main className="flex-grow pt-28 pb-12 px-6">
         <div className="max-w-7xl mx-auto space-y-8">
           
-          {/* Quick Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-slate-600 font-medium">Total Vehicles</p>
-                  <p className="text-3xl font-bold text-slate-900 mt-2">
-                    {vehicles.length}
-                  </p>
-                </div>
-                <Package className="w-12 h-12 text-green-100" />
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-slate-600 font-medium">Available Vehicles</p>
-                  <p className="text-3xl font-bold text-slate-900 mt-2">
-                    {vehicles.filter((v: any) => v.status === 'available').length}
-                  </p>
-                </div>
-                <Warehouse className="w-12 h-12 text-orange-100" />
-              </div>
+          {/* Tabs */}
+          <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+            <div className="flex border-b border-slate-200">
+              <button
+                onClick={() => setActiveTab('overview')}
+                className={`flex-1 px-6 py-4 font-medium text-center transition ${
+                  activeTab === 'overview'
+                    ? 'bg-indigo-50 text-indigo-600 border-b-2 border-indigo-600'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Overview
+              </button>
+              <button
+                onClick={() => setActiveTab('riders')}
+                className={`flex-1 px-6 py-4 font-medium text-center transition ${
+                  activeTab === 'riders'
+                    ? 'bg-indigo-50 text-indigo-600 border-b-2 border-indigo-600'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Users className="w-4 h-4 inline mr-2" />
+                New Riders ({newRiders.length})
+              </button>
+              <button
+                onClick={() => setActiveTab('tickets')}
+                className={`flex-1 px-6 py-4 font-medium text-center transition ${
+                  activeTab === 'tickets'
+                    ? 'bg-indigo-50 text-indigo-600 border-b-2 border-indigo-600'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Wrench className="w-4 h-4 inline mr-2" />
+                Support Tickets
+              </button>
             </div>
           </div>
-
-          {/* Hub Information */}
-          {hubData && (
-            <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-8">
-              <h2 className="text-xl font-bold text-slate-900 mb-6">Hub Information</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div>
-                  <h3 className="text-sm font-medium text-slate-600 mb-4">Basic Details</h3>
-                  <div className="space-y-3">
+          
+          {activeTab === 'overview' && (
+            <>
+              {/* Quick Stats */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+                  <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs text-slate-500">Hub Name</p>
-                      <p className="text-sm font-medium text-slate-900">{hubData.hubName}</p>
+                      <p className="text-sm text-slate-600 font-medium">Total Vehicles</p>
+                      <p className="text-3xl font-bold text-slate-900 mt-2">
+                        {vehicles.length}
+                      </p>
                     </div>
-                    <div>
-                      <p className="text-xs text-slate-500">Hub Code</p>
-                      <p className="text-sm font-medium text-slate-900">{hubData.hubCode}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500">Location</p>
-                      <p className="text-sm font-medium text-slate-900">{hubData.location}, {hubData.city}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500">State</p>
-                      <p className="text-sm font-medium text-slate-900">{hubData.state}</p>
-                    </div>
+                    <Package className="w-12 h-12 text-blue-100" />
                   </div>
                 </div>
-                <div>
-                  <h3 className="text-sm font-medium text-slate-600 mb-4">Manager Details</h3>
-                  <div className="space-y-3">
+
+                <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+                  <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs text-slate-500">Manager Name</p>
-                      <p className="text-sm font-medium text-slate-900">{managerData?.name}</p>
+                      <p className="text-sm text-slate-600 font-medium">Available Vehicles</p>
+                      <p className="text-3xl font-bold text-slate-900 mt-2">
+                        {vehicles.filter((v: any) => v.status === 'available').length}
+                      </p>
                     </div>
+                    <Warehouse className="w-12 h-12 text-green-100" />
+                  </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+                  <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs text-slate-500">Manager Email</p>
-                      <p className="text-sm font-medium text-slate-900">{managerData?.email}</p>
+                      <p className="text-sm text-slate-600 font-medium">In Maintenance</p>
+                      <p className="text-3xl font-bold text-slate-900 mt-2">
+                        {vehicles.filter((v: any) => v.status === 'in_maintenance').length}
+                      </p>
                     </div>
-                    <div>
-                      <p className="text-xs text-slate-500">Pincode</p>
-                      <p className="text-sm font-medium text-slate-900">{hubData.pincode}</p>
-                    </div>
+                    <Wrench className="w-12 h-12 text-amber-100" />
                   </div>
                 </div>
               </div>
+
+              {/* Hub Information */}
+              {hubData && (
+                <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-8">
+                  <h2 className="text-xl font-bold text-slate-900 mb-6">Hub Information</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                      <h3 className="text-sm font-medium text-slate-600 mb-4">Basic Details</h3>
+                      <div className="space-y-3">
+                        <div>
+                          <p className="text-xs text-slate-500">Hub Name</p>
+                          <p className="text-sm font-medium text-slate-900">{hubData.hub_name}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-slate-500">Hub Code</p>
+                          <p className="text-sm font-medium text-slate-900">{hubData.hub_code}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-slate-500">Location</p>
+                          <p className="text-sm font-medium text-slate-900">{hubData.location}, {hubData.city}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-slate-500">State</p>
+                          <p className="text-sm font-medium text-slate-900">{hubData.state}</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-medium text-slate-600 mb-4">Manager Details</h3>
+                      <div className="space-y-3">
+                        <div>
+                          <p className="text-xs text-slate-500">Manager Name</p>
+                          <p className="text-sm font-medium text-slate-900">{managerData?.name}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-slate-500">Manager Email</p>
+                          <p className="text-sm font-medium text-slate-900">{managerData?.email}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-slate-500">Manager Phone</p>
+                          <p className="text-sm font-medium text-slate-900">{hubData.manager_phone || 'N/A'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-slate-500">Pincode</p>
+                          <p className="text-sm font-medium text-slate-900">{hubData.pincode}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Vehicles List */}
+              <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+                <div className="px-8 py-6 border-b border-slate-200">
+                  <h2 className="text-xl font-bold text-slate-900">Hub Vehicles</h2>
+                  <p className="text-sm text-slate-600 mt-1">{vehicles.length} vehicles at this hub</p>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-slate-50 border-b border-slate-200">
+                      <tr>
+                        <th className="px-8 py-4 text-left text-xs font-semibold text-slate-600 uppercase">Vehicle Number</th>
+                        <th className="px-8 py-4 text-left text-xs font-semibold text-slate-600 uppercase">Type</th>
+                        <th className="px-8 py-4 text-left text-xs font-semibold text-slate-600 uppercase">Model</th>
+                        <th className="px-8 py-4 text-left text-xs font-semibold text-slate-600 uppercase">Status</th>
+                        <th className="px-8 py-4 text-left text-xs font-semibold text-slate-600 uppercase">Assigned To</th>
+                        <th className="px-8 py-4 text-left text-xs font-semibold text-slate-600 uppercase">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {vehicles.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="px-8 py-8 text-center">
+                            <AlertCircle className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                            <p className="text-slate-500">No vehicles at this hub yet</p>
+                          </td>
+                        </tr>
+                      ) : (
+                        vehicles.map((vehicle: any) => (
+                          <tr key={vehicle.id} className="border-b border-slate-200 hover:bg-slate-50 transition">
+                            <td className="px-8 py-4">
+                              <p className="font-medium text-slate-900">{vehicle.vehicle_number}</p>
+                            </td>
+                            <td className="px-8 py-4">
+                              <p className="text-sm text-slate-600">{vehicle.vehicle_type}</p>
+                            </td>
+                            <td className="px-8 py-4">
+                              <p className="text-sm text-slate-600">{vehicle.model}</p>
+                            </td>
+                            <td className="px-8 py-4">
+                              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                                vehicle.status === 'available' 
+                                  ? 'bg-green-100 text-green-700'
+                                  : vehicle.status === 'assigned'
+                                  ? 'bg-blue-100 text-blue-700'
+                                  : 'bg-amber-100 text-amber-700'
+                              }`}>
+                                {vehicle.status === 'in_maintenance' ? 'In Maintenance' : vehicle.status}
+                              </span>
+                            </td>
+                            <td className="px-8 py-4">
+                              <p className="text-sm text-slate-600">{vehicle.assigned_rider_id || 'Unassigned'}</p>
+                            </td>
+                            <td className="px-8 py-4">
+                              {vehicle.status === 'assigned' && (
+                                <button
+                                  onClick={() => handleOpenVehicleSwap(vehicle, { cee_id: vehicle.assigned_rider_id, full_name: 'Rider' })}
+                                  className="text-xs px-2 py-1 bg-orange-100 text-orange-700 rounded hover:bg-orange-200 transition font-semibold"
+                                  title="Swap this vehicle with an available one"
+                                >
+                                  Swap
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
+          )}
+
+          {activeTab === 'riders' && (
+            <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+              {/* Search Bar */}
+              <div className="px-8 py-6 border-b border-slate-200">
+                <div className="flex items-center gap-2 bg-slate-100 px-4 py-2 rounded-lg">
+                  <Search size={20} className="text-slate-500" />
+                  <input
+                    type="text"
+                    placeholder="Search by name or CEE ID..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="flex-1 bg-transparent outline-none text-slate-900"
+                  />
+                </div>
+                <p className="text-sm text-slate-600 mt-3">
+                  {filteredRiders.length} rider{filteredRiders.length !== 1 ? 's' : ''} ready for handover
+                </p>
+              </div>
+
+              {/* Riders List */}
+              {filteredRiders.length === 0 ? (
+                <div className="px-8 py-12 text-center">
+                  <Users className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                  <p className="text-slate-500">
+                    {newRiders.length === 0
+                      ? 'No new riders at this hub yet'
+                      : 'No riders match your search'}
+                  </p>
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-200">
+                  {filteredRiders.map((rider: any) => (
+                    <div
+                      key={rider.id}
+                      className="px-8 py-6 hover:bg-slate-50 transition flex items-center justify-between"
+                    >
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-slate-900">{rider.full_name}</h3>
+                        <div className="grid grid-cols-2 gap-4 mt-2 text-sm text-slate-600">
+                          <div>
+                            <p className="text-xs text-slate-500">CEE ID</p>
+                            <p className="font-medium text-slate-900">{rider.cee_id}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-slate-500">Phone</p>
+                            <p className="font-medium text-slate-900">{rider.phone}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-slate-500">Vehicle</p>
+                            <p className="font-medium text-slate-900">{rider.vehicle_number}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-slate-500">Status</p>
+                            <p className="font-medium text-amber-600">Awaiting Handover</p>
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleOpenHandover(rider)}
+                        className="ml-6 px-6 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition whitespace-nowrap"
+                      >
+                        Start Handover
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
-          {/* Vehicles List */}
-          <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-            <div className="px-8 py-6 border-b border-slate-200">
-              <h2 className="text-xl font-bold text-slate-900">Hub Vehicles</h2>
-              <p className="text-sm text-slate-600 mt-1">{vehicles.length} vehicles at this hub</p>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-slate-50 border-b border-slate-200">
-                  <tr>
-                    <th className="px-8 py-4 text-left text-xs font-semibold text-slate-600 uppercase">Vehicle Number</th>
-                    <th className="px-8 py-4 text-left text-xs font-semibold text-slate-600 uppercase">Type</th>
-                    <th className="px-8 py-4 text-left text-xs font-semibold text-slate-600 uppercase">Model</th>
-                    <th className="px-8 py-4 text-left text-xs font-semibold text-slate-600 uppercase">Year</th>
-                    <th className="px-8 py-4 text-left text-xs font-semibold text-slate-600 uppercase">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {vehicles.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="px-8 py-8 text-center">
-                        <AlertCircle className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                        <p className="text-slate-500">No vehicles at this hub yet</p>
-                      </td>
-                    </tr>
-                  ) : (
-                    vehicles.map((vehicle: any) => (
-                      <tr key={vehicle.id} className="border-b border-slate-200 hover:bg-slate-50 transition">
-                        <td className="px-8 py-4">
-                          <p className="font-medium text-slate-900">{vehicle.vehicle_number}</p>
-                        </td>
-                        <td className="px-8 py-4">
-                          <p className="text-sm text-slate-600">{vehicle.vehicle_type}</p>
-                        </td>
-                        <td className="px-8 py-4">
-                          <p className="text-sm text-slate-600">{vehicle.model}</p>
-                        </td>
-                        <td className="px-8 py-4">
-                          <p className="text-sm text-slate-600">{vehicle.year}</p>
-                        </td>
-                        <td className="px-8 py-4">
-                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                            vehicle.status === 'active' 
-                              ? 'bg-green-100 text-green-700'
-                              : 'bg-slate-100 text-slate-700'
-                          }`}>
-                            {vehicle.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          {activeTab === 'tickets' && hubId && (
+            <HubManagerTickets hubId={hubId} hubManagerId={managerData?.id} />
+          )}
         </div>
       </main>
+
+      {/* Handover Modal */}
+      <VehicleHandoverModal
+        isOpen={handoverModalOpen}
+        onClose={() => {
+          setHandoverModalOpen(false);
+          setSelectedRider(null);
+        }}
+        rider={selectedRider}
+        hubManagerId={managerData?.id}
+        onHandoverComplete={handleHandoverComplete}
+      />
+
+      {/* Vehicle Swap Modal */}
+      {selectedVehicleForSwap && selectedRiderForSwap && (
+        <VehicleSwapModal
+          isOpen={vehicleSwapOpen}
+          onClose={() => {
+            setVehicleSwapOpen(false);
+            setSelectedVehicleForSwap(null);
+            setSelectedRiderForSwap(null);
+          }}
+          oldVehicle={selectedVehicleForSwap}
+          riderCeeId={selectedRiderForSwap.cee_id}
+          riderName={selectedRiderForSwap.full_name}
+          hubId={hubId}
+          onSwapComplete={handleSwapComplete}
+        />
+      )}
 
       {/* Footer */}
       <footer className="bg-white border-t border-slate-200 py-8 mt-auto">

@@ -25,16 +25,24 @@ export default function NotificationBell() {
       
       const hubManager = localStorage.getItem('hubManager');
       if (hubManager) {
-        const manager = JSON.parse(hubManager);
-        queryParams = `?hubManagerId=${manager.id}`;
+        try {
+          const manager = JSON.parse(hubManager);
+          if (manager && manager.id) {
+            queryParams = `?hubManagerId=${manager.id}&type=hub_manager`;
+          }
+        } catch (e) {
+          console.error('Error parsing hub manager:', e);
+        }
       } else {
         // Check if it's a rider (from rider dashboard session)
         const riderSession = sessionStorage.getItem('riderSession');
         if (riderSession) {
           try {
             const riderData = JSON.parse(riderSession);
-            // For riders, filter by type: only show rider-specific notifications
-            queryParams = `?riderId=${riderData.id}&type=rider`;
+            if (riderData && riderData.id) {
+              // For riders, filter by type: only show rider-specific notifications
+              queryParams = `?riderId=${riderData.id}&type=rider`;
+            }
           } catch (e) {
             console.error('Error parsing rider session:', e);
           }
@@ -42,10 +50,23 @@ export default function NotificationBell() {
           // Check for admin user
           const storedUser = localStorage.getItem('currentUser');
           if (storedUser) {
-            const user = JSON.parse(storedUser);
-            queryParams = `?userId=${user.id}`;
+            try {
+              const user = JSON.parse(storedUser);
+              if (user && user.id) {
+                queryParams = `?userId=${user.id}`;
+              }
+            } catch (e) {
+              console.error('Error parsing stored user:', e);
+            }
           }
         }
+      }
+      
+      // Only fetch if we have valid query params (user is logged in)
+      if (!queryParams) {
+        setNotifications([]);
+        setUnreadCount(0);
+        return;
       }
       
       const response = await fetch(`/api/notifications${queryParams}`);
@@ -53,9 +74,15 @@ export default function NotificationBell() {
         const data = await response.json();
         setNotifications(data.notifications || []);
         setUnreadCount(data.unreadCount || 0);
+      } else {
+        console.error('Notification fetch failed:', response.status);
+        setNotifications([]);
+        setUnreadCount(0);
       }
     } catch (error) {
       console.error('Error fetching notifications:', error);
+      setNotifications([]);
+      setUnreadCount(0);
     } finally {
       setLoading(false);
     }
@@ -101,6 +128,10 @@ export default function NotificationBell() {
         return '🚗';
       case 'vehicle_handover_complete':
         return '✅';
+      case 'vehicle_handover_admin':
+        return '✓';
+      case 'new_rider_registered':
+        return '👤';
       case 'referral':
         return '🎁';
       case 'referral_approved':
