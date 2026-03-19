@@ -8,35 +8,33 @@ export async function GET(request: NextRequest) {
     const userId = searchParams.get('userId');
     const riderId = searchParams.get('riderId');
     const hubManagerId = searchParams.get('hubManagerId');
+    const technicianId = searchParams.get('technicianId');
     const type = searchParams.get('type'); // 'rider' to filter for rider-specific notifications
+
+    console.log('[API] /notifications GET request:', { userId, riderId, hubManagerId, technicianId, type, isRead });
 
     let notifications;
     
     // Filter by user role
     if (userId) {
-      // Get notifications for authenticated user (admin)
+      // Get notifications for authenticated user (admin) - ONLY admin and stats notifications
       if (isRead !== null) {
         const readValue = isRead === 'true';
         notifications = await sql`
           SELECT * FROM notifications 
-          WHERE (user_id = ${userId} OR rider_id IN (
-            SELECT id FROM riders WHERE user_id = ${userId}
-          ))
+          WHERE user_id = ${userId}
           AND is_read = ${readValue}
           ORDER BY created_at DESC
         `;
       } else {
         notifications = await sql`
           SELECT * FROM notifications 
-          WHERE (user_id = ${userId} OR rider_id IN (
-            SELECT id FROM riders WHERE user_id = ${userId}
-          ))
+          WHERE user_id = ${userId}
           ORDER BY created_at DESC LIMIT 50
         `;
       }
     } else if (riderId) {
       // Get notifications for a rider - only show rider-specific notification types
-      // Exclude admin-only notification types like 'new_advance_request'
       const riderRiderIdInt = parseInt(riderId);
       if (type === 'rider') {
         // Only show these notification types for riders
@@ -54,14 +52,26 @@ export async function GET(request: NextRequest) {
         `;
       }
     } else if (hubManagerId) {
-      // Get notifications for hub manager
+      // Get notifications for hub manager - only ticket-related notifications
+      const hubManagerIdInt = parseInt(hubManagerId);
+      console.log('[API] Fetching notifications for hub manager:', hubManagerIdInt);
       notifications = await sql`
         SELECT * FROM notifications 
-        WHERE hub_manager_id = ${parseInt(hubManagerId)}
+        WHERE hub_manager_id = ${hubManagerIdInt}
+        AND type IN ('service_ticket_raised', 'swap_request_pending', 'new_rider_onboarding')
+        ORDER BY created_at DESC LIMIT 50
+      `;
+      console.log('[API] Hub Manager notifications found:', notifications?.length || 0, 'records');
+    } else if (technicianId) {
+      // Get notifications for technician - only their assigned ticket notifications
+      notifications = await sql`
+        SELECT * FROM notifications 
+        WHERE technician_id = ${technicianId}
+        AND type IN ('ticket_assigned_to_technician', 'swap_approved')
         ORDER BY created_at DESC LIMIT 50
       `;
     } else {
-      // Default: get all notifications (for admin)
+      // Default: get all notifications (for admin) - stats only
       if (isRead !== null) {
         const readValue = isRead === 'true';
         notifications = await sql`SELECT * FROM notifications WHERE is_read = ${readValue} ORDER BY created_at DESC`;
@@ -75,9 +85,7 @@ export async function GET(request: NextRequest) {
     if (userId) {
       unreadCountQuery = await sql`
         SELECT COUNT(*) as count FROM notifications 
-        WHERE (user_id = ${userId} OR rider_id IN (
-          SELECT id FROM riders WHERE user_id = ${userId}
-        ))
+        WHERE user_id = ${userId}
         AND is_read = false
       `;
     } else if (riderId) {
@@ -100,6 +108,14 @@ export async function GET(request: NextRequest) {
       unreadCountQuery = await sql`
         SELECT COUNT(*) as count FROM notifications 
         WHERE hub_manager_id = ${parseInt(hubManagerId)}
+        AND type IN ('service_ticket_raised', 'swap_request_pending', 'new_rider_onboarding')
+        AND is_read = false
+      `;
+    } else if (technicianId) {
+      unreadCountQuery = await sql`
+        SELECT COUNT(*) as count FROM notifications 
+        WHERE technician_id = ${technicianId}
+        AND type IN ('ticket_assigned_to_technician', 'swap_approved')
         AND is_read = false
       `;
     } else {

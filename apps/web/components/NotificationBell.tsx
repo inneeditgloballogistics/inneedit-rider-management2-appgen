@@ -12,13 +12,11 @@ export default function NotificationBell() {
   useEffect(() => {
     console.log('NotificationBell component mounted');
     
-    // Fetch immediately on mount with a small delay to ensure localStorage is ready
-    const initialFetchTimer = setTimeout(() => {
-      fetchNotifications();
-    }, 100);
+    // Fetch immediately on mount
+    fetchNotifications();
     
-    // Poll for new notifications every 10 seconds (instead of 30)
-    const interval = setInterval(fetchNotifications, 10000);
+    // Poll for new notifications every 5 seconds (more frequent)
+    const interval = setInterval(fetchNotifications, 5000);
     
     // Refresh when tab becomes visible again
     const handleVisibilityChange = () => {
@@ -30,7 +28,6 @@ export default function NotificationBell() {
     document.addEventListener('visibilitychange', handleVisibilityChange);
     
     return () => {
-      clearTimeout(initialFetchTimer);
       clearInterval(interval);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
@@ -44,62 +41,89 @@ export default function NotificationBell() {
       let queryParams = '';
       let debugInfo: any = { source: 'none' };
       
-      // First check for hub manager (highest priority - used in hub-manager-dashboard)
-      const hubManager = localStorage.getItem('hubManager');
-      if (hubManager) {
+      // Check for technician first (highest priority - used in technician-dashboard)
+      const technician = localStorage.getItem('technician');
+      if (technician) {
         try {
-          const manager = JSON.parse(hubManager);
-          console.log('Hub Manager found:', { id: manager.id, name: manager.name });
-          if (manager && manager.id) {
-            queryParams = `?hubManagerId=${manager.id}`;
-            debugInfo.source = 'hub_manager';
-            debugInfo.id = manager.id;
+          const tech = JSON.parse(technician);
+          console.log('🔵 [NotificationBell] Technician found:', { id: tech.user_id, name: tech.name });
+          if (tech && tech.user_id) {
+            queryParams = `?technicianId=${tech.user_id}`;
+            debugInfo.source = 'technician';
+            debugInfo.id = tech.user_id;
           }
         } catch (e) {
-          console.error('Error parsing hub manager:', e);
+          console.error('🔴 [NotificationBell] Error parsing technician:', e);
         }
       }
       
-      // If no hub manager, check for rider (secondary - used in rider-dashboard)
+      // If no technician, check for hub manager (secondary - used in hub-manager-dashboard)
+      if (!queryParams) {
+        const hubManager = localStorage.getItem('hubManager');
+        console.log('🔵 [NotificationBell] Checking hubManager localStorage:', hubManager ? 'Found' : 'Not found');
+        if (hubManager) {
+          try {
+            const manager = JSON.parse(hubManager);
+            console.log('🔵 [NotificationBell] Hub Manager parsed successfully:', JSON.stringify(manager));
+            if (manager && manager.id) {
+              queryParams = `?hubManagerId=${manager.id}`;
+              debugInfo.source = 'hub_manager';
+              debugInfo.id = manager.id;
+              console.log('🟢 [NotificationBell] Hub Manager ID found:', manager.id);
+            } else {
+              console.warn('🟠 [NotificationBell] Hub Manager has no ID field!', JSON.stringify(manager));
+            }
+          } catch (e) {
+            console.error('🔴 [NotificationBell] Error parsing hub manager:', e);
+          }
+        } else {
+          console.log('🟠 [NotificationBell] No hubManager in localStorage');
+        }
+      }
+      
+      // If no hub manager, check for rider (tertiary - used in rider-dashboard)
       if (!queryParams) {
         const riderSession = localStorage.getItem('riderSession');
         if (riderSession) {
           try {
             const riderData = JSON.parse(riderSession);
-            console.log('Rider session found:', { id: riderData.id, name: riderData.name });
+            console.log('🔵 [NotificationBell] Rider session found:', { id: riderData.id, name: riderData.name });
             if (riderData && riderData.id) {
               queryParams = `?riderId=${riderData.id}`;
               debugInfo.source = 'rider';
               debugInfo.id = riderData.id;
             }
           } catch (e) {
-            console.error('Error parsing rider session:', e);
+            console.error('🔴 [NotificationBell] Error parsing rider session:', e);
           }
         }
       }
       
-      // Only fetch if we have valid query params (hub manager or rider is logged in)
+      // Only fetch if we have valid query params (technician, hub manager, or rider is logged in)
       if (!queryParams) {
-        console.log('No hub manager or rider logged in, skipping notification fetch');
+        console.log('🟠 [NotificationBell] No technician, hub manager, or rider logged in, skipping notification fetch');
         setNotifications([]);
         setUnreadCount(0);
         return;
       }
       
-      console.log('Fetching notifications with params:', { queryParams, debugInfo });
+      console.log('🟢 [NotificationBell] Fetching notifications with params:', queryParams, debugInfo);
       const response = await fetch(`/api/notifications${queryParams}`);
       if (response.ok) {
         const data = await response.json();
-        console.log('Notifications fetched:', { count: data.notifications?.length, unreadCount: data.unreadCount });
+        console.log('🟢 [NotificationBell] Notifications response:', { count: data.notifications?.length, unreadCount: data.unreadCount, queryParams });
+        console.log('🔵 [NotificationBell] Full notifications data:', JSON.stringify(data.notifications));
         setNotifications(data.notifications || []);
         setUnreadCount(data.unreadCount || 0);
       } else {
-        console.error('Notification fetch failed:', response.status);
+        console.error('🔴 [NotificationBell] Notification fetch failed with status:', response.status, response.statusText);
+        const errorText = await response.text();
+        console.error('🔴 [NotificationBell] Error response:', errorText);
         setNotifications([]);
         setUnreadCount(0);
       }
     } catch (error) {
-      console.error('Error fetching notifications:', error);
+      console.error('🔴 [NotificationBell] Error fetching notifications:', error);
       setNotifications([]);
       setUnreadCount(0);
     } finally {
@@ -179,28 +203,47 @@ export default function NotificationBell() {
   const handleNotificationClick = (notification: any) => {
     markAsRead(notification.id);
     
-    // Route based on notification type
-    if (notification.type === 'service_ticket_raised' || 
-        notification.type === 'ticket_assigned_to_technician') {
-      // Redirect to support tickets tab in hub manager dashboard
-      // First close the modal
-      setShowModal(false);
-      // Then redirect with proper URL
-      setTimeout(() => {
-        window.location.href = '/hub-manager-dashboard?tab=tickets';
-      }, 100);
-    } else if (notification.type === 'swap_request_pending') {
-      // Redirect to swap requests
-      setShowModal(false);
-      setTimeout(() => {
-        window.location.href = '/hub-manager-dashboard?tab=swaps';
-      }, 100);
-    } else if (notification.type === 'swap_approved') {
-      // Rider notification - redirect to rider dashboard
-      setShowModal(false);
-      setTimeout(() => {
-        window.location.href = '/rider-dashboard';
-      }, 100);
+    // Check user role and route accordingly
+    const technician = localStorage.getItem('technician');
+    const hubManager = localStorage.getItem('hubManager');
+    const riderSession = localStorage.getItem('riderSession');
+    
+    // Route based on notification type and user role
+    if (technician) {
+      // Technician routes
+      if (notification.type === 'ticket_assigned_to_technician') {
+        setShowModal(false);
+        setTimeout(() => {
+          window.location.href = '/technician-dashboard?tab=tickets';
+        }, 100);
+      } else if (notification.type === 'swap_approved') {
+        setShowModal(false);
+        setTimeout(() => {
+          window.location.href = '/technician-dashboard?tab=tickets';
+        }, 100);
+      }
+    } else if (hubManager) {
+      // Hub manager routes
+      if (notification.type === 'service_ticket_raised' || 
+          notification.type === 'new_rider_onboarding') {
+        setShowModal(false);
+        setTimeout(() => {
+          window.location.href = '/hub-manager-dashboard?tab=tickets';
+        }, 100);
+      } else if (notification.type === 'swap_request_pending') {
+        setShowModal(false);
+        setTimeout(() => {
+          window.location.href = '/hub-manager-dashboard?tab=swaps';
+        }, 100);
+      }
+    } else if (riderSession) {
+      // Rider routes
+      if (notification.type === 'swap_approved') {
+        setShowModal(false);
+        setTimeout(() => {
+          window.location.href = '/rider-dashboard';
+        }, 100);
+      }
     }
   };
 
@@ -213,8 +256,12 @@ export default function NotificationBell() {
       {/* Bell Button */}
       <button
         onClick={() => {
-          setShowModal(!showModal);
-          if (!showModal) fetchNotifications();
+          const newModalState = !showModal;
+          setShowModal(newModalState);
+          // Always fetch fresh notifications when opening modal
+          if (newModalState) {
+            fetchNotifications();
+          }
         }}
         className="relative p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-all group"
         title="Notifications"
@@ -229,7 +276,7 @@ export default function NotificationBell() {
 
       {/* Notification Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed top-0 left-0 w-full h-full z-[9999] flex items-center justify-center p-4">
           {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black/50"
@@ -248,12 +295,24 @@ export default function NotificationBell() {
                   </p>
                 )}
               </div>
-              <button
-                onClick={() => setShowModal(false)}
-                className="p-1 hover:bg-slate-100 rounded-lg transition-all"
-              >
-                <X size={20} className="text-slate-600" />
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={fetchNotifications}
+                  disabled={loading}
+                  className="p-1 hover:bg-slate-100 rounded-lg transition-all disabled:opacity-50"
+                  title="Refresh"
+                >
+                  <svg className={`w-5 h-5 text-slate-600 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="p-1 hover:bg-slate-100 rounded-lg transition-all"
+                >
+                  <X size={20} className="text-slate-600" />
+                </button>
+              </div>
             </div>
 
             {/* Notifications List */}

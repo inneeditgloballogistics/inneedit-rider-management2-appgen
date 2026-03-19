@@ -179,7 +179,7 @@ export async function POST(request: NextRequest) {
       // Update ticket status to indicate swap pending
       await sql`
         UPDATE service_tickets
-        SET status = 'Awaiting Swap'
+        SET status = 'In Progress'
         WHERE id = ${parseInt(ticketId)}
       `;
 
@@ -267,6 +267,29 @@ export async function PATCH(request: NextRequest) {
             ${`Your vehicle swap has been approved. Please report to the hub to collect your replacement vehicle. Current vehicle: ${oldVehicle[0]?.vehicle_number}, New vehicle: ${newVehicle[0]?.vehicle_number}`},
             ${request_data.rider_id},
             ${request_data.rider_id},
+            false,
+            NOW()
+          )
+        `;
+      }
+
+      // Create notification for technician
+      if (request_data.technician_id) {
+        await sql`
+          INSERT INTO notifications (
+            type,
+            title,
+            message,
+            related_id,
+            technician_id,
+            is_read,
+            created_at
+          ) VALUES (
+            'swap_approved',
+            'Vehicle Swap Approved',
+            ${`Vehicle swap has been approved for rider ${rider[0]?.full_name}. Replacement vehicle: ${newVehicle[0]?.vehicle_number}`},
+            ${request_data.id},
+            ${request_data.technician_id},
             false,
             NOW()
           )

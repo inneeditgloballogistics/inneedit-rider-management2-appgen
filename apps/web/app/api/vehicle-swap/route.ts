@@ -142,6 +142,7 @@ export async function POST(request: NextRequest) {
           assigned_hub_id,
           cee_id,
           issue_description,
+          priority,
           status,
           created_at
         )
@@ -151,7 +152,8 @@ export async function POST(request: NextRequest) {
           ${parseInt(hubId)},
           ${riderCeeId},
           ${'Vehicle swap initiated - requires maintenance/repair. ' + (notes || '')},
-          'open',
+          'High',
+          'Open',
           NOW()
         )
         RETURNING *

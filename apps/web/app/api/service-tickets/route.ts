@@ -298,7 +298,7 @@ export async function PATCH(request: NextRequest) {
             title,
             message,
             related_id,
-            user_id,
+            technician_id,
             is_read,
             created_at
           ) VALUES (
