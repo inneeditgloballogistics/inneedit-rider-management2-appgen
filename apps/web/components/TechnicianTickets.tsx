@@ -101,7 +101,7 @@ export default function TechnicianTickets({ technicianId, hubId }: any) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ticketId: selectedTicket.id,
-          status: 'Completed',
+          status: 'Resolved',
           resolution_notes: resolutionNotes,
           chargesAmount: chargesAmount ? parseFloat(chargesAmount) : null,
           chargesReason: chargesReason || null

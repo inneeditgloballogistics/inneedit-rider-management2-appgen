@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Mail, Phone, MapPin, FileText, Wallet, Car, Award, AlertCircle, Clock, User, Calendar, CheckCircle, Trophy } from 'lucide-react';
+import { ArrowLeft, Mail, Phone, MapPin, FileText, Wallet, Car, Award, AlertCircle, Clock, User, Calendar, CheckCircle, Trophy, History, X } from 'lucide-react';
 
 interface RiderProfile {
   id: number;
@@ -45,10 +45,40 @@ export default function RiderProfilePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'profile' | 'registration'>('profile');
+  const [currentVehicle, setCurrentVehicle] = useState<any | null>(null);
+  const [swapHistory, setSwapHistory] = useState<any[]>([]);
+  const [showSwapModal, setShowSwapModal] = useState(false);
+  const [loadingSwaps, setLoadingSwaps] = useState(false);
 
   useEffect(() => {
     checkAuthAndFetchProfile();
   }, []);
+
+  const fetchSwapHistory = async () => {
+    if (!profile?.id) return;
+    
+    setLoadingSwaps(true);
+    try {
+      const response = await fetch(`/api/swap-requests?action=rider&riderId=${profile.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        // Filter only completed swaps
+        const completedSwaps = data.filter((swap: any) => swap.status === 'completed');
+        setSwapHistory(completedSwaps);
+      }
+    } catch (err) {
+      console.error('Error fetching swap history:', err);
+    } finally {
+      setLoadingSwaps(false);
+    }
+  };
+
+  const handleViewSwapHistory = async () => {
+    setShowSwapModal(true);
+    if (swapHistory.length === 0) {
+      await fetchSwapHistory();
+    }
+  };
 
   const checkAuthAndFetchProfile = async () => {
     try {
@@ -76,6 +106,22 @@ export default function RiderProfilePage() {
       if (profileData.riders && profileData.riders.length > 0) {
         const riderData = profileData.riders[0];
         setProfile(riderData);
+
+        // Fetch current vehicle
+        if (riderData.assigned_vehicle_id) {
+          try {
+            const vehicleResponse = await fetch(`/api/vehicles`);
+            if (vehicleResponse.ok) {
+              const vehiclesData = await vehicleResponse.json();
+              const vehicle = vehiclesData.find((v: any) => v.id === riderData.assigned_vehicle_id);
+              if (vehicle) {
+                setCurrentVehicle(vehicle);
+              }
+            }
+          } catch (err) {
+            console.error('Error fetching vehicle:', err);
+          }
+        }
 
         if (riderData.assigned_hub_id) {
           try {
@@ -222,6 +268,16 @@ export default function RiderProfilePage() {
                     <label className="block text-sm font-medium text-gray-700">Vehicle Ownership</label>
                     <p className="text-gray-900 mt-1 font-semibold">{profile.vehicle_ownership === 'company_ev' ? '🚗 Company EV Bike' : '🏍️ Own Vehicle'}</p>
                   </div>
+
+                  {/* Current Vehicle Number */}
+                  {currentVehicle && (
+                    <div className="bg-indigo-50 rounded-lg p-3 border border-indigo-200">
+                      <label className="block text-sm font-medium text-indigo-700 mb-1">Current Vehicle</label>
+                      <p className="text-lg font-bold text-indigo-900">{currentVehicle.vehicle_number}</p>
+                      <p className="text-xs text-indigo-600 mt-1">{currentVehicle.vehicle_type} • Status: {currentVehicle.status}</p>
+                    </div>
+                  )}
+
                   {profile.vehicle_ownership === 'company_ev' && (
                     <>
                       <div>
@@ -254,6 +310,15 @@ export default function RiderProfilePage() {
                       ) : null}
                     </>
                   )}
+
+                  {/* Swap History Button */}
+                  <button
+                    onClick={handleViewSwapHistory}
+                    className="w-full mt-4 pt-4 border-t border-gray-200 flex items-center justify-center gap-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium rounded-lg transition-colors"
+                  >
+                    <History className="w-4 h-4" />
+                    View Swap History
+                  </button>
                 </div>
               </section>
             </div>
@@ -381,6 +446,110 @@ export default function RiderProfilePage() {
           </div>
         )}
       </div>
+
+      {/* Swap History Modal */}
+      {showSwapModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-lg max-w-2xl w-full max-h-96 overflow-y-auto">
+            {/* Modal Header */}
+            <div className="sticky top-0 flex items-center justify-between bg-white border-b p-6">
+              <div className="flex items-center gap-3">
+                <History className="w-6 h-6 text-blue-600" />
+                <h2 className="text-xl font-bold text-gray-900">Vehicle Swap History</h2>
+              </div>
+              <button
+                onClick={() => setShowSwapModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition"
+              >
+                <X className="w-5 h-5 text-gray-600" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6">
+              {loadingSwaps ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                  <p className="mt-4 text-gray-600">Loading swap history...</p>
+                </div>
+              ) : swapHistory.length === 0 ? (
+                <div className="text-center py-8">
+                  <History className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-600 font-medium">No vehicle swaps yet</p>
+                  <p className="text-sm text-gray-500 mt-1">Your swap history will appear here</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {swapHistory.map((swap: any, index: number) => (
+                    <div key={swap.id} className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition">
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <h3 className="font-semibold text-gray-900">Swap #{index + 1}</h3>
+                          <p className="text-xs text-gray-600 mt-1">
+                            {swap.completed_at
+                              ? new Date(swap.completed_at).toLocaleDateString('en-IN', {
+                                  day: '2-digit',
+                                  month: 'short',
+                                  year: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })
+                              : 'Completed'}
+                          </p>
+                        </div>
+                        <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                          Completed ✓
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4 mb-3">
+                        <div>
+                          <p className="text-xs text-gray-600 font-medium">From Vehicle</p>
+                          <p className="text-sm font-semibold text-gray-900">{swap.old_vehicle_number || 'N/A'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-600 font-medium">To Vehicle</p>
+                          <p className="text-sm font-semibold text-gray-900">{swap.new_vehicle_number || 'N/A'}</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        {swap.hub_name && (
+                          <div>
+                            <p className="text-xs text-gray-600 font-medium">Hub</p>
+                            <p className="text-sm text-gray-900">{swap.hub_name}</p>
+                          </div>
+                        )}
+                        {swap.issue_reason && (
+                          <div>
+                            <p className="text-xs text-gray-600 font-medium">Reason</p>
+                            <p className="text-sm text-gray-900 capitalize">{swap.issue_reason}</p>
+                          </div>
+                        )}
+                      </div>
+
+                      {swap.technician_notes && (
+                        <div className="mt-3 pt-3 border-t border-gray-200">
+                          <p className="text-xs text-gray-600 font-medium mb-1">Notes</p>
+                          <p className="text-sm text-gray-700">{swap.technician_notes}</p>
+                        </div>
+                      )}
+
+                      {swap.repair_cost && swap.repair_cost > 0 && (
+                        <div className="mt-3 pt-3 border-t border-gray-200">
+                          <p className="text-xs text-gray-600 font-medium mb-1">Repair Cost Deducted</p>
+                          <p className="text-sm font-bold text-red-600">₹{swap.repair_cost}</p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+

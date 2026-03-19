@@ -192,6 +192,21 @@ export async function POST(request: NextRequest) {
       ) RETURNING *
     `;
 
+    // Update vehicle status to 'in_maintenance' when ticket is created
+    if (finalVehicleId) {
+      try {
+        await sql`
+          UPDATE vehicles
+          SET status = 'in_maintenance'
+          WHERE id = ${parseInt(finalVehicleId)}
+        `;
+        console.log('[POST service-tickets] Vehicle status updated to in_maintenance:', finalVehicleId);
+      } catch (vehicleUpdateError) {
+        console.error('[POST service-tickets] Error updating vehicle status:', vehicleUpdateError);
+        // Don't fail the request if vehicle update fails
+      }
+    }
+
     const ticket = result[0];
 
     // Get rider details for notification
@@ -288,6 +303,21 @@ export async function PATCH(request: NextRequest) {
       WHERE id = ${parseInt(ticketId)}
       RETURNING *
     `;
+
+    // Update vehicle status to 'in_maintenance' if status is 'In Progress'
+    if ((status === 'In Progress' || finalStatus === 'In Progress') && currentTicket[0].vehicle_id) {
+      try {
+        await sql`
+          UPDATE vehicles
+          SET status = 'in_maintenance'
+          WHERE id = ${currentTicket[0].vehicle_id}
+        `;
+        console.log('[PATCH service-tickets] Vehicle status updated to in_maintenance:', currentTicket[0].vehicle_id);
+      } catch (vehicleUpdateError) {
+        console.error('[PATCH service-tickets] Error updating vehicle status:', vehicleUpdateError);
+        // Don't fail the request if vehicle update fails
+      }
+    }
 
     if (result.length === 0) {
       return NextResponse.json({ error: 'Ticket not found' }, { status: 404 });

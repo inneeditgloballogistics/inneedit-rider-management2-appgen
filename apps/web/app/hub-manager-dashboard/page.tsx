@@ -10,6 +10,7 @@ import VehicleSwapModal from '@/components/VehicleSwapModal';
 import SwapRequestsManager from '@/components/SwapRequestsManager';
 import PostSwapHandoverModal from '@/components/PostSwapHandoverModal';
 import PartsInventoryManagement from '@/components/PartsInventoryManagement';
+import VehicleInspectionManager from '@/components/VehicleInspectionManager';
 
 function HubManagerDashboardContent() {
   const router = useRouter();
@@ -294,6 +295,17 @@ function HubManagerDashboardContent() {
               >
                 <Package className="w-4 h-4 inline mr-2" />
                 Parts Inventory
+              </button>
+              <button
+                onClick={() => setActiveTab('inspection')}
+                className={`flex-1 px-6 py-4 font-medium text-center transition relative ${
+                  activeTab === 'inspection'
+                    ? 'bg-indigo-50 text-indigo-600 border-b-2 border-indigo-600'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Wrench className="w-4 h-4 inline mr-2" />
+                Vehicle Inspection
               </button>
             </div>
           </div>
@@ -599,6 +611,10 @@ function HubManagerDashboardContent() {
 
           {activeTab === 'inventory' && hubId && (
             <PartsInventoryManagement hubId={hubId} />
+          )}
+
+          {activeTab === 'inspection' && hubId && (
+            <VehicleInspectionManager hubId={hubId} hubManagerId={managerData?.id} />
           )}
         </div>
       </main>

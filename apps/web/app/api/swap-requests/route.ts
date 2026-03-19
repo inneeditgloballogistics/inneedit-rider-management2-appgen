@@ -8,6 +8,7 @@ export async function GET(request: NextRequest) {
     const action = searchParams.get('action');
     const hubId = searchParams.get('hubId');
     const technicianId = searchParams.get('technicianId');
+    const riderId = searchParams.get('riderId');
     const status = searchParams.get('status');
 
     // Get swap requests for hub manager
@@ -64,6 +65,29 @@ export async function GET(request: NextRequest) {
         LEFT JOIN hubs h ON sr.hub_id = h.id
         WHERE sr.technician_id = ${technicianId}
         ORDER BY sr.created_at DESC
+      `;
+      return NextResponse.json(requests);
+    }
+
+    // Get swap history for rider
+    if (action === 'rider' && riderId) {
+      const requests = await sql`
+        SELECT 
+          sr.*,
+          r.full_name as rider_name,
+          r.cee_id as rider_cee_id,
+          v.vehicle_number as old_vehicle_number,
+          rv.vehicle_number as new_vehicle_number,
+          h.hub_name,
+          t.name as technician_name
+        FROM swap_requests sr
+        LEFT JOIN riders r ON sr.rider_id = r.id
+        LEFT JOIN vehicles v ON sr.vehicle_id = v.id
+        LEFT JOIN vehicles rv ON sr.replacement_vehicle_id = rv.id
+        LEFT JOIN hubs h ON sr.hub_id = h.id
+        LEFT JOIN technicians t ON sr.technician_id = t.user_id
+        WHERE sr.rider_id = ${parseInt(riderId)}
+        ORDER BY sr.completed_at DESC NULLS LAST, sr.created_at DESC
       `;
       return NextResponse.json(requests);
     }
