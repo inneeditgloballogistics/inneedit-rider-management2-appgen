@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import sql from '../utils/sql';
+import sql from '@/app/api/utils/sql';
 
 export async function GET(request: NextRequest) {
   try {
@@ -33,20 +33,14 @@ export async function GET(request: NextRequest) {
       }
     } else if (riderId) {
       const riderRiderIdInt = parseInt(riderId);
-      if (type === 'rider') {
-        notifications = await sql`
-          SELECT * FROM notifications 
-          WHERE rider_id = ${riderRiderIdInt}
-          AND type IN ('rider_assignment', 'vehicle_handover_complete', 'referral_approved')
-          ORDER BY created_at DESC LIMIT 50
-        `;
-      } else {
-        notifications = await sql`
-          SELECT * FROM notifications 
-          WHERE rider_id = ${riderRiderIdInt}
-          ORDER BY created_at DESC LIMIT 50
-        `;
-      }
+      // Riders should only see notifications about themselves, NOT notifications about service tickets they raised
+      // Service tickets are for hub managers only
+      notifications = await sql`
+        SELECT * FROM notifications 
+        WHERE rider_id = ${riderRiderIdInt}
+        AND type IN ('rider_assignment', 'vehicle_handover_complete', 'referral_approved', 'swap_approved', 'ticket_resolved')
+        ORDER BY created_at DESC LIMIT 50
+      `;
     } else if (hubManagerId) {
       const hubManagerIdInt = parseInt(hubManagerId);
       console.log('[API /notifications] 🔍 Fetching notifications for hub manager:', { 
@@ -97,20 +91,14 @@ export async function GET(request: NextRequest) {
       `;
     } else if (riderId) {
       const riderRiderIdInt = parseInt(riderId);
-      if (type === 'rider') {
-        unreadCountQuery = await sql`
-          SELECT COUNT(*) as count FROM notifications 
-          WHERE rider_id = ${riderRiderIdInt}
-          AND type IN ('rider_assignment', 'vehicle_handover_complete', 'referral_approved')
-          AND is_read = false
-        `;
-      } else {
-        unreadCountQuery = await sql`
-          SELECT COUNT(*) as count FROM notifications 
-          WHERE rider_id = ${riderRiderIdInt}
-          AND is_read = false
-        `;
-      }
+      // Riders should only see notifications about themselves, NOT notifications about service tickets they raised
+      // Service tickets are for hub managers only
+      unreadCountQuery = await sql`
+        SELECT COUNT(*) as count FROM notifications 
+        WHERE rider_id = ${riderRiderIdInt}
+        AND type IN ('rider_assignment', 'vehicle_handover_complete', 'referral_approved', 'swap_approved', 'ticket_resolved')
+        AND is_read = false
+      `;
     } else if (hubManagerId) {
       unreadCountQuery = await sql`
         SELECT COUNT(*) as count FROM notifications 

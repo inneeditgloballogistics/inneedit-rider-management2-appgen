@@ -303,6 +303,211 @@ export async function PATCH(request: NextRequest) {
       });
     }
 
+    if (action === 'complete-post-swap-handover') {
+      // Complete the post-swap handover (finalize the swap after pictures & signature)
+      const { riderId, newVehicleId, oldVehicleId, hubId, hubManagerId } = body;
+
+      if (!swapRequestId || !riderId || !newVehicleId || !oldVehicleId) {
+        return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+      }
+
+      // Create vehicle handover record for the new vehicle
+      const handoverResult = await sql`
+        INSERT INTO vehicle_handovers (
+          rider_id,
+          hub_manager_id,
+          vehicle_id,
+          hub_id,
+          rider_signature_url,
+          odometer_reading,
+          fuel_level,
+          notes,
+          status,
+          created_at,
+          updated_at
+        ) VALUES (
+          ${parseInt(riderId)},
+          ${hubManagerId || null},
+          ${parseInt(newVehicleId)},
+          ${parseInt(hubId)},
+          ${body.riderSignature || null},
+          ${body.odometerReading || ''},
+          ${body.fuelLevel || 'full'},
+          ${body.notes || ''},
+          'completed',
+          NOW(),
+          NOW()
+        )
+        RETURNING *
+      `;
+
+      const handover = handoverResult[0];
+
+      // Save photos
+      if (body.vehiclePhotos && Array.isArray(body.vehiclePhotos) && body.vehiclePhotos.length > 0) {
+        for (let i = 0; i < body.vehiclePhotos.length; i++) {
+          await sql`
+            INSERT INTO handover_photos (
+              handover_id,
+              photo_data,
+              photo_order,
+              created_at
+            ) VALUES (
+              ${handover.id},
+              ${body.vehiclePhotos[i]},
+              ${i + 1},
+              NOW()
+            )
+          `;
+        }
+      }
+
+      // Get swap request details
+      const swapRequest = await sql`
+        SELECT * FROM swap_requests WHERE id = ${parseInt(swapRequestId)}
+      `;
+
+      if (swapRequest.length === 0) {
+        return NextResponse.json({ error: 'Swap request not found' }, { status: 404 });
+      }
+
+      const request_data = swapRequest[0];
+
+      // Mark old vehicle as in_maintenance
+      await sql`
+        UPDATE vehicles
+        SET status = 'in_maintenance', assigned_rider_id = NULL
+        WHERE id = ${parseInt(oldVehicleId)}
+      `;
+
+      // Assign new vehicle to rider
+      const rider = await sql`
+        SELECT cee_id FROM riders WHERE id = ${parseInt(riderId)}
+      `;
+
+      await sql`
+        UPDATE vehicles
+        SET status = 'assigned', assigned_rider_id = ${rider[0].cee_id}
+        WHERE id = ${parseInt(newVehicleId)}
+      `;
+
+      // Update rider's assigned vehicle
+      await sql`
+        UPDATE riders
+        SET assigned_vehicle_id = ${parseInt(newVehicleId)}
+        WHERE id = ${parseInt(riderId)}
+      `;
+
+      // Mark service ticket as completed
+      await sql`
+        UPDATE service_tickets
+        SET status = 'Completed'
+        WHERE id = ${request_data.ticket_id}
+      `;
+
+      // Add repair cost as deduction if applicable
+      if (request_data.repair_cost && request_data.repair_cost > 0) {
+        const riderData = await sql`
+          SELECT cee_id FROM riders WHERE id = ${parseInt(riderId)}
+        `;
+
+        await sql`
+          INSERT INTO deductions (
+            cee_id,
+            amount,
+            description,
+            entry_date,
+            status,
+            entry_type,
+            created_at
+          ) VALUES (
+            ${riderData[0].cee_id},
+            ${request_data.repair_cost},
+            ${'Vehicle repair cost - ' + (request_data.issue_reason || 'Vehicle maintenance')},
+            CURRENT_DATE,
+            'approved',
+            'vehicle_repair',
+            NOW()
+          )
+        `;
+      }
+
+      // Update swap request status to completed
+      const result = await sql`
+        UPDATE swap_requests
+        SET 
+          status = 'completed',
+          completed_at = NOW(),
+          updated_at = NOW()
+        WHERE id = ${parseInt(swapRequestId)}
+        RETURNING *
+      `;
+
+      // Get vehicle info for notifications
+      const oldVehicle = await sql`
+        SELECT vehicle_number FROM vehicles WHERE id = ${parseInt(oldVehicleId)}
+      `;
+
+      const newVehicle = await sql`
+        SELECT vehicle_number FROM vehicles WHERE id = ${parseInt(newVehicleId)}
+      `;
+
+      const riderInfo = await sql`
+        SELECT full_name FROM riders WHERE id = ${parseInt(riderId)}
+      `;
+
+      // Create notification for rider
+      await sql`
+        INSERT INTO notifications (
+          type,
+          title,
+          message,
+          user_id,
+          rider_id,
+          related_id,
+          is_read,
+          created_at
+        ) VALUES (
+          'swap_completed_handover',
+          'Vehicle Swap Completed! 🎉',
+          ${`Your vehicle swap has been completed. New vehicle ${newVehicle[0]?.vehicle_number} is now assigned to you. Your previous vehicle ${oldVehicle[0]?.vehicle_number} will be serviced and returned to fleet. Thank you!`},
+          ${rider[0]?.user_id || null},
+          ${parseInt(riderId)},
+          ${handover.id},
+          false,
+          NOW()
+        )
+      `;
+
+      // Create notification for hub manager
+      await sql`
+        INSERT INTO notifications (
+          type,
+          title,
+          message,
+          hub_manager_id,
+          related_id,
+          is_read,
+          created_at
+        ) VALUES (
+          'swap_completed_handover',
+          'Vehicle Swap Handover Completed ✓',
+          ${`Vehicle swap handover completed for ${riderInfo[0]?.full_name}. Old: ${oldVehicle[0]?.vehicle_number} (marked In Maintenance), New: ${newVehicle[0]?.vehicle_number} (assigned).`},
+          ${hubManagerId},
+          ${handover.id},
+          false,
+          NOW()
+        )
+      `;
+
+      return NextResponse.json({ 
+        success: true, 
+        message: 'Vehicle swap handover completed successfully',
+        handover,
+        swapRequest: result[0]
+      });
+    }
+
     if (action === 'complete') {
       // Complete the swap - actual vehicle swap execution
       if (!swapRequestId) {

@@ -330,7 +330,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // If ticket resolved, notify rider
-    if (status === 'Completed' || status === 'Cancelled') {
+    if (status === 'Resolved' || status === 'Completed' || status === 'Cancelled') {
       try {
         const rider = await sql`
           SELECT user_id FROM riders WHERE cee_id = ${ticket.cee_id}

@@ -50,8 +50,12 @@ export default function LoginPage() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to sign in. Please check your credentials.');
+        try {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to sign in. Please check your credentials.');
+        } catch (parseError) {
+          throw new Error('Failed to sign in. Please check your credentials.');
+        }
       }
 
       const data = await response.json();

@@ -161,8 +161,8 @@ export default function RiderSupportTickets({ riderId, riderLatitude, riderLongi
     }
   };
 
-  const activeTickets = tickets.filter(t => !['Resolved', 'Closed'].includes(t.status));
-  const historyTickets = tickets.filter(t => ['Resolved', 'Closed'].includes(t.status));
+  const activeTickets = tickets.filter(t => !['Completed', 'Closed'].includes(t.status));
+  const historyTickets = tickets.filter(t => ['Completed', 'Closed'].includes(t.status));
   const displayTickets = selectedTab === 'active' ? activeTickets : historyTickets;
 
   const getStatusColor = (status: string) => {
@@ -173,7 +173,7 @@ export default function RiderSupportTickets({ riderId, riderLatitude, riderLongi
         return 'bg-amber-100 text-amber-700';
       case 'In Progress':
         return 'bg-blue-100 text-blue-700';
-      case 'Resolved':
+      case 'Completed':
         return 'bg-green-100 text-green-700';
       case 'Closed':
         return 'bg-slate-100 text-slate-700';
@@ -188,7 +188,7 @@ export default function RiderSupportTickets({ riderId, riderLatitude, riderLongi
         return <AlertCircle className="w-4 h-4" />;
       case 'In Progress':
         return <Clock className="w-4 h-4" />;
-      case 'Resolved':
+      case 'Completed':
       case 'Closed':
         return <CheckCircle className="w-4 h-4" />;
       default:

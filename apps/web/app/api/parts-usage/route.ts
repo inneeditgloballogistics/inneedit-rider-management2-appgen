@@ -30,10 +30,6 @@ export async function GET(request: Request) {
     return NextResponse.json(results);
   } catch (error) {
     console.error("Error fetching parts usage:", error);
-
-
-  } catch (error) {
-    console.error("Error fetching parts usage:", error);
     return NextResponse.json(
       { error: "Failed to fetch parts usage" },
       { status: 500 }

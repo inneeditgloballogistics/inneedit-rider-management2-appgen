@@ -54,7 +54,11 @@ export default function PartsInventoryManagement({ hubId }: { hubId: number }) {
   const fetchParts = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/parts-inventory?action=by-hub&hubId=${hubId}`);
+      // If hubId is 0 (admin view), fetch all parts. Otherwise, fetch by hub
+      const url = hubId === 0 
+        ? '/api/parts-inventory'
+        : `/api/parts-inventory?action=by-hub&hubId=${hubId}`;
+      const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
         setParts(data);
@@ -220,7 +224,7 @@ export default function PartsInventoryManagement({ hubId }: { hubId: number }) {
         <div>
           <h2 className="text-2xl font-bold text-slate-900">Parts Inventory Management</h2>
           <p className="text-sm text-slate-600 mt-1">
-            {isAdmin ? 'Manage parts stock and pricing for your hub' : 'Add and manage parts stock for your hub'}
+            {isAdmin ? 'Manage parts stock and pricing for all hubs' : 'Add and manage parts stock for your hub'}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -338,6 +342,7 @@ export default function PartsInventoryManagement({ hubId }: { hubId: number }) {
                   <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Stock Value</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Status</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Supplier</th>
+                  {isAdmin && <th className="px-6 py-3 text-center text-xs font-semibold text-slate-600 uppercase">Hub ID</th>}
                   <th className="px-6 py-3 text-center text-xs font-semibold text-slate-600 uppercase">Actions</th>
                 </tr>
               </thead>
@@ -377,6 +382,11 @@ export default function PartsInventoryManagement({ hubId }: { hubId: number }) {
                     <td className="px-6 py-4">
                       <p className="text-sm text-slate-600">{part.supplier || 'N/A'}</p>
                     </td>
+                    {isAdmin && (
+                      <td className="px-6 py-4">
+                        <p className="text-sm font-medium text-slate-900">{part.hub_id}</p>
+                      </td>
+                    )}
                     <td className="px-6 py-4">
                       {isAdmin ? (
                         <div className="flex items-center justify-center gap-2">

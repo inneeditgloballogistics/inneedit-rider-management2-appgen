@@ -33,41 +33,44 @@ export default function NotificationBell() {
       let queryParams = '';
       let debugInfo: any = { source: 'none' };
       
-      const technician = localStorage.getItem('technician');
-      if (technician) {
+      // Check hub manager FIRST (highest priority)
+      const hubManager = localStorage.getItem('hubManager');
+      console.log('🔵 [NotificationBell] Checking hubManager localStorage:', hubManager ? 'Found' : 'Not found');
+      if (hubManager) {
         try {
-          const tech = JSON.parse(technician);
-          console.log('🔵 [NotificationBell] Technician found:', { id: tech.user_id, name: tech.name });
-          if (tech && tech.user_id) {
-            queryParams = `?technicianId=${tech.user_id}`;
-            debugInfo.source = 'technician';
-            debugInfo.id = tech.user_id;
+          const manager = JSON.parse(hubManager);
+          console.log('🔵 [NotificationBell] Hub Manager parsed:', { id: manager.id, hubId: manager.hubId });
+          if (manager && manager.id) {
+            const managerId = String(manager.id).trim();
+            queryParams = `?hubManagerId=${managerId}`;
+            debugInfo.source = 'hub_manager';
+            debugInfo.id = managerId;
+            console.log('🟢 [NotificationBell] Hub Manager ID found:', managerId);
           }
         } catch (e) {
-          console.error('🔴 [NotificationBell] Error parsing technician:', e);
+          console.error('🔴 [NotificationBell] Error parsing hub manager:', e);
         }
       }
       
+      // Check technician SECOND
       if (!queryParams) {
-        const hubManager = localStorage.getItem('hubManager');
-        console.log('🔵 [NotificationBell] Checking hubManager localStorage:', hubManager ? 'Found' : 'Not found');
-        if (hubManager) {
+        const technician = localStorage.getItem('technician');
+        if (technician) {
           try {
-            const manager = JSON.parse(hubManager);
-            console.log('🔵 [NotificationBell] Hub Manager parsed:', { id: manager.id, hubId: manager.hubId });
-            if (manager && manager.id) {
-              const managerId = String(manager.id).trim();
-              queryParams = `?hubManagerId=${managerId}`;
-              debugInfo.source = 'hub_manager';
-              debugInfo.id = managerId;
-              console.log('🟢 [NotificationBell] Hub Manager ID found:', managerId);
+            const tech = JSON.parse(technician);
+            console.log('🔵 [NotificationBell] Technician found:', { id: tech.user_id, name: tech.name });
+            if (tech && tech.user_id) {
+              queryParams = `?technicianId=${tech.user_id}`;
+              debugInfo.source = 'technician';
+              debugInfo.id = tech.user_id;
             }
           } catch (e) {
-            console.error('🔴 [NotificationBell] Error parsing hub manager:', e);
+            console.error('🔴 [NotificationBell] Error parsing technician:', e);
           }
         }
       }
       
+      // Check rider THIRD
       if (!queryParams) {
         const riderSession = localStorage.getItem('riderSession');
         if (riderSession) {
@@ -171,14 +174,8 @@ export default function NotificationBell() {
     const hubManager = localStorage.getItem('hubManager');
     const riderSession = localStorage.getItem('riderSession');
     
-    if (technician) {
-      if (notification.type === 'ticket_assigned_to_technician' || notification.type === 'swap_approved') {
-        setShowModal(false);
-        setTimeout(() => {
-          window.location.href = '/technician-dashboard?tab=tickets';
-        }, 100);
-      }
-    } else if (hubManager) {
+    // Check hubManager FIRST (highest priority)
+    if (hubManager) {
       if (notification.type === 'service_ticket_raised' || notification.type === 'new_rider_onboarding') {
         setShowModal(false);
         setTimeout(() => {
@@ -190,7 +187,16 @@ export default function NotificationBell() {
           window.location.href = '/hub-manager-dashboard?tab=swaps';
         }, 100);
       }
+    } else if (technician) {
+      // Check technician SECOND
+      if (notification.type === 'ticket_assigned_to_technician' || notification.type === 'swap_approved') {
+        setShowModal(false);
+        setTimeout(() => {
+          window.location.href = '/technician-dashboard?tab=tickets';
+        }, 100);
+      }
     } else if (riderSession) {
+      // Check rider THIRD
       if (notification.type === 'swap_approved') {
         setShowModal(false);
         setTimeout(() => {

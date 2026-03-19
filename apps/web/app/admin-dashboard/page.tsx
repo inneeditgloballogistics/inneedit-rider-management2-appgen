@@ -897,7 +897,7 @@ function AdminDashboardContent() {
                     <span><strong>Admin-Only Access</strong> | Hub Managers can add stock, Admins can manage inventory</span>
                   </div>
                 </div>
-                <PartsInventoryManagement />
+                <PartsInventoryManagement hubId={0} />
               </>
             )}
 

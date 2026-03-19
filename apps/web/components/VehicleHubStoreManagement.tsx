@@ -263,3 +263,119 @@ export function VehicleList({ vehicles, onAdd, onRefresh }: { vehicles: any[], o
     </>
   );
 }
+
+export function HubList({ hubs, onAdd }: { hubs: any[], onAdd: () => void }) {
+  return (
+    <>
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-2 border-b border-slate-200/60">
+        <div>
+          <h2 className="font-display text-3xl font-bold text-slate-900">Hub Management</h2>
+          <p className="text-slate-500 mt-2">Manage operational hubs</p>
+        </div>
+        <button onClick={onAdd} className="px-4 py-2 bg-brand-500 text-white rounded-lg font-medium hover:bg-brand-600 transition-all flex items-center gap-2">
+          <i className="ph-bold ph-plus"></i> Add Hub
+        </button>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="text-xs text-slate-400 uppercase tracking-wider bg-slate-50/50">
+                <th className="px-6 py-4 font-medium">Hub Name</th>
+                <th className="px-6 py-4 font-medium">Code</th>
+                <th className="px-6 py-4 font-medium">Location</th>
+                <th className="px-6 py-4 font-medium">Manager</th>
+                <th className="px-6 py-4 font-medium">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 text-sm">
+              {hubs.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-12 text-center text-slate-500">
+                    No hubs found.
+                  </td>
+                </tr>
+              ) : (
+                hubs.map((hub) => (
+                  <tr key={hub.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-6 py-4 font-bold text-slate-900">{hub.hub_name}</td>
+                    <td className="px-6 py-4 font-mono text-slate-600">{hub.hub_code}</td>
+                    <td className="px-6 py-4 text-slate-600">{hub.location}</td>
+                    <td className="px-6 py-4 text-slate-600">{hub.manager_name || '-'}</td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        hub.status === 'active' ? 'bg-green-100 text-green-800' :
+                        'bg-amber-100 text-amber-800'
+                      }`}>
+                        {hub.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </>
+  );
+}
+
+export function StoreList({ stores, onAdd }: { stores: any[], onAdd: () => void }) {
+  return (
+    <>
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-2 border-b border-slate-200/60">
+        <div>
+          <h2 className="font-display text-3xl font-bold text-slate-900">Store Management</h2>
+          <p className="text-slate-500 mt-2">Manage partner stores</p>
+        </div>
+        <button onClick={onAdd} className="px-4 py-2 bg-brand-500 text-white rounded-lg font-medium hover:bg-brand-600 transition-all flex items-center gap-2">
+          <i className="ph-bold ph-plus"></i> Add Store
+        </button>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="text-xs text-slate-400 uppercase tracking-wider bg-slate-50/50">
+                <th className="px-6 py-4 font-medium">Store Name</th>
+                <th className="px-6 py-4 font-medium">Code</th>
+                <th className="px-6 py-4 font-medium">Location</th>
+                <th className="px-6 py-4 font-medium">Contact</th>
+                <th className="px-6 py-4 font-medium">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 text-sm">
+              {stores.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-12 text-center text-slate-500">
+                    No stores found.
+                  </td>
+                </tr>
+              ) : (
+                stores.map((store) => (
+                  <tr key={store.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-6 py-4 font-bold text-slate-900">{store.store_name}</td>
+                    <td className="px-6 py-4 font-mono text-slate-600">{store.store_code}</td>
+                    <td className="px-6 py-4 text-slate-600">{store.location}</td>
+                    <td className="px-6 py-4 text-slate-600">{store.contact_person || '-'}</td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        store.status === 'active' ? 'bg-green-100 text-green-800' :
+                        'bg-amber-100 text-amber-800'
+                      }`}>
+                        {store.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </>
+  );
+}

@@ -8,6 +8,7 @@ import VehicleHandoverModal from '@/components/VehicleHandoverModal';
 import HubManagerTickets from '@/components/HubManagerTickets';
 import VehicleSwapModal from '@/components/VehicleSwapModal';
 import SwapRequestsManager from '@/components/SwapRequestsManager';
+import PostSwapHandoverModal from '@/components/PostSwapHandoverModal';
 import PartsInventoryManagement from '@/components/PartsInventoryManagement';
 
 function HubManagerDashboardContent() {
@@ -24,6 +25,8 @@ function HubManagerDashboardContent() {
   const [vehicleSwapOpen, setVehicleSwapOpen] = useState(false);
   const [selectedVehicleForSwap, setSelectedVehicleForSwap] = useState<any>(null);
   const [selectedRiderForSwap, setSelectedRiderForSwap] = useState<any>(null);
+  const [approvedSwaps, setApprovedSwaps] = useState<any[]>([]);
+  const [selectedSwapForHandover, setSelectedSwapForHandover] = useState<any>(null);
 
   // Check if hub manager is logged in and read tab from URL
   useEffect(() => {
@@ -84,6 +87,13 @@ function HubManagerDashboardContent() {
               const ridersData = await ridersResponse.json();
               setNewRiders(ridersData);
             }
+
+            // Get approved swaps awaiting handover
+            const swapsResponse = await fetch(`/api/swap-requests?action=hub-manager&hubId=${hubId}&status=approved`);
+            if (swapsResponse.ok) {
+              const swapsData = await swapsResponse.json();
+              setApprovedSwaps(swapsData);
+            }
           }
         }
       } catch (error) {
@@ -128,13 +138,24 @@ function HubManagerDashboardContent() {
   };
 
   const handleSwapComplete = () => {
-    // Refresh vehicles list
+    // Refresh vehicles list and approved swaps
     if (managerData && (managerData.hubId || managerData.hub_id)) {
       const hubId = managerData.hubId || managerData.hub_id;
       fetch(`/api/vehicles?hubId=${hubId}`)
         .then(res => res.json())
         .then(data => setVehicles(data));
+      
+      // Fetch approved swaps awaiting handover
+      fetch(`/api/swap-requests?action=hub-manager&hubId=${hubId}&status=approved`)
+        .then(res => res.json())
+        .then(data => setApprovedSwaps(data));
     }
+  };
+
+  const handlePostSwapHandoverComplete = () => {
+    // Refresh vehicles and approved swaps
+    handleSwapComplete();
+    setSelectedSwapForHandover(null);
   };
 
   const filteredRiders = newRiders.filter(rider =>
@@ -247,7 +268,7 @@ function HubManagerDashboardContent() {
               </button>
               <button
                 onClick={() => setActiveTab('swaps')}
-                className={`flex-1 px-6 py-4 font-medium text-center transition ${
+                className={`flex-1 px-6 py-4 font-medium text-center transition relative ${
                   activeTab === 'swaps'
                     ? 'bg-indigo-50 text-indigo-600 border-b-2 border-indigo-600'
                     : 'text-slate-600 hover:text-slate-900'
@@ -255,6 +276,11 @@ function HubManagerDashboardContent() {
               >
                 <Truck className="w-4 h-4 inline mr-2" />
                 Swap Requests
+                {approvedSwaps.length > 0 && (
+                  <span className="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full font-bold">
+                    {approvedSwaps.length}
+                  </span>
+                )}
               </button>
               <button
                 onClick={() => setActiveTab('inventory')}
@@ -510,7 +536,63 @@ function HubManagerDashboardContent() {
           )}
 
           {activeTab === 'swaps' && hubId && (
-            <SwapRequestsManager hubId={hubId} />
+            <>
+              <SwapRequestsManager hubId={hubId} />
+
+              {/* Approved Swaps - Awaiting Handover */}
+              {approvedSwaps.length > 0 && (
+                <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden mt-8">
+                  <div className="px-8 py-6 border-b border-slate-200 bg-gradient-to-r from-green-50 to-green-100">
+                    <h2 className="text-xl font-bold text-green-900">✓ Approved Swaps - Awaiting Handover</h2>
+                    <p className="text-sm text-green-800 mt-1">New vehicle is ready. Complete the handover with rider to finalize the swap.</p>
+                  </div>
+                  <div className="divide-y divide-slate-200">
+                    {approvedSwaps.map((swap: any) => (
+                      <div key={swap.id} className="p-6 hover:bg-green-50 transition">
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-slate-900 text-lg">
+                              {swap.rider_name} ({swap.rider_cee_id})
+                            </h3>
+                            <p className="text-xs text-slate-500 mt-1">Ticket #{swap.ticket_number}</p>
+                          </div>
+                          <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">
+                            APPROVED ✓
+                          </span>
+                        </div>
+
+                        {/* Swap Details */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-slate-50 rounded-lg mb-4">
+                          <div>
+                            <p className="text-xs text-slate-600 font-medium">Old Vehicle</p>
+                            <p className="text-sm font-mono font-semibold text-slate-900">{swap.current_vehicle_number}</p>
+                            <p className="text-xs text-slate-600 mt-1">{swap.current_vehicle_type}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-slate-600 font-medium">Status</p>
+                            <p className="text-sm font-semibold text-amber-600 mt-1">In Maintenance (pending pickup)</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-slate-600 font-medium">New Vehicle</p>
+                            <p className="text-sm font-mono font-semibold text-slate-900">{swap.replacement_vehicle_number}</p>
+                            <p className="text-xs text-slate-600 mt-1">{swap.replacement_vehicle_type}</p>
+                          </div>
+                        </div>
+
+                        {/* Action Button */}
+                        <button
+                          onClick={() => setSelectedSwapForHandover(swap)}
+                          className="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition flex items-center gap-2"
+                        >
+                          <Truck size={16} />
+                          Complete Handover
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
           )}
 
           {activeTab === 'inventory' && hubId && (
@@ -545,6 +627,17 @@ function HubManagerDashboardContent() {
           riderName={selectedRiderForSwap.full_name}
           hubId={hubId}
           onSwapComplete={handleSwapComplete}
+        />
+      )}
+
+      {/* Post-Swap Vehicle Handover Modal */}
+      {selectedSwapForHandover && (
+        <PostSwapHandoverModal
+          isOpen={!!selectedSwapForHandover}
+          onClose={() => setSelectedSwapForHandover(null)}
+          swap={selectedSwapForHandover}
+          hubManagerId={managerData?.id}
+          onHandoverComplete={handlePostSwapHandoverComplete}
         />
       )}
 

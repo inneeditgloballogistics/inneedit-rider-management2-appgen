@@ -78,16 +78,23 @@ export default function TechnicianTickets({ technicianId, hubId }: any) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ticketId: selectedTicket.id,
-          status: 'Resolved',
+          status: 'Completed',
           resolution_notes: resolutionNotes
         })
       });
 
-      if (response.ok) {
+      const data = await response.json();
+
+      if (response.ok && data.success) {
         alert('Ticket resolved successfully!');
         setSelectedTicket(null);
         setResolutionNotes('');
+        setShowSwapRequest(false);
+        setSwapReason('');
+        setSwapNotes('');
         fetchTickets();
+      } else {
+        alert(`Failed to resolve ticket: ${data.error || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error resolving ticket:', error);
@@ -142,7 +149,7 @@ export default function TechnicianTickets({ technicianId, hubId }: any) {
         return 'bg-amber-100 text-amber-700';
       case 'In Progress':
         return 'bg-blue-100 text-blue-700';
-      case 'Resolved':
+      case 'Completed':
         return 'bg-green-100 text-green-700';
       case 'Closed':
         return 'bg-slate-100 text-slate-700';
@@ -168,7 +175,7 @@ export default function TechnicianTickets({ technicianId, hubId }: any) {
 
   const assignedTickets = tickets.filter(t => t.status === 'Assigned');
   const inProgressTickets = tickets.filter(t => t.status === 'In Progress');
-  const resolvedTickets = tickets.filter(t => t.status === 'Resolved' || t.status === 'Closed');
+  const resolvedTickets = tickets.filter(t => t.status === 'Completed' || t.status === 'Closed');
 
   return (
     <div className="space-y-6">
