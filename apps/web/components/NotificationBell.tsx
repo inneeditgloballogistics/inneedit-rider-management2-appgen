@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Bell, X, MoreVertical } from 'lucide-react';
+import { Bell, X, MoreVertical, RefreshCw } from 'lucide-react';
 
 export default function NotificationBell() {
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -12,19 +12,29 @@ export default function NotificationBell() {
 
   useEffect(() => {
     console.log('NotificationBell component mounted');
+    // Initial fetch immediately
     fetchNotifications();
-    // Fetch notifications every 3 seconds (more frequent than before)
-    const interval = setInterval(fetchNotifications, 3000);
+    // Fetch notifications every 2 seconds (even more frequent)
+    const interval = setInterval(() => {
+      console.log('[NotificationBell] Auto-fetching notifications...');
+      fetchNotifications();
+    }, 2000);
     const handleVisibilityChange = () => {
       if (!document.hidden) {
-        console.log('Tab became visible, refreshing notifications...');
+        console.log('[NotificationBell] Tab became visible, refreshing notifications...');
         fetchNotifications();
       }
     };
+    const handleFocus = () => {
+      console.log('[NotificationBell] Window focused, fetching notifications...');
+      fetchNotifications();
+    };
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
     return () => {
       clearInterval(interval);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
     };
   }, []);
 
@@ -249,12 +259,24 @@ export default function NotificationBell() {
               <div>
                 <h3 className="text-2xl font-bold text-slate-900">Notifications</h3>
               </div>
-              <button
-                onClick={() => setShowModal(false)}
-                className="p-1 hover:bg-slate-100 rounded-lg transition-all"
-              >
-                <X size={24} className="text-slate-600" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    console.log('[NotificationBell] Manual refresh clicked');
+                    fetchNotifications();
+                  }}
+                  className="p-1 hover:bg-slate-100 rounded-lg transition-all text-slate-600 hover:text-slate-900"
+                  title="Refresh notifications"
+                >
+                  <RefreshCw size={20} />
+                </button>
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="p-1 hover:bg-slate-100 rounded-lg transition-all"
+                >
+                  <X size={24} className="text-slate-600" />
+                </button>
+              </div>
             </div>
 
             {/* Tabs */}
