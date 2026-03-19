@@ -134,7 +134,7 @@ export default function RiderSupportTickets({ riderId, riderLatitude, riderLongi
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ceeId: riderId,
-          hubId: selectedHub.id,
+          hub_id: selectedHub.id,
           issueCategory: selectedIssue,
           issueDescription: selectedIssue === 'Other' ? issueDescription : '',
           priority: 'Medium'

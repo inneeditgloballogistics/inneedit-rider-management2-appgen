@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const action = searchParams.get('action');
     const status = searchParams.get('status');
-    const hubId = searchParams.get('hubId');
+    const hub_id = searchParams.get('hub_id'); // Use ONLY hub_id (snake_case)
 
     if (action === 'count') {
       const result = await sql`SELECT COUNT(*) as count FROM vehicles`;
@@ -23,12 +23,12 @@ export async function GET(request: NextRequest) {
     `;
 
     // Filter by hub_id if provided
-    if (hubId) {
+    if (hub_id) {
       const vehicles = await sql`
         SELECT v.*, h.hub_name 
         FROM vehicles v
         LEFT JOIN hubs h ON v.hub_id = h.id
-        WHERE v.hub_id = ${parseInt(hubId)}
+        WHERE v.hub_id = ${parseInt(hub_id)}
         ORDER BY v.created_at DESC
       `;
       return NextResponse.json(vehicles);

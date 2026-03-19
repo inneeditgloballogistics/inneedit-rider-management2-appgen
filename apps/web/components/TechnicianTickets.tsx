@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { AlertCircle, Wrench, Phone, User, MapPin, Clock, CheckCircle, X } from 'lucide-react';
+import { AlertCircle, Wrench, Phone, User, MapPin, Clock, CheckCircle, X, Truck } from 'lucide-react';
 
 interface Ticket {
   id: number;
@@ -23,6 +23,10 @@ export default function TechnicianTickets({ technicianId, hubId }: any) {
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [resolutionNotes, setResolutionNotes] = useState('');
   const [submittingUpdate, setSubmittingUpdate] = useState(false);
+  const [showSwapRequest, setShowSwapRequest] = useState(false);
+  const [swapReason, setSwapReason] = useState('');
+  const [swapNotes, setSwapNotes] = useState('');
+  const [submittingSwapRequest, setSubmittingSwapRequest] = useState(false);
 
   useEffect(() => {
     fetchTickets();
@@ -89,6 +93,45 @@ export default function TechnicianTickets({ technicianId, hubId }: any) {
       alert('Failed to resolve ticket');
     } finally {
       setSubmittingUpdate(false);
+    }
+  };
+
+  const handleRequestSwap = async () => {
+    if (!selectedTicket || !swapReason.trim()) {
+      alert('Please provide a reason for the swap');
+      return;
+    }
+
+    setSubmittingSwapRequest(true);
+    try {
+      const response = await fetch('/api/swap-requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'request-swap',
+          ticketId: selectedTicket.id,
+          technicianId,
+          issueReason: swapReason,
+          notes: swapNotes
+        })
+      });
+
+      if (response.ok) {
+        alert('Swap request submitted! Hub manager will review shortly.');
+        setShowSwapRequest(false);
+        setSwapReason('');
+        setSwapNotes('');
+        setSelectedTicket(null);
+        fetchTickets();
+      } else {
+        const error = await response.json();
+        alert(`Failed: ${error.error}`);
+      }
+    } catch (error) {
+      console.error('Error requesting swap:', error);
+      alert('Failed to request swap');
+    } finally {
+      setSubmittingSwapRequest(false);
     }
   };
 
@@ -337,12 +380,125 @@ export default function TechnicianTickets({ technicianId, hubId }: any) {
                   Cancel
                 </button>
                 <button
+                  onClick={() => {
+                    setShowSwapRequest(true);
+                  }}
+                  className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg font-medium hover:bg-orange-700 transition flex items-center justify-center gap-2"
+                >
+                  <Truck size={16} />
+                  Request Swap
+                </button>
+                <button
                   onClick={handleResolveTicket}
                   disabled={!resolutionNotes.trim() || submittingUpdate}
                   className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   <CheckCircle size={16} />
                   {submittingUpdate ? 'Resolving...' : 'Mark as Resolved'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Swap Request Modal */}
+      {selectedTicket && showSwapRequest && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50">
+          <div className="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="sticky top-0 px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-white">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">Request Vehicle Swap</h3>
+                <p className="text-xs text-gray-500 mt-1">Ticket #{selectedTicket.ticket_number}</p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowSwapRequest(false);
+                  setSwapReason('');
+                  setSwapNotes('');
+                }}
+                className="p-1 hover:bg-gray-100 rounded-lg transition"
+              >
+                <X size={20} className="text-gray-600" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-6">
+              {/* Issue Details */}
+              <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+                <p className="text-xs font-medium text-orange-600 mb-2">ISSUE</p>
+                <p className="text-sm text-gray-900">{selectedTicket.issue_description}</p>
+              </div>
+
+              {/* Swap Reason */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">
+                  Why does this vehicle need to be swapped? *
+                </label>
+                <select
+                  value={swapReason}
+                  onChange={(e) => setSwapReason(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-600"
+                >
+                  <option value="">-- Select a reason --</option>
+                  <option value="Issue requires 1-2 days to resolve">Issue requires 1-2 days to repair</option>
+                  <option value="Parts need to be ordered">Parts need to be ordered</option>
+                  <option value="Complex mechanical issue">Complex mechanical issue</option>
+                  <option value="Engine problems">Engine problems</option>
+                  <option value="Suspension issues">Suspension issues</option>
+                  <option value="Electrical problems">Electrical problems</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              {/* Additional Notes */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">
+                  Additional Details (Optional)
+                </label>
+                <textarea
+                  value={swapNotes}
+                  onChange={(e) => setSwapNotes(e.target.value)}
+                  placeholder="Provide more context about the issue and estimated repair time..."
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-600 resize-none"
+                  rows={4}
+                />
+              </div>
+
+              {/* Info Box */}
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <p className="text-xs font-semibold text-blue-600 mb-2">HOW THIS WORKS</p>
+                <ul className="text-xs text-blue-800 space-y-1 list-disc list-inside">
+                  <li>Hub manager will review your swap request</li>
+                  <li>Manager will select a replacement vehicle from available fleet</li>
+                  <li>Rider will be notified to collect the replacement vehicle</li>
+                  <li>Current vehicle will be marked for repair</li>
+                  <li>Repair cost will be deducted from rider's payout</li>
+                </ul>
+              </div>
+
+              {/* Buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowSwapRequest(false);
+                    setSwapReason('');
+                    setSwapNotes('');
+                  }}
+                  disabled={submittingSwapRequest}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleRequestSwap}
+                  disabled={!swapReason.trim() || submittingSwapRequest}
+                  className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg font-medium hover:bg-orange-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  <Truck size={16} />
+                  {submittingSwapRequest ? 'Submitting...' : 'Submit Swap Request'}
                 </button>
               </div>
             </div>

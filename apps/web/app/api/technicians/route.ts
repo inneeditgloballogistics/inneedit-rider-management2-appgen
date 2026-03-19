@@ -4,8 +4,9 @@ import sql from '@/app/api/utils/sql';
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const hubId = searchParams.get('hubId');
+    const hubId = searchParams.get('hub_id'); // Use ONLY hub_id (snake_case)
 
+    // Get technicians for a specific hub
     if (hubId) {
       const technicians = await sql`
         SELECT * FROM technicians 

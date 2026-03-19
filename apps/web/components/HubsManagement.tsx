@@ -92,9 +92,9 @@ export default function HubsManagement() {
 
   const fetchTechnicianCount = async (hubId: number) => {
     try {
-      const res = await fetch(`/api/technicians?hub_id=${hubId}&action=count`);
+      const res = await fetch(`/api/technicians?hub_id=${hubId}`);
       const data = await res.json();
-      setTechnicianCounts(prev => ({...prev, [hubId]: data.count || 0}));
+      setTechnicianCounts(prev => ({...prev, [hubId]: (data && Array.isArray(data) ? data.length : 0)}));
     } catch (error) {
       console.error('Error fetching technician count:', error);
     }
@@ -341,53 +341,59 @@ export default function HubsManagement() {
                             {hub.status}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-right flex gap-2 justify-end">
-                          <button
-                            onClick={() => handleView(hub)}
-                            className="px-3 py-1 text-blue-600 text-sm font-medium border border-blue-200 rounded hover:bg-blue-50"
-                          >
-                            View
-                          </button>
-                          <button
-                            onClick={() => handleEdit(hub)}
-                            className="px-3 py-1 text-amber-600 text-sm font-medium border border-amber-200 rounded hover:bg-amber-50"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => {
-                              setCredentialsHub(hub);
-                              setCredentialEmail(hub.manager_email || '');
-                              setCredentialPassword('');
-                              setCredentialsMessage('');
-                              setCredentialsError('');
-                              setShowGeneratedPassword(false);
-                              setGeneratedCredentials(null);
-                              setShowCredentialsModal(true);
-                            }}
-                            className="px-3 py-1 text-green-600 text-sm font-medium border border-green-200 rounded hover:bg-green-50"
-                          >
-                            Credentials
-                          </button>
-                          <button
-                            onClick={() => {
-                              setSelectedHubForTech(hub);
-                              setTechnicianForm({ name: '', email: '', phone: '', password: '' });
-                              setTechnicianError('');
-                              setTechnicianSuccess('');
-                              setGeneratedTechPassword('');
-                              setShowTechnicianModal(true);
-                            }}
-                            className="px-3 py-1 text-purple-600 text-sm font-medium border border-purple-200 rounded hover:bg-purple-50"
-                          >
-                            Register Technician
-                          </button>
-                          <button
-                            onClick={() => handleDelete(hub.id)}
-                            className="px-3 py-1 text-red-600 text-sm font-medium border border-red-200 rounded hover:bg-red-50"
-                          >
-                            Delete
-                          </button>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex flex-col gap-2">
+                            <div className="flex gap-2 justify-end flex-wrap">
+                              <button
+                                onClick={() => handleView(hub)}
+                                className="px-3 py-1 text-blue-600 text-sm font-medium border border-blue-200 rounded hover:bg-blue-50 whitespace-nowrap"
+                              >
+                                View
+                              </button>
+                              <button
+                                onClick={() => handleEdit(hub)}
+                                className="px-3 py-1 text-amber-600 text-sm font-medium border border-amber-200 rounded hover:bg-amber-50 whitespace-nowrap"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setCredentialsHub(hub);
+                                  setCredentialEmail(hub.manager_email || '');
+                                  setCredentialPassword('');
+                                  setCredentialsMessage('');
+                                  setCredentialsError('');
+                                  setShowGeneratedPassword(false);
+                                  setGeneratedCredentials(null);
+                                  setShowCredentialsModal(true);
+                                }}
+                                className="px-3 py-1 text-green-600 text-sm font-medium border border-green-200 rounded hover:bg-green-50 whitespace-nowrap"
+                              >
+                                Credentials
+                              </button>
+                            </div>
+                            <div className="flex gap-2 justify-end flex-wrap">
+                              <button
+                                onClick={() => {
+                                  setSelectedHubForTech(hub);
+                                  setTechnicianForm({ name: '', email: '', phone: '', password: '' });
+                                  setTechnicianError('');
+                                  setTechnicianSuccess('');
+                                  setGeneratedTechPassword('');
+                                  setShowTechnicianModal(true);
+                                }}
+                                className="px-3 py-1 text-purple-600 text-sm font-medium border border-purple-200 rounded hover:bg-purple-50 whitespace-nowrap"
+                              >
+                                Register Technician
+                              </button>
+                              <button
+                                onClick={() => handleDelete(hub.id)}
+                                className="px-3 py-1 text-red-600 text-sm font-medium border border-red-200 rounded hover:bg-red-50 whitespace-nowrap"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </div>
                         </td>
                       </tr>
                     ))

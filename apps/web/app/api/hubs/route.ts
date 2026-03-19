@@ -13,13 +13,18 @@ export async function GET(request: NextRequest) {
     }
 
     if (action === 'map') {
-      // Fetch hubs with vehicle and rider counts for map view
+      // Fetch hubs with vehicle, rider, and technician counts for map view
       const hubs = await sql`
         SELECT 
           h.*,
+          hm.manager_name,
+          hm.manager_email,
+          hm.manager_phone,
           (SELECT COUNT(*) FROM vehicles WHERE hub_id = h.id) as vehicles_assigned_count,
-          (SELECT COUNT(*) FROM riders WHERE assigned_hub_id = h.id) as riders_collected_count
+          (SELECT COUNT(*) FROM riders WHERE assigned_hub_id = h.id) as riders_collected_count,
+          (SELECT COUNT(*) FROM technicians WHERE hub_id = h.id AND status = 'active') as technicians_count
         FROM hubs h
+        LEFT JOIN hub_managers hm ON h.id = hm.hub_id AND hm.status = 'active'
         WHERE h.latitude IS NOT NULL AND h.longitude IS NOT NULL
         ORDER BY h.created_at DESC
       `;
@@ -28,11 +33,31 @@ export async function GET(request: NextRequest) {
 
     // If specific ID is requested, return only that hub
     if (id) {
-      const hub = await sql`SELECT * FROM hubs WHERE id = ${parseInt(id)}`;
+      const hub = await sql`
+        SELECT 
+          h.*,
+          hm.manager_name,
+          hm.manager_email,
+          hm.manager_phone,
+          (SELECT COUNT(*) FROM technicians WHERE hub_id = h.id AND status = 'active') as technicians_count
+        FROM hubs h
+        LEFT JOIN hub_managers hm ON h.id = hm.hub_id AND hm.status = 'active'
+        WHERE h.id = ${parseInt(id)}
+      `;
       return NextResponse.json(hub);
     }
 
-    const hubs = await sql`SELECT * FROM hubs ORDER BY created_at DESC`;
+    const hubs = await sql`
+      SELECT 
+        h.*,
+        hm.manager_name,
+        hm.manager_email,
+        hm.manager_phone,
+        (SELECT COUNT(*) FROM technicians WHERE hub_id = h.id AND status = 'active') as technicians_count
+      FROM hubs h
+      LEFT JOIN hub_managers hm ON h.id = hm.hub_id AND hm.status = 'active'
+      ORDER BY h.created_at DESC
+    `;
     return NextResponse.json(hubs);
   } catch (error) {
     console.error('Error fetching hubs:', error);

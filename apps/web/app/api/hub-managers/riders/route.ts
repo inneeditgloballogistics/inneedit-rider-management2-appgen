@@ -4,9 +4,9 @@ import sql from '@/app/api/utils/sql';
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const hubId = searchParams.get('hubId');
+    const hub_id = searchParams.get('hub_id'); // Use hub_id (snake_case)
 
-    if (!hubId) {
+    if (!hub_id) {
       return NextResponse.json(
         { error: 'Hub ID is required' },
         { status: 400 }
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
         status, 
         assigned_hub_id
       FROM riders
-      WHERE assigned_hub_id = ${parseInt(hubId)}
+      WHERE assigned_hub_id = ${parseInt(hub_id)}
       ORDER BY full_name ASC
     `;
 

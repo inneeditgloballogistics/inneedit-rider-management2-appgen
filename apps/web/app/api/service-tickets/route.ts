@@ -5,12 +5,12 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const action = searchParams.get('action');
-    const hubId = searchParams.get('hubId');
+    const hub_id = searchParams.get('hub_id'); // Use hub_id (snake_case)
     const technicianId = searchParams.get('technicianId');
     const ceeId = searchParams.get('ceeId');
 
     // Get all tickets for a hub manager
-    if (action === 'hub-manager' && hubId) {
+    if (action === 'hub-manager' && hub_id) {
       const tickets = await sql`
         SELECT 
           st.*,
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
         LEFT JOIN riders r ON st.cee_id = r.cee_id
         LEFT JOIN vehicles v ON st.vehicle_id = v.id
         LEFT JOIN technicians t ON st.technician_id = t.user_id
-        WHERE st.assigned_hub_id = ${parseInt(hubId)}
+        WHERE st.assigned_hub_id = ${parseInt(hub_id)}
         ORDER BY st.created_at DESC
       `;
       return NextResponse.json(tickets);
@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       ceeId,
-      hubId,
+      hub_id, // Use hub_id (snake_case)
       vehicleId,
       issueCategory,
       issueDescription,
@@ -135,8 +135,8 @@ export async function POST(request: NextRequest) {
     if (!ceeId) {
       return NextResponse.json({ error: 'Missing ceeId' }, { status: 400 });
     }
-    if (!hubId) {
-      return NextResponse.json({ error: 'Missing hubId' }, { status: 400 });
+    if (!hub_id) {
+      return NextResponse.json({ error: 'Missing hub_id' }, { status: 400 });
     }
     if (!issueCategory) {
       return NextResponse.json({ error: 'Missing issueCategory' }, { status: 400 });
@@ -157,6 +157,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Create the service ticket
+    const finalDescription = issueDescription 
+      ? `${issueCategory}: ${issueDescription}` 
+      : issueCategory;
+
     const result = await sql`
       INSERT INTO service_tickets (
         ticket_number,
@@ -172,8 +176,8 @@ export async function POST(request: NextRequest) {
         ${ticketNumber},
         ${ceeId},
         ${finalVehicleId ? parseInt(finalVehicleId) : null},
-        ${parseInt(hubId)},
-        ${`${issueCategory}${issueDescription ? ': ' + issueDescription : ''}`},
+        ${parseInt(hub_id)},
+        ${finalDescription},
         ${priority},
         'Open',
         NOW(),
@@ -188,32 +192,39 @@ export async function POST(request: NextRequest) {
       SELECT id, full_name, user_id FROM riders WHERE cee_id = ${ceeId}
     `;
 
-    // Get hub manager for notification
-    const hubManager = await sql`
-      SELECT id FROM hub_managers WHERE hub_id = ${parseInt(hubId)} AND status = 'active' LIMIT 1
+    // Get ALL active hub managers for this hub (in case multiple managers handle one hub)
+    const hubManagers = await sql`
+      SELECT id FROM hub_managers WHERE hub_id = ${parseInt(hub_id)} AND status = 'active'
     `;
 
-    // Create notification for hub manager
-    if (hubManager.length > 0) {
-      await sql`
-        INSERT INTO notifications (
-          type,
-          title,
-          message,
-          related_id,
-          hub_manager_id,
-          is_read,
-          created_at
-        ) VALUES (
-          'service_ticket_raised',
-          'New Service Ticket - ' + ${issueCategory},
-          ${`Rider ${riderInfo[0]?.full_name || 'Unknown'} (${ceeId}) raised a ticket: ${issueCategory}`},
-          ${ticket.id},
-          ${hubManager[0].id},
-          false,
-          NOW()
-        )
-      `;
+    // Create notification for all hub managers at this hub
+    if (hubManagers.length > 0) {
+      const notificationTitle = `New Service Ticket - ${issueCategory}`;
+      const riderName = riderInfo[0]?.full_name || 'Unknown';
+      const notificationMessage = `Rider ${riderName} (${ceeId}) raised a ticket: ${issueCategory}`;
+      
+      // Insert notification for each hub manager
+      for (const manager of hubManagers) {
+        await sql`
+          INSERT INTO notifications (
+            type,
+            title,
+            message,
+            related_id,
+            hub_manager_id,
+            is_read,
+            created_at
+          ) VALUES (
+            'service_ticket_raised',
+            ${notificationTitle},
+            ${notificationMessage},
+            ${ticket.id},
+            ${manager.id},
+            false,
+            NOW()
+          )
+        `;
+      }
     }
 
     return NextResponse.json({ success: true, ticket });
@@ -232,57 +243,55 @@ export async function PATCH(request: NextRequest) {
     const body = await request.json();
     const { ticketId, status, technicianId, resolution_notes } = body;
 
-    const updateData: any = { status, updated_at: new Date() };
-    if (technicianId) updateData.technician_id = technicianId;
-    if (resolution_notes) updateData.technician_notes = resolution_notes;
+    console.log('PATCH /api/service-tickets - Body:', body);
+
+    if (!ticketId) {
+      return NextResponse.json({ error: 'Missing ticketId' }, { status: 400 });
+    }
+
+    // Get current ticket first
+    const currentTicket = await sql`
+      SELECT * FROM service_tickets WHERE id = ${parseInt(ticketId)}
+    `;
+
+    if (currentTicket.length === 0) {
+      return NextResponse.json({ error: 'Ticket not found' }, { status: 404 });
+    }
+
+    // Only update the fields that are provided
+    const finalStatus = status || currentTicket[0].status;
+    const finalTechnicianId = technicianId !== undefined ? technicianId : currentTicket[0].technician_id;
+    const finalNotes = resolution_notes || currentTicket[0].technician_notes;
 
     const result = await sql`
       UPDATE service_tickets
       SET 
-        status = ${status},
-        technician_id = ${technicianId || null},
-        technician_notes = ${resolution_notes || null},
+        status = ${finalStatus},
+        technician_id = ${finalTechnicianId},
+        technician_notes = ${finalNotes},
         updated_at = NOW()
       WHERE id = ${parseInt(ticketId)}
       RETURNING *
     `;
 
-    // If assigning to technician, create notification
-    if (technicianId && status === 'Assigned') {
-      const ticket = result[0];
-      const riderInfo = await sql`
-        SELECT full_name, cee_id, phone FROM riders WHERE cee_id = ${ticket.cee_id}
-      `;
-
-      await sql`
-        INSERT INTO notifications (
-          type,
-          title,
-          message,
-          related_id,
-          user_id,
-          is_read,
-          created_at
-        ) VALUES (
-          'ticket_assigned_to_technician',
-          'New Service Ticket Assigned',
-          ${`You have been assigned a service ticket from ${riderInfo[0]?.full_name || 'a rider'}. Ticket #${ticket.ticket_number}`},
-          ${ticket.id},
-          ${technicianId},
-          false,
-          NOW()
-        )
-      `;
+    if (result.length === 0) {
+      return NextResponse.json({ error: 'Ticket not found' }, { status: 404 });
     }
 
-    // If ticket resolved, notify rider
-    if (status === 'Resolved' || status === 'Closed') {
-      const ticket = result[0];
-      const rider = await sql`
-        SELECT user_id FROM riders WHERE cee_id = ${ticket.cee_id}
-      `;
+    const ticket = result[0];
+    console.log('Updated ticket:', ticket);
 
-      if (rider.length > 0) {
+    // If assigning to technician, create notification
+    if (technicianId && status === 'In Progress') {
+      try {
+        const riderInfo = await sql`
+          SELECT full_name, cee_id, phone FROM riders WHERE cee_id = ${ticket.cee_id}
+        `;
+
+        const notificationMessage = `You have been assigned a service ticket from ${riderInfo[0]?.full_name || 'a rider'}. Ticket #${ticket.ticket_number}`;
+        
+        console.log('Creating notification for technician:', technicianId, notificationMessage);
+
         await sql`
           INSERT INTO notifications (
             type,
@@ -293,22 +302,61 @@ export async function PATCH(request: NextRequest) {
             is_read,
             created_at
           ) VALUES (
-            'ticket_resolved',
-            'Service Ticket Resolved',
-            ${`Your service ticket #${ticket.ticket_number} has been resolved.`},
+            'ticket_assigned_to_technician',
+            'New Service Ticket Assigned',
+            ${notificationMessage},
             ${ticket.id},
-            ${rider[0].user_id},
+            ${technicianId},
             false,
             NOW()
           )
         `;
+      } catch (notificationError) {
+        console.error('Error creating technician notification:', notificationError);
+        // Don't fail the request if notification creation fails
       }
     }
 
-    return NextResponse.json(result[0]);
+    // If ticket resolved, notify rider
+    if (status === 'Completed' || status === 'Cancelled') {
+      try {
+        const rider = await sql`
+          SELECT user_id FROM riders WHERE cee_id = ${ticket.cee_id}
+        `;
+
+        if (rider.length > 0) {
+          await sql`
+            INSERT INTO notifications (
+              type,
+              title,
+              message,
+              related_id,
+              user_id,
+              is_read,
+              created_at
+            ) VALUES (
+              'ticket_resolved',
+              'Service Ticket Resolved',
+              ${`Your service ticket #${ticket.ticket_number} has been resolved.`},
+              ${ticket.id},
+              ${rider[0].user_id},
+              false,
+              NOW()
+            )
+          `;
+        }
+      } catch (notificationError) {
+        console.error('Error creating rider notification:', notificationError);
+        // Don't fail the request if notification creation fails
+      }
+    }
+
+    console.log('Returning updated ticket:', ticket);
+    return NextResponse.json({ success: true, ticket });
   } catch (error) {
-    console.error('Error updating service ticket:', error);
-    return NextResponse.json({ error: 'Failed to update ticket' }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error('Error updating service ticket:', errorMessage, error);
+    return NextResponse.json({ error: `Failed to update ticket: ${errorMessage}` }, { status: 500 });
   }
 }
 

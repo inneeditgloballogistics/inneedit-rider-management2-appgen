@@ -81,20 +81,25 @@ export default function HubManagerTickets({ hubId, hubManagerId }: any) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ticketId: selectedTicket.id,
-          status: 'Assigned',
+          status: 'In Progress',
           technicianId: assigningTechnicianId
         })
       });
 
+      const data = await response.json();
+      
       if (response.ok) {
         alert('Technician assigned successfully!');
         setSelectedTicket(null);
         setAssigningTechnicianId('');
         fetchTickets();
+      } else {
+        console.error('API Error:', data);
+        alert(`Failed to assign technician: ${data.error || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error assigning technician:', error);
-      alert('Failed to assign technician');
+      alert('Failed to assign technician: ' + (error instanceof Error ? error.message : 'Unknown error'));
     } finally {
       setSubmittingAssignment(false);
     }
@@ -104,13 +109,15 @@ export default function HubManagerTickets({ hubId, hubManagerId }: any) {
     switch (status) {
       case 'Open':
         return 'bg-red-100 text-red-700';
-      case 'Assigned':
-        return 'bg-amber-100 text-amber-700';
       case 'In Progress':
         return 'bg-blue-100 text-blue-700';
-      case 'Resolved':
+      case 'Pending Parts':
+        return 'bg-amber-100 text-amber-700';
+      case 'On Hold':
+        return 'bg-orange-100 text-orange-700';
+      case 'Completed':
         return 'bg-green-100 text-green-700';
-      case 'Closed':
+      case 'Cancelled':
         return 'bg-slate-100 text-slate-700';
       default:
         return 'bg-slate-100 text-slate-700';
@@ -132,9 +139,9 @@ export default function HubManagerTickets({ hubId, hubManagerId }: any) {
     }
   };
 
-  const openTickets = tickets.filter(t => t.status === 'Open' || t.status === 'Assigned');
-  const inProgressTickets = tickets.filter(t => t.status === 'In Progress');
-  const resolvedTickets = tickets.filter(t => t.status === 'Resolved' || t.status === 'Closed');
+  const openTickets = tickets.filter(t => t.status === 'Open');
+  const inProgressTickets = tickets.filter(t => t.status === 'In Progress' || t.status === 'Pending Parts' || t.status === 'On Hold');
+  const completedTickets = tickets.filter(t => t.status === 'Completed' || t.status === 'Cancelled');
 
   return (
     <div className="space-y-6">
@@ -155,8 +162,8 @@ export default function HubManagerTickets({ hubId, hubManagerId }: any) {
           <p className="text-2xl font-bold text-blue-600 mt-1">{inProgressTickets.length}</p>
         </div>
         <div className="bg-white p-4 rounded-lg border border-gray-200">
-          <p className="text-xs text-gray-600 font-medium">Resolved</p>
-          <p className="text-2xl font-bold text-green-600 mt-1">{resolvedTickets.length}</p>
+          <p className="text-xs text-gray-600 font-medium">Completed</p>
+          <p className="text-2xl font-bold text-green-600 mt-1">{completedTickets.length}</p>
         </div>
         <div className="bg-white p-4 rounded-lg border border-gray-200">
           <p className="text-xs text-gray-600 font-medium">Total Tickets</p>
@@ -315,7 +322,7 @@ export default function HubManagerTickets({ hubId, hubManagerId }: any) {
               </div>
 
               {/* Assign Technician */}
-              {selectedTicket.status !== 'Resolved' && selectedTicket.status !== 'Closed' && (
+              {selectedTicket.status !== 'Completed' && selectedTicket.status !== 'Cancelled' && (
                 <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
                   <h4 className="text-sm font-semibold text-gray-900 mb-3">Assign Technician</h4>
                   <div className="space-y-3">

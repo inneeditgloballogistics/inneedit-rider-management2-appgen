@@ -10,10 +10,30 @@ export default function NotificationBell() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetchNotifications();
-    // Poll for new notifications every 30 seconds
-    const interval = setInterval(fetchNotifications, 30000);
-    return () => clearInterval(interval);
+    console.log('NotificationBell component mounted');
+    
+    // Fetch immediately on mount with a small delay to ensure localStorage is ready
+    const initialFetchTimer = setTimeout(() => {
+      fetchNotifications();
+    }, 100);
+    
+    // Poll for new notifications every 10 seconds (instead of 30)
+    const interval = setInterval(fetchNotifications, 10000);
+    
+    // Refresh when tab becomes visible again
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        console.log('Tab became visible, refreshing notifications...');
+        fetchNotifications();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      clearTimeout(initialFetchTimer);
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   const fetchNotifications = async () => {
@@ -22,56 +42,55 @@ export default function NotificationBell() {
       
       // Check if there's a logged-in user/role to fetch role-specific notifications
       let queryParams = '';
+      let debugInfo: any = { source: 'none' };
       
+      // First check for hub manager (highest priority - used in hub-manager-dashboard)
       const hubManager = localStorage.getItem('hubManager');
       if (hubManager) {
         try {
           const manager = JSON.parse(hubManager);
+          console.log('Hub Manager found:', { id: manager.id, name: manager.name });
           if (manager && manager.id) {
-            queryParams = `?hubManagerId=${manager.id}&type=hub_manager`;
+            queryParams = `?hubManagerId=${manager.id}`;
+            debugInfo.source = 'hub_manager';
+            debugInfo.id = manager.id;
           }
         } catch (e) {
           console.error('Error parsing hub manager:', e);
         }
-      } else {
-        // Check if it's a rider (from rider dashboard session)
-        const riderSession = sessionStorage.getItem('riderSession');
+      }
+      
+      // If no hub manager, check for rider (secondary - used in rider-dashboard)
+      if (!queryParams) {
+        const riderSession = localStorage.getItem('riderSession');
         if (riderSession) {
           try {
             const riderData = JSON.parse(riderSession);
+            console.log('Rider session found:', { id: riderData.id, name: riderData.name });
             if (riderData && riderData.id) {
-              // For riders, filter by type: only show rider-specific notifications
-              queryParams = `?riderId=${riderData.id}&type=rider`;
+              queryParams = `?riderId=${riderData.id}`;
+              debugInfo.source = 'rider';
+              debugInfo.id = riderData.id;
             }
           } catch (e) {
             console.error('Error parsing rider session:', e);
           }
-        } else {
-          // Check for admin user
-          const storedUser = localStorage.getItem('currentUser');
-          if (storedUser) {
-            try {
-              const user = JSON.parse(storedUser);
-              if (user && user.id) {
-                queryParams = `?userId=${user.id}`;
-              }
-            } catch (e) {
-              console.error('Error parsing stored user:', e);
-            }
-          }
         }
       }
       
-      // Only fetch if we have valid query params (user is logged in)
+      // Only fetch if we have valid query params (hub manager or rider is logged in)
       if (!queryParams) {
+        console.log('No hub manager or rider logged in, skipping notification fetch');
         setNotifications([]);
         setUnreadCount(0);
         return;
       }
       
+      console.log('Fetching notifications with params:', { queryParams, debugInfo });
       const response = await fetch(`/api/notifications${queryParams}`);
       if (response.ok) {
         const data = await response.json();
+        console.log('Notifications fetched:', { count: data.notifications?.length, unreadCount: data.unreadCount });
         setNotifications(data.notifications || []);
         setUnreadCount(data.unreadCount || 0);
       } else {
@@ -138,8 +157,50 @@ export default function NotificationBell() {
         return '✅';
       case 'bank_update':
         return '🏦';
+      case 'service_ticket_raised':
+        return '🔧';
+      case 'ticket_assigned_to_technician':
+        return '🔨';
+      case 'ticket_resolved':
+        return '✨';
+      case 'swap_request_pending':
+        return '🔄';
+      case 'swap_approved':
+        return '✅';
+      case 'swap_completed':
+        return '🎉';
+      case 'vehicle_swap':
+        return '🚙';
       default:
         return '📢';
+    }
+  };
+
+  const handleNotificationClick = (notification: any) => {
+    markAsRead(notification.id);
+    
+    // Route based on notification type
+    if (notification.type === 'service_ticket_raised' || 
+        notification.type === 'ticket_assigned_to_technician') {
+      // Redirect to support tickets tab in hub manager dashboard
+      // First close the modal
+      setShowModal(false);
+      // Then redirect with proper URL
+      setTimeout(() => {
+        window.location.href = '/hub-manager-dashboard?tab=tickets';
+      }, 100);
+    } else if (notification.type === 'swap_request_pending') {
+      // Redirect to swap requests
+      setShowModal(false);
+      setTimeout(() => {
+        window.location.href = '/hub-manager-dashboard?tab=swaps';
+      }, 100);
+    } else if (notification.type === 'swap_approved') {
+      // Rider notification - redirect to rider dashboard
+      setShowModal(false);
+      setTimeout(() => {
+        window.location.href = '/rider-dashboard';
+      }, 100);
     }
   };
 
@@ -212,7 +273,7 @@ export default function NotificationBell() {
                   {notifications.map((notification: any) => (
                     <div
                       key={notification.id}
-                      onClick={() => markAsRead(notification.id)}
+                      onClick={() => handleNotificationClick(notification)}
                       className={`p-4 rounded-lg cursor-pointer transition-all ${getNotificationColor(
                         notification.is_read
                       )} hover:shadow-md`}

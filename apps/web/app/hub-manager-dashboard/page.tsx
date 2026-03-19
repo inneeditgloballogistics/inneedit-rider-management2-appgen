@@ -2,11 +2,12 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { LogOut, Package, Warehouse, AlertCircle, Users, Search, Wrench, RefreshCw } from 'lucide-react';
+import { LogOut, Package, Warehouse, AlertCircle, Users, Search, Wrench, RefreshCw, Truck } from 'lucide-react';
 import NotificationBell from '@/components/NotificationBell';
 import VehicleHandoverModal from '@/components/VehicleHandoverModal';
 import HubManagerTickets from '@/components/HubManagerTickets';
 import VehicleSwapModal from '@/components/VehicleSwapModal';
+import SwapRequestsManager from '@/components/SwapRequestsManager';
 
 function HubManagerDashboardContent() {
   const router = useRouter();
@@ -23,7 +24,7 @@ function HubManagerDashboardContent() {
   const [selectedVehicleForSwap, setSelectedVehicleForSwap] = useState<any>(null);
   const [selectedRiderForSwap, setSelectedRiderForSwap] = useState<any>(null);
 
-  // Check if hub manager is logged in
+  // Check if hub manager is logged in and read tab from URL
   useEffect(() => {
     const checkAuth = () => {
       try {
@@ -33,6 +34,13 @@ function HubManagerDashboardContent() {
           return;
         }
         setManagerData(JSON.parse(storedManager));
+        
+        // Check if there's a tab parameter in the URL
+        const searchParams = new URLSearchParams(window.location.search);
+        const tabParam = searchParams.get('tab');
+        if (tabParam) {
+          setActiveTab(tabParam);
+        }
       } catch (error) {
         router.push('/login');
       }
@@ -235,6 +243,17 @@ function HubManagerDashboardContent() {
               >
                 <Wrench className="w-4 h-4 inline mr-2" />
                 Support Tickets
+              </button>
+              <button
+                onClick={() => setActiveTab('swaps')}
+                className={`flex-1 px-6 py-4 font-medium text-center transition ${
+                  activeTab === 'swaps'
+                    ? 'bg-indigo-50 text-indigo-600 border-b-2 border-indigo-600'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Truck className="w-4 h-4 inline mr-2" />
+                Swap Requests
               </button>
             </div>
           </div>
@@ -476,6 +495,10 @@ function HubManagerDashboardContent() {
 
           {activeTab === 'tickets' && hubId && (
             <HubManagerTickets hubId={hubId} hubManagerId={managerData?.id} />
+          )}
+
+          {activeTab === 'swaps' && hubId && (
+            <SwapRequestsManager hubId={hubId} />
           )}
         </div>
       </main>

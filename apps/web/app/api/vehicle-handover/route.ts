@@ -5,7 +5,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const action = searchParams.get('action');
-    const hubId = searchParams.get('hubId');
+    const hub_id = searchParams.get('hub_id'); // Use hub_id (snake_case)
 
     // Get new riders for hub (riders assigned but not yet handed over)
     if (action === 'new-riders') {
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
         FROM riders r
         LEFT JOIN vehicles v ON r.assigned_vehicle_id = v.id
         LEFT JOIN hubs h ON r.assigned_hub_id = h.id
-        WHERE r.assigned_hub_id = ${parseInt(hubId || '0')}
+        WHERE r.assigned_hub_id = ${parseInt(hub_id || '0')}
         AND r.status = 'active'
         AND NOT EXISTS (
           SELECT 1 FROM vehicle_handovers vh 
@@ -59,13 +59,13 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     console.log('Handover request body keys:', Object.keys(body));
     
-    const { riderId, hubManagerId, vehicleId, hubId, vehiclePhotos, riderSignature, odometerReading, fuelLevel, notes } = body;
+    const { riderId, hubManagerId, vehicleId, hub_id, vehiclePhotos, riderSignature, odometerReading, fuelLevel, notes } = body; // Use hub_id (snake_case)
 
     // Validate required fields
-    if (!riderId || !vehicleId || !hubId) {
-      console.error('Missing required fields:', { riderId, vehicleId, hubId });
+    if (!riderId || !vehicleId || !hub_id) {
+      console.error('Missing required fields:', { riderId, vehicleId, hub_id });
       return NextResponse.json(
-        { error: 'Missing required fields: riderId, vehicleId, hubId' },
+        { error: 'Missing required fields: riderId, vehicleId, hub_id' },
         { status: 400 }
       );
     }
@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
         ${riderId},
         ${hubManagerId || null},
         ${vehicleId},
-        ${hubId},
+        ${hub_id},
         ${riderSignature || null},
         ${odometerReading || ''},
         ${fuelLevel || 'full'},
