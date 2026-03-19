@@ -9,121 +9,118 @@ export async function GET(request: NextRequest) {
     const riderId = searchParams.get('riderId');
     const hubManagerId = searchParams.get('hubManagerId');
     const technicianId = searchParams.get('technicianId');
-    const type = searchParams.get('type');
 
-    console.log('[API] /notifications GET request:', { userId, riderId, hubManagerId, technicianId, type, isRead });
+    console.log('[API] /notifications GET request:', { userId, riderId, hubManagerId, technicianId, isRead });
 
     let notifications;
     
     if (userId) {
-      if (isRead !== null) {
-        const readValue = isRead === 'true';
-        notifications = await sql`
-          SELECT * FROM notifications 
-          WHERE user_id = ${userId}
-          AND is_read = ${readValue}
-          ORDER BY created_at DESC
-        `;
-      } else {
-        notifications = await sql`
-          SELECT * FROM notifications 
-          WHERE user_id = ${userId}
-          ORDER BY created_at DESC LIMIT 50
-        `;
-      }
-    } else if (riderId) {
-      const riderRiderIdInt = parseInt(riderId);
-      // Riders should only see notifications about themselves, NOT notifications about service tickets they raised
-      // Service tickets are for hub managers only
+      // For backwards compatibility - treat user_id as rider with user-based notifications
       notifications = await sql`
         SELECT * FROM notifications 
-        WHERE rider_id = ${riderRiderIdInt}
-        AND type IN ('rider_assignment', 'vehicle_handover_complete', 'referral_approved', 'swap_approved', 'ticket_resolved')
+        WHERE user_id = ${userId} AND recipient_type IS NULL
+        ORDER BY created_at DESC LIMIT 50
+      `;
+    } else if (riderId) {
+      const riderIdInt = parseInt(riderId, 10);
+      if (isNaN(riderIdInt)) {
+        console.error('[API /notifications] Invalid rider ID:', riderId);
+        return NextResponse.json({ notifications: [], unreadCount: 0 });
+      }
+      // Riders see notifications meant for them
+      notifications = await sql`
+        SELECT * FROM notifications 
+        WHERE recipient_type = 'rider' AND recipient_id = ${riderIdInt}
         ORDER BY created_at DESC LIMIT 50
       `;
     } else if (hubManagerId) {
-      const hubManagerIdInt = parseInt(hubManagerId);
+      const hubManagerIdInt = parseInt(hubManagerId, 10);
       console.log('[API /notifications] 🔍 Fetching notifications for hub manager:', { 
         raw_hubManagerId: hubManagerId, 
         parsedInt: hubManagerIdInt,
-        type: typeof hubManagerIdInt 
+        isValid: !isNaN(hubManagerIdInt)
       });
       
-      const allNotifications = await sql`
-        SELECT id, hub_manager_id, type, title, is_read, created_at FROM notifications 
-        WHERE hub_manager_id = ${hubManagerIdInt}
-        ORDER BY created_at DESC LIMIT 100
-      `;
-      console.log('[API /notifications] ℹ️ Total notifications for this hub manager:', allNotifications?.length || 0);
-      if (allNotifications.length > 0) {
-        console.log('[API /notifications] Sample notifications:', allNotifications.slice(0, 3).map(n => ({ id: n.id, type: n.type, hub_manager_id: n.hub_manager_id, created_at: n.created_at })));
+      if (isNaN(hubManagerIdInt)) {
+        console.error('[API /notifications] Invalid hub manager ID:', hubManagerId);
+        return NextResponse.json({ notifications: [], unreadCount: 0 });
       }
       
+      // Hub managers see notifications meant for them
       notifications = await sql`
         SELECT * FROM notifications 
-        WHERE hub_manager_id = ${hubManagerIdInt}
-        AND type IN ('service_ticket_raised', 'swap_request_pending', 'new_rider_onboarding')
+        WHERE recipient_type = 'hub_manager' AND recipient_id = ${hubManagerIdInt}
         ORDER BY created_at DESC LIMIT 50
       `;
-      console.log('[API /notifications] ✅ Filtered notifications (by type):', notifications?.length || 0, 'records');
+      console.log('[API /notifications] ✅ Found', notifications.length, 'notifications for hub manager', hubManagerIdInt);
     } else if (technicianId) {
+      // Technicians see notifications meant for them
+      const techIdInt = parseInt(technicianId, 10);
+      if (isNaN(techIdInt)) {
+        console.error('[API /notifications] Invalid technician ID:', technicianId);
+        return NextResponse.json({ notifications: [], unreadCount: 0 });
+      }
       notifications = await sql`
         SELECT * FROM notifications 
-        WHERE technician_id = ${technicianId}
-        AND type IN ('ticket_assigned_to_technician', 'swap_approved')
+        WHERE recipient_type = 'technician' AND recipient_id = ${techIdInt}
         ORDER BY created_at DESC LIMIT 50
       `;
     } else {
-      if (isRead !== null) {
-        const readValue = isRead === 'true';
-        notifications = await sql`SELECT * FROM notifications WHERE is_read = ${readValue} ORDER BY created_at DESC`;
-      } else {
-        notifications = await sql`SELECT * FROM notifications ORDER BY created_at DESC LIMIT 50`;
-      }
+      // Admin sees all
+      notifications = await sql`SELECT * FROM notifications ORDER BY created_at DESC LIMIT 50`;
     }
 
-    let unreadCountQuery;
+    // Fetch unread count
+    let unreadCountResult;
+    
     if (userId) {
-      unreadCountQuery = await sql`
+      unreadCountResult = await sql`
         SELECT COUNT(*) as count FROM notifications 
-        WHERE user_id = ${userId}
-        AND is_read = false
+        WHERE user_id = ${userId} AND recipient_type IS NULL AND is_read = false
       `;
     } else if (riderId) {
-      const riderRiderIdInt = parseInt(riderId);
-      // Riders should only see notifications about themselves, NOT notifications about service tickets they raised
-      // Service tickets are for hub managers only
-      unreadCountQuery = await sql`
-        SELECT COUNT(*) as count FROM notifications 
-        WHERE rider_id = ${riderRiderIdInt}
-        AND type IN ('rider_assignment', 'vehicle_handover_complete', 'referral_approved', 'swap_approved', 'ticket_resolved')
-        AND is_read = false
-      `;
+      const riderIdInt = parseInt(riderId, 10);
+      if (!isNaN(riderIdInt)) {
+        unreadCountResult = await sql`
+          SELECT COUNT(*) as count FROM notifications 
+          WHERE recipient_type = 'rider' AND recipient_id = ${riderIdInt} AND is_read = false
+        `;
+      } else {
+        unreadCountResult = [{ count: 0 }];
+      }
     } else if (hubManagerId) {
-      unreadCountQuery = await sql`
-        SELECT COUNT(*) as count FROM notifications 
-        WHERE hub_manager_id = ${parseInt(hubManagerId)}
-        AND type IN ('service_ticket_raised', 'swap_request_pending', 'new_rider_onboarding')
-        AND is_read = false
-      `;
+      const hubManagerIdInt = parseInt(hubManagerId, 10);
+      if (!isNaN(hubManagerIdInt)) {
+        unreadCountResult = await sql`
+          SELECT COUNT(*) as count FROM notifications 
+          WHERE recipient_type = 'hub_manager' AND recipient_id = ${hubManagerIdInt} AND is_read = false
+        `;
+      } else {
+        unreadCountResult = [{ count: 0 }];
+      }
     } else if (technicianId) {
-      unreadCountQuery = await sql`
-        SELECT COUNT(*) as count FROM notifications 
-        WHERE technician_id = ${technicianId}
-        AND type IN ('ticket_assigned_to_technician', 'swap_approved')
-        AND is_read = false
-      `;
+      const techIdInt = parseInt(technicianId, 10);
+      if (!isNaN(techIdInt)) {
+        unreadCountResult = await sql`
+          SELECT COUNT(*) as count FROM notifications 
+          WHERE recipient_type = 'technician' AND recipient_id = ${techIdInt} AND is_read = false
+        `;
+      } else {
+        unreadCountResult = [{ count: 0 }];
+      }
     } else {
-      unreadCountQuery = await sql`SELECT COUNT(*) as count FROM notifications WHERE is_read = false`;
+      unreadCountResult = await sql`SELECT COUNT(*) as count FROM notifications WHERE is_read = false`;
     }
 
+    console.log('[API /notifications] Notifications fetched:', notifications?.length || 0, 'records');
+
     return NextResponse.json({ 
-      notifications,
-      unreadCount: parseInt(unreadCountQuery[0].count) || 0
+      notifications: notifications || [],
+      unreadCount: parseInt(unreadCountResult[0]?.count || 0) || 0
     });
   } catch (error) {
     console.error('Error fetching notifications:', error);
-    return NextResponse.json({ error: 'Failed to fetch notifications' }, { status: 500 });
+    return NextResponse.json({ notifications: [], unreadCount: 0 }, { status: 200 });
   }
 }
 

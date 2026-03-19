@@ -537,7 +537,7 @@ function AdminDashboardContent() {
                       <tr>
                         <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Name</th>
                         <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Phone</th>
-                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Email</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">CEE ID</th>
                         <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Status</th>
                         <th className="px-6 py-4 text-right text-sm font-semibold text-slate-900">Actions</th>
                       </tr>
@@ -547,7 +547,7 @@ function AdminDashboardContent() {
                         <tr key={rider.id} className="border-b border-slate-200 hover:bg-slate-50">
                           <td className="px-6 py-4 text-sm text-slate-900">{rider.full_name}</td>
                           <td className="px-6 py-4 text-sm text-slate-600">{rider.phone}</td>
-                          <td className="px-6 py-4 text-sm text-slate-600">{rider.email}</td>
+                          <td className="px-6 py-4 text-sm font-semibold text-slate-900">{rider.cee_id}</td>
                           <td className="px-6 py-4 text-sm">
                             <span className={`px-3 py-1 rounded-full text-xs font-medium ${rider.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-700'}`}>
                               {rider.status}

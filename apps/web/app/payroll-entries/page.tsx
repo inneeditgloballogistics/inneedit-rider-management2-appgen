@@ -152,15 +152,13 @@ export default function PayrollEntries() {
     { id: 4, label: 'Week 4 (22nd - Month End)' }
   ];
 
+  // Entry types - note: deductions are now dynamically shown (all types except referral, incentive, vehicle_rent)
   const entryTypes = [
     { value: 'all', label: 'All Entries' },
     { value: 'referral', label: 'Referrals' },
     { value: 'incentive', label: 'Incentives' },
-    { value: 'advance', label: 'Advances' },
-    { value: 'security_deposit', label: 'Security Deposit' },
-    { value: 'damage', label: 'Damage' },
-    { value: 'challan', label: 'Challan' },
-    { value: 'vehicle_rent', label: 'Vehicle Rent' }
+    { value: 'vehicle_rent', label: 'Vehicle Rent' },
+    { value: 'deductions', label: 'All Deductions (service charges, advances, etc.)' }
   ];
 
   const handleRiderClick = (rider: Rider) => {
@@ -483,9 +481,13 @@ export default function PayrollEntries() {
                       </div>
                       <div className="overflow-x-auto">
                         {(() => {
-                          const deductionEntries = riderDetails.filter(e => 
-                            ['advance', 'security_deposit', 'damage', 'challan', 'other'].includes(e.entry_type?.toLowerCase())
-                          );
+                          // Show ALL deductions dynamically - exclude only additions and vehicle_rent
+                          // This means: service_charge, advance, security_deposit, damage, challan, other, AND any future deduction types
+                          const deductionEntries = riderDetails.filter(e => {
+                            const entryType = e.entry_type?.toLowerCase() || '';
+                            // Exclude additions and vehicle_rent only
+                            return !['referral', 'incentive', 'vehicle_rent'].includes(entryType);
+                          });
                           if (deductionEntries.length === 0) {
                             return (
                               <div className="px-4 py-6 text-center text-slate-500 text-sm">
@@ -624,7 +626,10 @@ export default function PayrollEntries() {
                           <div className="bg-white rounded-lg p-4 border border-yellow-100">
                             <p className="text-xs text-slate-600 font-medium mb-1">Total Deductions</p>
                             <p className="text-2xl font-bold text-red-700">
-                              ₹{riderDetails.filter(e => ['advance', 'security_deposit', 'damage', 'challan', 'other'].includes(e.entry_type?.toLowerCase())).reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}
+                              ₹{riderDetails.filter(e => {
+                                const entryType = e.entry_type?.toLowerCase() || '';
+                                return !['referral', 'incentive', 'vehicle_rent'].includes(entryType);
+                              }).reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0).toFixed(2)}
                             </p>
                           </div>
                           <div className="bg-white rounded-lg p-4 border border-yellow-100">
@@ -647,7 +652,10 @@ export default function PayrollEntries() {
                           <p className="font-semibold text-slate-900 mb-3">Payroll Calculation:</p>
                           {(() => {
                             const totalAdditions = riderDetails.filter(e => ['referral', 'incentive'].includes(e.entry_type?.toLowerCase())).reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0);
-                            const totalDeductions = riderDetails.filter(e => ['advance', 'security_deposit', 'damage', 'challan', 'other'].includes(e.entry_type?.toLowerCase())).reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0);
+                            const totalDeductions = riderDetails.filter(e => {
+                              const entryType = e.entry_type?.toLowerCase() || '';
+                              return !['referral', 'incentive', 'vehicle_rent'].includes(entryType);
+                            }).reduce((sum, e) => sum + (parseFloat(e.amount.toString()) || 0), 0);
                             const { startDate, endDate } = getWeekDateRange(selectedWeek, selectedMonth, selectedYear);
                             const totalVehicleRent = riderDetails.filter(e => {
                               if (e.entry_type?.toLowerCase() !== 'vehicle_rent') return false;

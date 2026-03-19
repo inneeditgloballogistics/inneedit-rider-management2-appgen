@@ -35,6 +35,11 @@ export default function HubManagerTickets({ hubId, hubManagerId }: any) {
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [assigningTechnicianId, setAssigningTechnicianId] = useState('');
   const [submittingAssignment, setSubmittingAssignment] = useState(false);
+  const [serviceCharges, setServiceCharges] = useState<any[]>([]);
+  const [editingChargeId, setEditingChargeId] = useState<number | null>(null);
+  const [editingChargeAmount, setEditingChargeAmount] = useState('');
+  const [editingChargeDesc, setEditingChargeDesc] = useState('');
+  const [submittingChargeUpdate, setSubmittingChargeUpdate] = useState(false);
 
   useEffect(() => {
     fetchTickets();
@@ -65,6 +70,24 @@ export default function HubManagerTickets({ hubId, hubManagerId }: any) {
       }
     } catch (error) {
       console.error('Error fetching technicians:', error);
+    }
+  };
+
+  const fetchServiceCharges = async (ticketId: number) => {
+    try {
+      console.log('[HubManagerTickets] Fetching service charges for ticketId:', ticketId);
+      const response = await fetch(`/api/service-charges?ticketId=${ticketId}`);
+      if (response.ok) {
+        const data = await response.json();
+        console.log('[HubManagerTickets] Service charges fetched:', data);
+        setServiceCharges(data);
+      } else {
+        console.error('[HubManagerTickets] Error response:', response.status, response.statusText);
+        setServiceCharges([]);
+      }
+    } catch (error) {
+      console.error('[HubManagerTickets] Error fetching service charges:', error);
+      setServiceCharges([]);
     }
   };
 
@@ -102,6 +125,70 @@ export default function HubManagerTickets({ hubId, hubManagerId }: any) {
       alert('Failed to assign technician: ' + (error instanceof Error ? error.message : 'Unknown error'));
     } finally {
       setSubmittingAssignment(false);
+    }
+  };
+
+  const handleEditCharge = (charge: any) => {
+    setEditingChargeId(charge.id);
+    setEditingChargeAmount(charge.amount.toString());
+    setEditingChargeDesc(charge.description);
+  };
+
+  const handleSaveCharge = async () => {
+    if (!editingChargeId) return;
+
+    setSubmittingChargeUpdate(true);
+    try {
+      const response = await fetch('/api/service-charges', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          deductionId: editingChargeId,
+          amount: parseFloat(editingChargeAmount),
+          description: editingChargeDesc
+        })
+      });
+
+      if (response.ok) {
+        alert('Charge updated successfully!');
+        setEditingChargeId(null);
+        setEditingChargeAmount('');
+        setEditingChargeDesc('');
+        if (selectedTicket) {
+          fetchServiceCharges(selectedTicket.id);
+        }
+      } else {
+        alert('Failed to update charge');
+      }
+    } catch (error) {
+      console.error('Error updating charge:', error);
+      alert('Failed to update charge');
+    } finally {
+      setSubmittingChargeUpdate(false);
+    }
+  };
+
+  const handleDeleteCharge = async (deductionId: number) => {
+    if (!confirm('Are you sure you want to remove this charge? This will affect the rider\'s payout.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/service-charges?deductionId=${deductionId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        alert('Charge removed successfully!');
+        if (selectedTicket) {
+          fetchServiceCharges(selectedTicket.id);
+        }
+      } else {
+        alert('Failed to remove charge');
+      }
+    } catch (error) {
+      console.error('Error removing charge:', error);
+      alert('Failed to remove charge');
     }
   };
 
@@ -189,7 +276,12 @@ export default function HubManagerTickets({ hubId, hubManagerId }: any) {
               <div
                 key={ticket.id}
                 className="p-6 hover:bg-gray-50 transition cursor-pointer"
-                onClick={() => setSelectedTicket(ticket)}
+                onClick={() => {
+                  setSelectedTicket(ticket);
+                  if (ticket.status === 'Completed' || ticket.status === 'Cancelled') {
+                    fetchServiceCharges(ticket.id);
+                  }
+                }}
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
@@ -320,6 +412,90 @@ export default function HubManagerTickets({ hubId, hubManagerId }: any) {
                   </div>
                 </div>
               </div>
+
+              {/* Service Charges Section */}
+              {(selectedTicket.status === 'Completed' || selectedTicket.status === 'Cancelled') && (
+                <div className="border-t pt-6">
+                  <h4 className="text-sm font-semibold text-gray-900 mb-4">Service Charges</h4>
+                  
+                  {serviceCharges.length === 0 ? (
+                    <p className="text-sm text-gray-600">No service charges applied to this ticket.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {serviceCharges.map((charge: any) => (
+                        <div key={charge.id} className="bg-amber-50 p-4 rounded-lg border border-amber-200">
+                          {editingChargeId === charge.id ? (
+                            <div className="space-y-3">
+                              <div>
+                                <label className="text-xs font-medium text-gray-600">Amount (₹)</label>
+                                <input
+                                  type="number"
+                                  value={editingChargeAmount}
+                                  onChange={(e) => setEditingChargeAmount(e.target.value)}
+                                  step="10"
+                                  min="0"
+                                  className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-600 text-sm"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-xs font-medium text-gray-600">Description</label>
+                                <input
+                                  type="text"
+                                  value={editingChargeDesc}
+                                  onChange={(e) => setEditingChargeDesc(e.target.value)}
+                                  className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-600 text-sm"
+                                />
+                              </div>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={handleSaveCharge}
+                                  disabled={submittingChargeUpdate}
+                                  className="flex-1 px-3 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition disabled:opacity-50"
+                                >
+                                  Save
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setEditingChargeId(null);
+                                    setEditingChargeAmount('');
+                                    setEditingChargeDesc('');
+                                  }}
+                                  className="flex-1 px-3 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-300 transition"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <p className="text-sm font-semibold text-gray-900">
+                                  ₹{parseFloat(charge.amount).toFixed(2)}
+                                </p>
+                                <p className="text-xs text-gray-600 mt-1">{charge.description}</p>
+                              </div>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => handleEditCharge(charge)}
+                                  className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium hover:bg-blue-200 transition"
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteCharge(charge.id)}
+                                  className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs font-medium hover:bg-red-200 transition"
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Assign Technician */}
               {selectedTicket.status !== 'Completed' && selectedTicket.status !== 'Cancelled' && (

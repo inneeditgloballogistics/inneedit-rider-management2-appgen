@@ -169,7 +169,8 @@ export async function PATCH(request: NextRequest) {
           message,
           related_id,
           user_id,
-          rider_id,
+          recipient_type,
+          recipient_id,
           is_read,
           created_at
         ) VALUES (
@@ -178,6 +179,7 @@ export async function PATCH(request: NextRequest) {
           ${notificationMessage},
           ${deduction.id},
           ${rider.user_id},
+          'rider',
           ${rider.id},
           false,
           NOW()

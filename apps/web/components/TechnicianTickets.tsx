@@ -28,6 +28,10 @@ export default function TechnicianTickets({ technicianId, hubId }: any) {
   const [swapReason, setSwapReason] = useState('');
   const [swapNotes, setSwapNotes] = useState('');
   const [submittingSwapRequest, setSubmittingSwapRequest] = useState(false);
+  const [chargesAmount, setChargesAmount] = useState('');
+  const [chargesReason, setChargesReason] = useState('');
+  const [serviceCharges, setServiceCharges] = useState<any>(null);
+  const [loadingCharges, setLoadingCharges] = useState(false);
 
   useEffect(() => {
     fetchTickets();
@@ -45,6 +49,25 @@ export default function TechnicianTickets({ technicianId, hubId }: any) {
       console.error('Error fetching tickets:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchServiceCharges = async (ticketId: number) => {
+    try {
+      setLoadingCharges(true);
+      const response = await fetch(`/api/service-charges?ticketId=${ticketId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setServiceCharges(data);
+        console.log('[TechnicianTickets] Service charges fetched:', data);
+      } else {
+        setServiceCharges(null);
+      }
+    } catch (error) {
+      console.error('[TechnicianTickets] Error fetching charges:', error);
+      setServiceCharges(null);
+    } finally {
+      setLoadingCharges(false);
     }
   };
 
@@ -79,7 +102,9 @@ export default function TechnicianTickets({ technicianId, hubId }: any) {
         body: JSON.stringify({
           ticketId: selectedTicket.id,
           status: 'Completed',
-          resolution_notes: resolutionNotes
+          resolution_notes: resolutionNotes,
+          chargesAmount: chargesAmount ? parseFloat(chargesAmount) : null,
+          chargesReason: chargesReason || null
         })
       });
 
@@ -89,6 +114,8 @@ export default function TechnicianTickets({ technicianId, hubId }: any) {
         alert('Ticket resolved successfully!');
         setSelectedTicket(null);
         setResolutionNotes('');
+        setChargesAmount('');
+        setChargesReason('');
         setShowSwapRequest(false);
         setSwapReason('');
         setSwapNotes('');
@@ -287,7 +314,12 @@ export default function TechnicianTickets({ technicianId, hubId }: any) {
                     </button>
                   )}
                   <button
-                    onClick={() => setSelectedTicket(ticket)}
+                    onClick={() => {
+                      setSelectedTicket(ticket);
+                      if (ticket.status === 'Completed' || ticket.status === 'Closed') {
+                        fetchServiceCharges(ticket.id);
+                      }
+                    }}
                     className="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg font-medium hover:bg-slate-300 transition"
                   >
                     Details
@@ -299,7 +331,139 @@ export default function TechnicianTickets({ technicianId, hubId }: any) {
         )}
       </div>
 
-      {/* Detail Modal */}
+      {/* Detail Modal - For Completed/Closed Tickets (View Charges) */}
+      {selectedTicket && (selectedTicket.status === 'Completed' || selectedTicket.status === 'Closed') && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="sticky top-0 px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-white">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">Ticket Details</h3>
+                <p className="text-xs text-gray-500 mt-1">Ticket #{selectedTicket.ticket_number}</p>
+              </div>
+              <button
+                onClick={() => {
+                  setSelectedTicket(null);
+                  setServiceCharges(null);
+                }}
+                className="p-1 hover:bg-gray-100 rounded-lg transition"
+              >
+                <X size={20} className="text-gray-600" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-6">
+              {/* Status */}
+              <div className="flex items-center gap-3">
+                <span className={`px-3 py-1 rounded-full text-sm font-bold ${getStatusColor(selectedTicket.status)}`}>
+                  {selectedTicket.status}
+                </span>
+                <span className={`px-3 py-1 rounded-full text-sm font-bold ${getPriorityColor(selectedTicket.priority)}`}>
+                  {selectedTicket.priority}
+                </span>
+              </div>
+
+              {/* Issue Details */}
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <p className="text-xs font-medium text-gray-600 mb-2">Issue</p>
+                <p className="text-sm text-gray-900">{selectedTicket.issue_description}</p>
+              </div>
+
+              {/* Rider Information */}
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <User className="w-4 h-4 text-blue-600" />
+                  Rider Information
+                </h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-600 font-medium">Name:</span>
+                    <span className="text-gray-900">{selectedTicket.rider_name || 'N/A'}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-600 font-medium">CEE ID:</span>
+                    <span className="font-mono text-gray-900">{selectedTicket.rider_cee_id || 'N/A'}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Phone className="w-4 h-4 text-blue-600" />
+                    <span className="text-gray-900">{selectedTicket.rider_phone || 'N/A'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Vehicle Information */}
+              <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <Wrench className="w-4 h-4 text-green-600" />
+                  Vehicle Information
+                </h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-600 font-medium">Vehicle Number:</span>
+                    <span className="font-mono text-gray-900">{selectedTicket.vehicle_number || 'N/A'}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-600 font-medium">Type:</span>
+                    <span className="text-gray-900">{selectedTicket.vehicle_type || 'N/A'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Service Charges */}
+              <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
+                <h4 className="text-sm font-semibold text-gray-900 mb-3">Service Charges Applied</h4>
+                {loadingCharges ? (
+                  <div className="flex items-center justify-center py-4">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-amber-600"></div>
+                    <span className="ml-2 text-sm text-gray-600">Loading charges...</span>
+                  </div>
+                ) : serviceCharges && serviceCharges.length > 0 ? (
+                  <div className="space-y-3">
+                    {serviceCharges.map((charge: any, index: number) => (
+                      <div key={index} className="bg-white p-3 rounded border border-amber-200">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-semibold text-gray-900">{charge.description}</p>
+                            <p className="text-xs text-gray-500 mt-1">
+                              {new Date(charge.created_at).toLocaleDateString('en-IN')}
+                            </p>
+                          </div>
+                          <p className="text-lg font-bold text-amber-600">₹{parseFloat(charge.amount).toFixed(2)}</p>
+                        </div>
+                        <p className="text-xs text-gray-600 mt-2">Status: <span className="font-semibold">{charge.status}</span></p>
+                      </div>
+                    ))}
+                    <div className="border-t border-amber-200 pt-3 mt-3">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-bold text-gray-900">Total Charges</p>
+                        <p className="text-lg font-bold text-amber-600">₹{serviceCharges.reduce((sum: number, c: any) => sum + parseFloat(c.amount), 0).toFixed(2)}</p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-600 py-4">No service charges applied to this ticket.</p>
+                )}
+              </div>
+
+              {/* Close Button */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setSelectedTicket(null);
+                    setServiceCharges(null);
+                  }}
+                  className="flex-1 px-4 py-2 bg-slate-600 text-white rounded-lg font-medium hover:bg-slate-700 transition"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Detail Modal - For In Progress Tickets (Mark Resolved) */}
       {selectedTicket && selectedTicket.status === 'In Progress' && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
           <div className="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -386,6 +550,59 @@ export default function TechnicianTickets({ technicianId, hubId }: any) {
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-600 resize-none"
                   rows={5}
                 />
+              </div>
+
+              {/* Service Charges Section */}
+              <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
+                <p className="text-xs font-semibold text-amber-600 mb-3">SERVICE CHARGES (OPTIONAL)</p>
+                <p className="text-xs text-amber-700 mb-4">Add charges if applicable (e.g., transport fees, service labor). Leave blank if no charges.</p>
+                
+                <div className="space-y-4">
+                  {/* Charges Reason Dropdown */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">
+                      Charge Type
+                    </label>
+                    <select
+                      value={chargesReason}
+                      onChange={(e) => setChargesReason(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-600 text-sm"
+                    >
+                      <option value="">-- No charges --</option>
+                      <option value="Transport Charges">Transport Charges</option>
+                      <option value="Service Labor Charges">Service Labor Charges</option>
+                      <option value="Spare Parts Installation">Spare Parts Installation</option>
+                      <option value="Emergency Service Charge">Emergency Service Charge</option>
+                      <option value="On-site Repair Charge">On-site Repair Charge</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+
+                  {/* Charges Amount */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">
+                      Amount (₹)
+                    </label>
+                    <input
+                      type="number"
+                      value={chargesAmount}
+                      onChange={(e) => setChargesAmount(e.target.value)}
+                      placeholder="0"
+                      min="0"
+                      step="10"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-600 text-sm"
+                    />
+                  </div>
+
+                  {/* Info */}
+                  {chargesAmount && chargesReason && (
+                    <div className="bg-white p-3 rounded border border-amber-200 text-sm">
+                      <p className="text-gray-900"><strong>Charge Summary:</strong></p>
+                      <p className="text-gray-700 mt-1">{chargesReason}: <strong>₹{parseFloat(chargesAmount).toFixed(2)}</strong></p>
+                      <p className="text-xs text-gray-500 mt-2">This will be auto-approved and deducted from rider's payout this week.</p>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Buttons */}

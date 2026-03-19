@@ -30,8 +30,8 @@ export async function POST(request: Request) {
       entries = [...entries, ...additions];
     }
 
-    // Fetch deductions (advances, damages, challans, security deposits)
-    if (type === 'all' || type === 'advance' || type === 'damage' || type === 'challan' || type === 'security_deposit') {
+    // Fetch deductions (advances, damages, challans, security deposits, service charges)
+    if (type === 'all' || type === 'advance' || type === 'damage' || type === 'challan' || type === 'security_deposit' || type === 'service_charge') {
       const deductions = await sql`
         SELECT 
           id,

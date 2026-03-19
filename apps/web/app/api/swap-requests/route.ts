@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import sql from '@/app/api/utils/sql';
+import { getTodayIST } from '@/lib/timezone';
 
 export async function GET(request: NextRequest) {
   try {
@@ -161,7 +162,8 @@ export async function POST(request: NextRequest) {
             title,
             message,
             related_id,
-            hub_manager_id,
+            recipient_type,
+            recipient_id,
             is_read,
             created_at
           ) VALUES (
@@ -169,6 +171,7 @@ export async function POST(request: NextRequest) {
             'Vehicle Swap Request',
             ${`Technician has requested vehicle swap for rider ${rider[0].full_name} (${rider[0].cee_id}). Reason: ${issueReason}`},
             ${swapRequest.id},
+            'hub_manager',
             ${hubManager[0].id},
             false,
             NOW()
@@ -258,7 +261,8 @@ export async function PATCH(request: NextRequest) {
             title,
             message,
             related_id,
-            rider_id,
+            recipient_type,
+            recipient_id,
             is_read,
             created_at
           ) VALUES (
@@ -266,6 +270,7 @@ export async function PATCH(request: NextRequest) {
             'Vehicle Swap Approved',
             ${`Your vehicle swap has been approved. Please report to the hub to collect your replacement vehicle. Current vehicle: ${oldVehicle[0]?.vehicle_number}, New vehicle: ${newVehicle[0]?.vehicle_number}`},
             ${request_data.rider_id},
+            'rider',
             ${request_data.rider_id},
             false,
             NOW()
@@ -275,25 +280,34 @@ export async function PATCH(request: NextRequest) {
 
       // Create notification for technician
       if (request_data.technician_id) {
-        await sql`
-          INSERT INTO notifications (
-            type,
-            title,
-            message,
-            related_id,
-            technician_id,
-            is_read,
-            created_at
-          ) VALUES (
-            'swap_approved',
-            'Vehicle Swap Approved',
-            ${`Vehicle swap has been approved for rider ${rider[0]?.full_name}. Replacement vehicle: ${newVehicle[0]?.vehicle_number}`},
-            ${request_data.id},
-            ${request_data.technician_id},
-            false,
-            NOW()
-          )
+        // Get technician ID from user_id
+        const techRecord = await sql`
+          SELECT id FROM technicians WHERE user_id = ${request_data.technician_id}
         `;
+        
+        if (techRecord.length > 0) {
+          await sql`
+            INSERT INTO notifications (
+              type,
+              title,
+              message,
+              related_id,
+              recipient_type,
+              recipient_id,
+              is_read,
+              created_at
+            ) VALUES (
+              'swap_approved',
+              'Vehicle Swap Approved',
+              ${`Vehicle swap has been approved for rider ${rider[0]?.full_name}. Replacement vehicle: ${newVehicle[0]?.vehicle_number}`},
+              ${request_data.id},
+              'technician',
+              ${techRecord[0].id},
+              false,
+              NOW()
+            )
+          `;
+        }
       }
 
       return NextResponse.json({ 
@@ -411,6 +425,7 @@ export async function PATCH(request: NextRequest) {
           SELECT cee_id FROM riders WHERE id = ${parseInt(riderId)}
         `;
 
+        const todayIST = getTodayIST(); // Get today's date in IST
         await sql`
           INSERT INTO deductions (
             cee_id,
@@ -424,7 +439,7 @@ export async function PATCH(request: NextRequest) {
             ${riderData[0].cee_id},
             ${request_data.repair_cost},
             ${'Vehicle repair cost - ' + (request_data.issue_reason || 'Vehicle maintenance')},
-            CURRENT_DATE,
+            ${todayIST}::date,
             'approved',
             'vehicle_repair',
             NOW()
@@ -463,7 +478,8 @@ export async function PATCH(request: NextRequest) {
           title,
           message,
           user_id,
-          rider_id,
+          recipient_type,
+          recipient_id,
           related_id,
           is_read,
           created_at
@@ -472,6 +488,7 @@ export async function PATCH(request: NextRequest) {
           'Vehicle Swap Completed! 🎉',
           ${`Your vehicle swap has been completed. New vehicle ${newVehicle[0]?.vehicle_number} is now assigned to you. Your previous vehicle ${oldVehicle[0]?.vehicle_number} will be serviced and returned to fleet. Thank you!`},
           ${rider[0]?.user_id || null},
+          'rider',
           ${parseInt(riderId)},
           ${handover.id},
           false,
@@ -480,25 +497,35 @@ export async function PATCH(request: NextRequest) {
       `;
 
       // Create notification for hub manager
-      await sql`
-        INSERT INTO notifications (
-          type,
-          title,
-          message,
-          hub_manager_id,
-          related_id,
-          is_read,
-          created_at
-        ) VALUES (
-          'swap_completed_handover',
-          'Vehicle Swap Handover Completed ✓',
-          ${`Vehicle swap handover completed for ${riderInfo[0]?.full_name}. Old: ${oldVehicle[0]?.vehicle_number} (marked In Maintenance), New: ${newVehicle[0]?.vehicle_number} (assigned).`},
-          ${hubManagerId},
-          ${handover.id},
-          false,
-          NOW()
-        )
-      `;
+      if (hubManagerId) {
+        const hubManagerRecord = await sql`
+          SELECT id FROM hub_managers WHERE id = ${hubManagerId}
+        `;
+        
+        if (hubManagerRecord.length > 0) {
+          await sql`
+            INSERT INTO notifications (
+              type,
+              title,
+              message,
+              recipient_type,
+              recipient_id,
+              related_id,
+              is_read,
+              created_at
+            ) VALUES (
+              'swap_completed_handover',
+              'Vehicle Swap Handover Completed ✓',
+              ${`Vehicle swap handover completed for ${riderInfo[0]?.full_name}. Old: ${oldVehicle[0]?.vehicle_number} (marked In Maintenance), New: ${newVehicle[0]?.vehicle_number} (assigned).`},
+              'hub_manager',
+              ${hubManagerRecord[0].id},
+              ${handover.id},
+              false,
+              NOW()
+            )
+          `;
+        }
+      }
 
       return NextResponse.json({ 
         success: true, 
@@ -563,6 +590,7 @@ export async function PATCH(request: NextRequest) {
           SELECT cee_id FROM riders WHERE id = ${request_data.rider_id}
         `;
 
+        const todayIST = getTodayIST(); // Get today's date in IST
         await sql`
           INSERT INTO deductions (
             cee_id,
@@ -576,7 +604,7 @@ export async function PATCH(request: NextRequest) {
             ${riderData[0].cee_id},
             ${request_data.repair_cost},
             ${'Vehicle repair cost - ' + (request_data.issue_reason || 'Vehicle maintenance')},
-            CURRENT_DATE,
+            ${todayIST}::date,
             'approved',
             'vehicle_repair',
             NOW()
@@ -619,7 +647,8 @@ export async function PATCH(request: NextRequest) {
             title,
             message,
             related_id,
-            hub_manager_id,
+            recipient_type,
+            recipient_id,
             is_read,
             created_at
           ) VALUES (
@@ -627,6 +656,7 @@ export async function PATCH(request: NextRequest) {
             'Vehicle Swap Completed',
             ${`Vehicle swap completed for ${riderInfo[0]?.full_name}. Old: ${oldVehicle[0]?.vehicle_number}, New: ${newVehicle[0]?.vehicle_number}`},
             ${parseInt(swapRequestId)},
+            'hub_manager',
             ${hubManager[0].id},
             false,
             NOW()

@@ -234,6 +234,8 @@ export default function RiderDashboard() {
     try {
       setEntriesLoading(true);
       
+      console.log('[fetchPayoutDetails] Starting for:', { ceeId, weekNumber, month, year });
+      
       // Fetch aggregated payout details
       const detailsRes = await fetch('/api/payroll/rider-payout-details', {
         method: 'POST',
@@ -255,17 +257,22 @@ export default function RiderDashboard() {
         const d = String(date.getUTCDate()).padStart(2, '0');
         return `${y}-${m}-${d}`;
       };
+      
+      const startDateStr = formatDate(startDate);
+      const endDateStr = formatDate(endDate);
+      console.log('[fetchPayoutDetails] Date range for week:', { startDate: startDateStr, endDate: endDateStr });
 
       const entriesRes = await fetch('/api/payroll/rider-entries', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           rider_id: ceeId,
-          start_date: formatDate(startDate),
-          end_date: formatDate(endDate)
+          start_date: startDateStr,
+          end_date: endDateStr
         })
       });
       const entriesData = await entriesRes.json();
+      console.log('[fetchPayoutDetails] Entries received:', entriesData.entries);
       setRiderEntries(entriesData.entries || []);
 
       const finalAmount = details.finalAmount || 0;
@@ -525,22 +532,31 @@ export default function RiderDashboard() {
   };
 
   const getEntriesByType = (type: string): PayrollEntry[] => {
-    console.log(`Filtering entries for type: ${type}, total entries:`, riderEntries.length);
+    console.log(`[FILTER] type: ${type}, total riderEntries:`, riderEntries.length);
+    console.log(`[FILTER] All entries:`, riderEntries);
     const filtered = riderEntries.filter(e => {
       const entryType = e.entry_type?.toLowerCase() || '';
-      console.log(`Checking entry:`, { entryType, description: e.description, amount: e.amount });
+      console.log(`[FILTER] Checking - type: ${type}, entryType: ${entryType}, amount: ${e.amount}, desc: ${e.description}`);
       
       if (type === 'additions') {
-        return ['referral', 'incentive'].includes(entryType);
+        const match = ['referral', 'incentive'].includes(entryType);
+        console.log(`[FILTER] Addition check: ${match}`);
+        return match;
       } else if (type === 'deductions') {
-        // Include all deductions: advances, security deposits, damages, challans, and others
-        return ['advance', 'security_deposit', 'damage', 'challan', 'other'].includes(entryType);
+        // Show ALL deductions dynamically - exclude only additions and vehicle_rent
+        // This means: service_charge, advance, security_deposit, damage, challan, other, AND any future deduction types
+        const isAddition = ['referral', 'incentive', 'vehicle_rent'].includes(entryType);
+        const match = !isAddition;
+        console.log(`[FILTER] Deduction check: ${match} (is exclusion: ${isAddition})`);
+        return match;
       } else if (type === 'vehicle_rent') {
-        return entryType === 'vehicle_rent';
+        const match = entryType === 'vehicle_rent';
+        console.log(`[FILTER] Vehicle rent check: ${match}`);
+        return match;
       }
       return false;
     });
-    console.log(`Filtered entries for ${type}:`, filtered.length);
+    console.log(`[FILTER] RESULT for ${type}: ${filtered.length} entries`, filtered);
     return filtered;
   };
 

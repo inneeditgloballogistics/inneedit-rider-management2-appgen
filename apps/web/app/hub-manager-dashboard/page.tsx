@@ -37,7 +37,9 @@ function HubManagerDashboardContent() {
           router.push('/login');
           return;
         }
-        setManagerData(JSON.parse(storedManager));
+        const managerData = JSON.parse(storedManager);
+        setManagerData(managerData);
+        console.log('🔐 [Hub Manager Dashboard] Manager data loaded:', { id: managerData.id, name: managerData.name, hub_id: managerData.hub_id });
         
         // Check if there's a tab parameter in the URL
         const searchParams = new URLSearchParams(window.location.search);

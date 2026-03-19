@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import sql from '@/app/api/utils/sql';
+import { getTodayIST } from '@/lib/timezone';
 
 export async function GET(request: NextRequest) {
   try {
@@ -220,7 +221,8 @@ export async function POST(request: NextRequest) {
             title,
             message,
             related_id,
-            hub_manager_id,
+            recipient_type,
+            recipient_id,
             is_read,
             created_at
           ) VALUES (
@@ -228,10 +230,11 @@ export async function POST(request: NextRequest) {
             ${notificationTitle},
             ${notificationMessage},
             ${ticket.id},
+            'hub_manager',
             ${manager.id},
             false,
             NOW()
-          ) RETURNING id, hub_manager_id, type, created_at
+          ) RETURNING id, recipient_id, type, created_at
         `;
         console.log('[POST service-tickets] Notification created:', notifResult[0]);
       }
@@ -253,7 +256,7 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json();
-    const { ticketId, status, technicianId, resolution_notes } = body;
+    const { ticketId, status, technicianId, resolution_notes, chargesAmount, chargesReason } = body;
 
     console.log('PATCH /api/service-tickets - Body:', body);
 
@@ -293,6 +296,42 @@ export async function PATCH(request: NextRequest) {
     const ticket = result[0];
     console.log('Updated ticket:', ticket);
 
+    // If ticket is being resolved with charges, create deduction entry
+    if ((status === 'Resolved' || status === 'Completed') && chargesAmount && chargesAmount > 0) {
+      try {
+        const deductionDescription = `Service Charge: ${chargesReason || 'Technician Service'} (Ticket #${ticket.ticket_number})`;
+        const todayIST = getTodayIST(); // Get today's date in IST (YYYY-MM-DD format)
+        
+        console.log('Creating deduction for rider:', { ceeId: ticket.cee_id, amount: chargesAmount, reason: chargesReason, entryDateIST: todayIST });
+
+        // Use IST date instead of UTC
+        const deductionResult = await sql`
+          INSERT INTO deductions (
+            cee_id,
+            amount,
+            description,
+            entry_date,
+            entry_type,
+            status,
+            created_at
+          ) VALUES (
+            ${ticket.cee_id},
+            ${parseFloat(chargesAmount)},
+            ${deductionDescription},
+            ${todayIST}::date,
+            'service_charge',
+            'approved',
+            NOW()
+          ) RETURNING *
+        `;
+
+        console.log('Deduction created:', deductionResult[0]);
+      } catch (deductionError) {
+        console.error('Error creating deduction:', deductionError);
+        // Don't fail the request if deduction creation fails
+      }
+    }
+
     // If assigning to technician, create notification
     if (technicianId && status === 'In Progress') {
       try {
@@ -300,65 +339,123 @@ export async function PATCH(request: NextRequest) {
           SELECT full_name, cee_id, phone FROM riders WHERE cee_id = ${ticket.cee_id}
         `;
 
-        const notificationMessage = `You have been assigned a service ticket from ${riderInfo[0]?.full_name || 'a rider'}. Ticket #${ticket.ticket_number}`;
-        
-        console.log('Creating notification for technician:', technicianId, notificationMessage);
-
-        await sql`
-          INSERT INTO notifications (
-            type,
-            title,
-            message,
-            related_id,
-            technician_id,
-            is_read,
-            created_at
-          ) VALUES (
-            'ticket_assigned_to_technician',
-            'New Service Ticket Assigned',
-            ${notificationMessage},
-            ${ticket.id},
-            ${technicianId},
-            false,
-            NOW()
-          )
-        `;
-      } catch (notificationError) {
-        console.error('Error creating technician notification:', notificationError);
-        // Don't fail the request if notification creation fails
-      }
-    }
-
-    // If ticket resolved, notify rider
-    if (status === 'Resolved' || status === 'Completed' || status === 'Cancelled') {
-      try {
-        const rider = await sql`
-          SELECT user_id FROM riders WHERE cee_id = ${ticket.cee_id}
+        // Get technician ID from user_id
+        const technicianRecord = await sql`
+          SELECT id FROM technicians WHERE user_id = ${technicianId}
         `;
 
-        if (rider.length > 0) {
+        if (technicianRecord.length > 0) {
+          const notificationMessage = `You have been assigned a service ticket from ${riderInfo[0]?.full_name || 'a rider'}. Ticket #${ticket.ticket_number}`;
+          
+          console.log('Creating notification for technician:', technicianId, notificationMessage);
+
           await sql`
             INSERT INTO notifications (
               type,
               title,
               message,
               related_id,
-              user_id,
+              recipient_type,
+              recipient_id,
               is_read,
               created_at
             ) VALUES (
-              'ticket_resolved',
-              'Service Ticket Resolved',
-              ${`Your service ticket #${ticket.ticket_number} has been resolved.`},
+              'ticket_assigned_to_technician',
+              'New Service Ticket Assigned',
+              ${notificationMessage},
               ${ticket.id},
-              ${rider[0].user_id},
+              'technician',
+              ${technicianRecord[0].id},
               false,
               NOW()
             )
           `;
         }
       } catch (notificationError) {
-        console.error('Error creating rider notification:', notificationError);
+        console.error('Error creating technician notification:', notificationError);
+        // Don't fail the request if notification creation fails
+      }
+    }
+
+    // If ticket resolved, notify rider and hub manager
+    if (status === 'Resolved' || status === 'Completed' || status === 'Cancelled') {
+      try {
+        const rider = await sql`
+          SELECT id, user_id FROM riders WHERE cee_id = ${ticket.cee_id}
+        `;
+
+        if (rider.length > 0) {
+          let notificationMessage = `Your service ticket #${ticket.ticket_number} has been resolved.`;
+          
+          // Add charges info if applicable
+          if (chargesAmount && chargesAmount > 0) {
+            notificationMessage += ` Service charges: ₹${parseFloat(chargesAmount).toFixed(2)} (${chargesReason || 'Service charge'}).`;
+          }
+
+          await sql`
+            INSERT INTO notifications (
+              type,
+              title,
+              message,
+              related_id,
+              recipient_type,
+              recipient_id,
+              is_read,
+              created_at
+            ) VALUES (
+              'ticket_resolved',
+              'Service Ticket Resolved',
+              ${notificationMessage},
+              ${ticket.id},
+              'rider',
+              ${rider[0].id},
+              false,
+              NOW()
+            )
+          `;
+        }
+
+        // Also notify hub manager
+        const hubManagers = await sql`
+          SELECT id FROM hub_managers WHERE hub_id = ${ticket.assigned_hub_id} AND status = 'active'
+        `;
+
+        if (hubManagers.length > 0) {
+          const riderInfo = await sql`
+            SELECT full_name FROM riders WHERE cee_id = ${ticket.cee_id}
+          `;
+
+          let managerMessage = `Service ticket #${ticket.ticket_number} from ${riderInfo[0]?.full_name || 'rider'} has been resolved.`;
+          if (chargesAmount && chargesAmount > 0) {
+            managerMessage += ` Service charges applied: ₹${parseFloat(chargesAmount).toFixed(2)}.`;
+          }
+
+          for (const manager of hubManagers) {
+            await sql`
+              INSERT INTO notifications (
+                type,
+                title,
+                message,
+                related_id,
+                recipient_type,
+                recipient_id,
+                is_read,
+                created_at
+              ) VALUES (
+                'ticket_resolved',
+                'Service Ticket Resolved',
+                ${managerMessage},
+                ${ticket.id},
+                'hub_manager',
+                ${manager.id},
+                false,
+                NOW()
+              )
+            `;
+          }
+        }
+      } catch (notificationError) {
+        console.error('Error creating rider/manager notification:', notificationError);
         // Don't fail the request if notification creation fails
       }
     }

@@ -1,5 +1,6 @@
 import sql from "@/app/api/utils/sql";
 import { NextResponse } from "next/server";
+import { getTodayIST } from "@/lib/timezone";
 
 export async function GET(request: Request) {
   try {
@@ -109,6 +110,7 @@ export async function POST(request: Request) {
     `;
 
     // Create deduction entry for the rider (parts cost deduction)
+    const todayIST = getTodayIST(); // Get today's date in IST
     const deductionResult = await sql`
       INSERT INTO deductions (
         cee_id,
@@ -122,7 +124,7 @@ export async function POST(request: Request) {
         ${ceeId},
         ${totalCost},
         ${'Parts used in service ticket #' + (ticketData[0]?.ticket_number || service_ticket_id)},
-        CURRENT_DATE,
+        ${todayIST}::date,
         'pending',
         'parts_deduction',
         NOW()

@@ -146,7 +146,8 @@ export async function POST(request: NextRequest) {
           title,
           message,
           user_id,
-          rider_id,
+          recipient_type,
+          recipient_id,
           related_id,
           is_read,
           created_at
@@ -155,6 +156,7 @@ export async function POST(request: NextRequest) {
           'Vehicle Handed Over Successfully! 🎉',
           ${'Your vehicle ' + (rider.vehicle_number || vehicleId) + ' is ready. Head to your assigned store and start working. All the best!'},
           ${rider.user_id},
+          'rider',
           ${riderId},
           ${handover.id},
           false,

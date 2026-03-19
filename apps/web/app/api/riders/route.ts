@@ -134,18 +134,21 @@ export async function POST(request: Request) {
         `;
 
         // Create notification for hub manager
-        await sql`
-          INSERT INTO notifications (type, title, message, related_id, hub_manager_id, is_read, created_at)
-          VALUES (
-            'new_rider_onboarding',
-            'New Rider Registered - Ready for Handover',
-            ${`${body.fullName} (CEE ID: ${ceeId}) has been assigned to your hub and is ready for vehicle handover`},
-            ${newRider.id},
-            ${hubManagerResult.length > 0 ? hubManagerResult[0].id : null},
-            false,
-            NOW()
-          )
-        `;
+        if (hubManagerResult.length > 0) {
+          await sql`
+            INSERT INTO notifications (type, title, message, related_id, recipient_type, recipient_id, is_read, created_at)
+            VALUES (
+              'new_rider_onboarding',
+              'New Rider Registered - Ready for Handover',
+              ${`${body.fullName} (CEE ID: ${ceeId}) has been assigned to your hub and is ready for vehicle handover`},
+              ${newRider.id},
+              'hub_manager',
+              ${hubManagerResult[0].id},
+              false,
+              NOW()
+            )
+          `;
+        }
 
         console.log('Hub manager notification created for hub:', hubId);
       } catch (notificationError) {
@@ -168,12 +171,13 @@ export async function POST(request: Request) {
 
         // Create notification for rider
         await sql`
-          INSERT INTO notifications (type, title, message, user_id, rider_id, related_id, is_read, created_at)
+          INSERT INTO notifications (type, title, message, user_id, recipient_type, recipient_id, related_id, is_read, created_at)
           VALUES (
             'rider_assignment',
             'Welcome to the Team! 🎉',
             ${`You have been assigned to ${hub.hub_name} (${hub.hub_code}). Vehicle: ${vehicle.vehicle_number} (${vehicle.vehicle_type}). Head to the hub to complete the vehicle handover process.`},
             ${userId},
+            'rider',
             ${newRider.id},
             ${newRider.id},
             false,

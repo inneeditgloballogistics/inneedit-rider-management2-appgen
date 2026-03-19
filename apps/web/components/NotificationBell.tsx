@@ -13,7 +13,8 @@ export default function NotificationBell() {
   useEffect(() => {
     console.log('NotificationBell component mounted');
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 5000);
+    // Fetch notifications every 3 seconds (more frequent than before)
+    const interval = setInterval(fetchNotifications, 3000);
     const handleVisibilityChange = () => {
       if (!document.hidden) {
         console.log('Tab became visible, refreshing notifications...');
@@ -33,26 +34,24 @@ export default function NotificationBell() {
       let queryParams = '';
       let debugInfo: any = { source: 'none' };
       
-      // Check hub manager FIRST (highest priority)
-      const hubManager = localStorage.getItem('hubManager');
-      console.log('🔵 [NotificationBell] Checking hubManager localStorage:', hubManager ? 'Found' : 'Not found');
-      if (hubManager) {
+      // ✅ HYBRID APPROACH: Check rider first (client-side riders are NOT in AppGen auth)
+      const riderSession = localStorage.getItem('riderSession');
+      if (riderSession) {
         try {
-          const manager = JSON.parse(hubManager);
-          console.log('🔵 [NotificationBell] Hub Manager parsed:', { id: manager.id, hubId: manager.hubId });
-          if (manager && manager.id) {
-            const managerId = String(manager.id).trim();
-            queryParams = `?hubManagerId=${managerId}`;
-            debugInfo.source = 'hub_manager';
-            debugInfo.id = managerId;
-            console.log('🟢 [NotificationBell] Hub Manager ID found:', managerId);
+          const riderData = JSON.parse(riderSession);
+          console.log('🔵 [NotificationBell] Rider session found:', { id: riderData.id });
+          if (riderData && riderData.id) {
+            queryParams = `?riderId=${riderData.id}`;
+            debugInfo.source = 'rider';
+            debugInfo.id = riderData.id;
+            console.log('🟢 [NotificationBell] Rider ID found:', riderData.id);
           }
         } catch (e) {
-          console.error('🔴 [NotificationBell] Error parsing hub manager:', e);
+          console.error('🔴 [NotificationBell] Error parsing rider session:', e);
         }
       }
       
-      // Check technician SECOND
+      // Check technician
       if (!queryParams) {
         const technician = localStorage.getItem('technician');
         if (technician) {
@@ -70,21 +69,28 @@ export default function NotificationBell() {
         }
       }
       
-      // Check rider THIRD
+      // Check hub manager LAST
       if (!queryParams) {
-        const riderSession = localStorage.getItem('riderSession');
-        if (riderSession) {
+        const hubManager = localStorage.getItem('hubManager');
+        if (hubManager) {
           try {
-            const riderData = JSON.parse(riderSession);
-            console.log('🔵 [NotificationBell] Rider session found:', { id: riderData.id });
-            if (riderData && riderData.id) {
-              queryParams = `?riderId=${riderData.id}`;
-              debugInfo.source = 'rider';
-              debugInfo.id = riderData.id;
+            const manager = JSON.parse(hubManager);
+            console.log('🔵 [NotificationBell] Hub Manager parsed:', { id: manager.id, hubId: manager.hubId, fullObject: JSON.stringify(manager) });
+            if (manager && manager.id) {
+              const managerId = String(manager.id).trim();
+              queryParams = `?hubManagerId=${managerId}`;
+              debugInfo.source = 'hub_manager';
+              debugInfo.id = managerId;
+              debugInfo.numeric_id = manager.id;
+              console.log('🟢 [NotificationBell] Hub Manager ID found:', { stringId: managerId, numericId: manager.id });
+            } else {
+              console.error('🔴 [NotificationBell] Manager object exists but has no id:', manager);
             }
           } catch (e) {
-            console.error('🔴 [NotificationBell] Error parsing rider session:', e);
+            console.error('🔴 [NotificationBell] Error parsing hub manager:', e);
           }
+        } else {
+          console.log('🟡 [NotificationBell] No hubManager in localStorage');
         }
       }
       
@@ -97,16 +103,20 @@ export default function NotificationBell() {
       
       console.log('🟢 [NotificationBell] Fetching notifications with params:', queryParams, debugInfo);
       const response = await fetch(`/api/notifications${queryParams}`);
-      if (response.ok) {
-        const data = await response.json();
-        console.log('🟢 [NotificationBell] Got', data.notifications?.length, 'notifications, unread:', data.unreadCount);
-        setNotifications(data.notifications || []);
-        setUnreadCount(data.unreadCount || 0);
-      } else {
-        console.error('🔴 [NotificationBell] Fetch failed:', response.status);
+      
+      if (!response.ok) {
+        console.error('🔴 [NotificationBell] Fetch failed with status:', response.status);
+        const errorText = await response.text();
+        console.error('🔴 [NotificationBell] Error response:', errorText);
         setNotifications([]);
         setUnreadCount(0);
+        return;
       }
+      
+      const data = await response.json();
+      console.log('🟢 [NotificationBell] Got', data.notifications?.length || 0, 'notifications, unread:', data.unreadCount || 0);
+      setNotifications(data.notifications || []);
+      setUnreadCount(data.unreadCount || 0);
     } catch (error) {
       console.error('🔴 [NotificationBell] Error:', error);
       setNotifications([]);
@@ -170,12 +180,9 @@ export default function NotificationBell() {
   const handleNotificationClick = (notification: any) => {
     markAsRead(notification.id);
     
-    const technician = localStorage.getItem('technician');
-    const hubManager = localStorage.getItem('hubManager');
-    const riderSession = localStorage.getItem('riderSession');
-    
-    // Check hubManager FIRST (highest priority)
-    if (hubManager) {
+    // Use the notification's recipient_type to determine where to redirect
+    // This ensures the correct user sees the correct page
+    if (notification.recipient_type === 'hub_manager') {
       if (notification.type === 'service_ticket_raised' || notification.type === 'new_rider_onboarding') {
         setShowModal(false);
         setTimeout(() => {
@@ -187,17 +194,15 @@ export default function NotificationBell() {
           window.location.href = '/hub-manager-dashboard?tab=swaps';
         }, 100);
       }
-    } else if (technician) {
-      // Check technician SECOND
+    } else if (notification.recipient_type === 'technician') {
       if (notification.type === 'ticket_assigned_to_technician' || notification.type === 'swap_approved') {
         setShowModal(false);
         setTimeout(() => {
           window.location.href = '/technician-dashboard?tab=tickets';
         }, 100);
       }
-    } else if (riderSession) {
-      // Check rider THIRD
-      if (notification.type === 'swap_approved') {
+    } else if (notification.recipient_type === 'rider') {
+      if (notification.type === 'swap_approved' || notification.type === 'vehicle_handover_complete' || notification.type === 'ticket_resolved') {
         setShowModal(false);
         setTimeout(() => {
           window.location.href = '/rider-dashboard';
