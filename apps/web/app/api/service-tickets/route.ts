@@ -9,8 +9,14 @@ export async function GET(request: NextRequest) {
     const technicianId = searchParams.get('technicianId');
     const ceeId = searchParams.get('ceeId');
 
-    // Get all tickets for a hub manager
-    if (action === 'hub-manager' && hub_id) {
+    // Get all tickets for a hub manager - support both hub_id and hubId parameter names
+    let hubManagerHubId = hub_id;
+    if (!hubManagerHubId) {
+      const hubIdParam = searchParams.get('hubId');
+      hubManagerHubId = hubIdParam;
+    }
+
+    if (action === 'hub-manager' && hubManagerHubId) {
       const tickets = await sql`
         SELECT 
           st.*,
@@ -24,7 +30,7 @@ export async function GET(request: NextRequest) {
         LEFT JOIN riders r ON st.cee_id = r.cee_id
         LEFT JOIN vehicles v ON st.vehicle_id = v.id
         LEFT JOIN technicians t ON st.technician_id = t.user_id
-        WHERE st.assigned_hub_id = ${parseInt(hub_id)}
+        WHERE st.assigned_hub_id = ${parseInt(hubManagerHubId)}
         ORDER BY st.created_at DESC
       `;
       return NextResponse.json(tickets);
@@ -197,6 +203,8 @@ export async function POST(request: NextRequest) {
       SELECT id FROM hub_managers WHERE hub_id = ${parseInt(hub_id)} AND status = 'active'
     `;
 
+    console.log('[POST service-tickets] Found hub managers:', { count: hubManagers.length, hubId: hub_id, managers: hubManagers });
+
     // Create notification for all hub managers at this hub
     if (hubManagers.length > 0) {
       const notificationTitle = `New Service Ticket - ${issueCategory}`;
@@ -205,7 +213,8 @@ export async function POST(request: NextRequest) {
       
       // Insert notification for each hub manager
       for (const manager of hubManagers) {
-        await sql`
+        console.log('[POST service-tickets] Creating notification for manager:', { managerId: manager.id, ticketId: ticket.id, type: 'service_ticket_raised' });
+        const notifResult = await sql`
           INSERT INTO notifications (
             type,
             title,
@@ -222,9 +231,12 @@ export async function POST(request: NextRequest) {
             ${manager.id},
             false,
             NOW()
-          )
+          ) RETURNING id, hub_manager_id, type, created_at
         `;
+        console.log('[POST service-tickets] Notification created:', notifResult[0]);
       }
+    } else {
+      console.log('[POST service-tickets] No active hub managers found for hub_id:', hub_id);
     }
 
     return NextResponse.json({ success: true, ticket });

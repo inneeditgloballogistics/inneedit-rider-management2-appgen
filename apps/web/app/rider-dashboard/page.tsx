@@ -1322,20 +1322,35 @@ export default function RiderDashboard() {
             {/* Deductions Summary */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
               <div className="p-6 border-b border-gray-200">
-                <h3 className="font-semibold text-gray-900">Active Deductions</h3>
+                <h3 className="font-semibold text-gray-900">Recent Deductions</h3>
               </div>
               <div className="p-4">
                 {deductions.length > 0 ? (
-                  <div className="space-y-2">
-                    {deductions.slice(0, 3).map((ded) => (
-                      <div key={ded.id} className="flex items-center justify-between text-sm">
-                        <span className="text-gray-600 capitalize">{ded.deduction_type}</span>
-                        <span className="font-semibold text-red-600">-₹{parseFloat(ded.amount).toFixed(2)}</span>
+                  <div className="space-y-3">
+                    {deductions.slice(0, 5).map((ded) => (
+                      <div key={ded.id} className="flex items-start justify-between text-sm p-3 bg-gray-50 rounded border border-gray-100 hover:bg-gray-100 transition">
+                        <div className="flex-1">
+                          <p className="text-gray-900 font-medium capitalize">{ded.entry_type?.replace(/_/g, ' ') || 'Deduction'}</p>
+                          <p className="text-xs text-gray-600 mt-1">{ded.description}</p>
+                          <div className="flex items-center gap-2 mt-2">
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold ${
+                              ded.status === 'approved' ? 'bg-green-100 text-green-800' :
+                              ded.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                              'bg-yellow-100 text-yellow-800'
+                            }`}>
+                              {ded.status === 'approved' && <i className="ph ph-check-circle text-xs"></i>}
+                              {ded.status === 'rejected' && <i className="ph ph-x-circle text-xs"></i>}
+                              {ded.status === 'pending' && <i className="ph ph-clock text-xs"></i>}
+                              {ded.status?.charAt(0).toUpperCase() + (ded.status?.slice(1) || 'pending')}
+                            </span>
+                          </div>
+                        </div>
+                        <span className="font-semibold text-red-600 ml-2 flex-shrink-0">-₹{parseFloat(String(ded.amount)).toFixed(2)}</span>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-gray-500">No active deductions</p>
+                  <p className="text-sm text-gray-500">No deductions</p>
                 )}
               </div>
             </div>

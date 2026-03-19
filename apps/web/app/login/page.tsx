@@ -58,7 +58,16 @@ export default function LoginPage() {
 
       // Store data based on login type
       if (loginType === 'hub_manager') {
-        localStorage.setItem('hubManager', JSON.stringify(data.hub_manager || data.manager));
+        const managerData = data.hub_manager || data.manager;
+        console.log('🔐 [Login] Hub Manager login successful:', {
+          id: managerData?.id,
+          name: managerData?.name,
+          email: managerData?.email,
+          hub_id: managerData?.hub_id,
+          hubId: managerData?.hubId,
+          fullObject: JSON.stringify(managerData)
+        });
+        localStorage.setItem('hubManager', JSON.stringify(managerData));
         // Force navigation after localStorage is set
         setTimeout(() => router.push('/hub-manager-dashboard'), 100);
       } else if (loginType === 'technician') {

@@ -8,6 +8,7 @@ import VehicleHandoverModal from '@/components/VehicleHandoverModal';
 import HubManagerTickets from '@/components/HubManagerTickets';
 import VehicleSwapModal from '@/components/VehicleSwapModal';
 import SwapRequestsManager from '@/components/SwapRequestsManager';
+import PartsInventoryManagement from '@/components/PartsInventoryManagement';
 
 function HubManagerDashboardContent() {
   const router = useRouter();
@@ -255,6 +256,17 @@ function HubManagerDashboardContent() {
                 <Truck className="w-4 h-4 inline mr-2" />
                 Swap Requests
               </button>
+              <button
+                onClick={() => setActiveTab('inventory')}
+                className={`flex-1 px-6 py-4 font-medium text-center transition ${
+                  activeTab === 'inventory'
+                    ? 'bg-indigo-50 text-indigo-600 border-b-2 border-indigo-600'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Package className="w-4 h-4 inline mr-2" />
+                Parts Inventory
+              </button>
             </div>
           </div>
           
@@ -499,6 +511,10 @@ function HubManagerDashboardContent() {
 
           {activeTab === 'swaps' && hubId && (
             <SwapRequestsManager hubId={hubId} />
+          )}
+
+          {activeTab === 'inventory' && hubId && (
+            <PartsInventoryManagement hubId={hubId} />
           )}
         </div>
       </main>

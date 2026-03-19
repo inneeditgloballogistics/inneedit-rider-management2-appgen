@@ -14,6 +14,8 @@ import BulkUploadModal from '@/components/BulkUploadModal';
 import HubManagerCredentialsGenerator from '@/components/HubManagerCredentialsGenerator';
 import NotificationBell from '@/components/NotificationBell';
 import VehicleStatusDashboard from '@/components/VehicleStatusDashboard';
+import PartsInventoryManagement from '@/components/PartsInventoryManagement';
+import PendingDeductionsManagement from '@/components/PendingDeductionsManagement';
 
 const StoreMapView = dynamic(() => import('@/components/StoreMapView'), {
   ssr: false,
@@ -442,7 +444,7 @@ function AdminDashboardContent() {
 
           <nav className="border-t border-slate-200 overflow-x-auto">
             <div className="flex px-6">
-              {['dashboard', 'riders', 'vehicles', 'hubs', 'stores', 'advances', 'referrals', 'payroll', 'entries', 'payout'].map((tab) => (
+              {['dashboard', 'riders', 'vehicles', 'hubs', 'stores', 'inventory', 'deductions', 'advances', 'referrals', 'payroll', 'entries', 'payout'].map((tab) => (
                 <button 
                   key={tab}
                   onClick={() => setActiveTab(tab)} 
@@ -457,13 +459,15 @@ function AdminDashboardContent() {
                   {tab === 'vehicles' && <i className="ph-bold ph-truck text-lg"></i>}
                   {tab === 'hubs' && <i className="ph-bold ph-building text-lg"></i>}
                   {tab === 'stores' && <i className="ph-bold ph-storefront text-lg"></i>}
+                  {tab === 'inventory' && <i className="ph-bold ph-package text-lg"></i>}
+                  {tab === 'deductions' && <i className="ph-bold ph-minus-circle text-lg"></i>}
                   {tab === 'advances' && <i className="ph-bold ph-currency-dollar text-lg"></i>}
                   {tab === 'referrals' && <i className="ph-bold ph-user-plus text-lg"></i>}
                   {tab === 'payroll' && <i className="ph-bold ph-money text-lg"></i>}
                   {tab === 'entries' && <i className="ph-bold ph-list text-lg"></i>}
                   {tab === 'payout' && <i className="ph-bold ph-credit-card text-lg"></i>}
 
-                  <span className="capitalize">{tab === 'entries' ? 'Payroll Entries' : tab === 'payout' ? 'Payout' : tab}</span>
+                  <span className="capitalize">{tab === 'entries' ? 'Payroll Entries' : tab === 'payout' ? 'Payout' : tab === 'deductions' ? 'Parts Deductions' : tab}</span>
                   {tab === 'advances' && pendingAdvancesCount > 0 && (
                     <span className="ml-2 px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full">{pendingAdvancesCount}</span>
                   )}
@@ -881,6 +885,32 @@ function AdminDashboardContent() {
                     Go to Payout Management
                   </button>
                 </div>
+              </>
+            )}
+
+            {activeTab === 'inventory' && (
+              <>
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="font-display text-3xl font-bold text-slate-900">Parts Inventory Management</h2>
+                  <div className="text-sm text-slate-600 bg-slate-100 px-4 py-2 rounded-lg">
+                    <i className="ph-bold ph-lock text-lg mr-2"></i>
+                    <span><strong>Admin-Only Access</strong> | Hub Managers can add stock, Admins can manage inventory</span>
+                  </div>
+                </div>
+                <PartsInventoryManagement />
+              </>
+            )}
+
+            {activeTab === 'deductions' && (
+              <>
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="font-display text-3xl font-bold text-slate-900">Parts Deductions Management</h2>
+                  <div className="text-sm text-slate-600 bg-slate-100 px-4 py-2 rounded-lg">
+                    <i className="ph-bold ph-check-circle text-lg mr-2"></i>
+                    <span><strong>Admin Approval Required</strong> | Review and approve/reject parts usage deductions</span>
+                  </div>
+                </div>
+                <PendingDeductionsManagement />
               </>
             )}
 

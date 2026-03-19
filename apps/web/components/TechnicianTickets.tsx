@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { AlertCircle, Wrench, Phone, User, MapPin, Clock, CheckCircle, X, Truck } from 'lucide-react';
+import PartsUsageRecorder from './PartsUsageRecorder';
 
 interface Ticket {
   id: number;
@@ -355,6 +356,15 @@ export default function TechnicianTickets({ technicianId, hubId }: any) {
                     <span className="text-gray-900">{selectedTicket.vehicle_type || 'N/A'}</span>
                   </div>
                 </div>
+              </div>
+
+              {/* Parts Usage Recorder */}
+              <div className="border-t border-gray-200 pt-6">
+                <PartsUsageRecorder 
+                  ticketId={selectedTicket.id}
+                  hubId={hubId}
+                  onPartUsageRecorded={fetchTickets}
+                />
               </div>
 
               {/* Resolution Notes */}

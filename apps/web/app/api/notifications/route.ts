@@ -9,15 +9,13 @@ export async function GET(request: NextRequest) {
     const riderId = searchParams.get('riderId');
     const hubManagerId = searchParams.get('hubManagerId');
     const technicianId = searchParams.get('technicianId');
-    const type = searchParams.get('type'); // 'rider' to filter for rider-specific notifications
+    const type = searchParams.get('type');
 
     console.log('[API] /notifications GET request:', { userId, riderId, hubManagerId, technicianId, type, isRead });
 
     let notifications;
     
-    // Filter by user role
     if (userId) {
-      // Get notifications for authenticated user (admin) - ONLY admin and stats notifications
       if (isRead !== null) {
         const readValue = isRead === 'true';
         notifications = await sql`
@@ -34,10 +32,8 @@ export async function GET(request: NextRequest) {
         `;
       }
     } else if (riderId) {
-      // Get notifications for a rider - only show rider-specific notification types
       const riderRiderIdInt = parseInt(riderId);
       if (type === 'rider') {
-        // Only show these notification types for riders
         notifications = await sql`
           SELECT * FROM notifications 
           WHERE rider_id = ${riderRiderIdInt}
@@ -52,18 +48,31 @@ export async function GET(request: NextRequest) {
         `;
       }
     } else if (hubManagerId) {
-      // Get notifications for hub manager - only ticket-related notifications
       const hubManagerIdInt = parseInt(hubManagerId);
-      console.log('[API] Fetching notifications for hub manager:', hubManagerIdInt);
+      console.log('[API /notifications] 🔍 Fetching notifications for hub manager:', { 
+        raw_hubManagerId: hubManagerId, 
+        parsedInt: hubManagerIdInt,
+        type: typeof hubManagerIdInt 
+      });
+      
+      const allNotifications = await sql`
+        SELECT id, hub_manager_id, type, title, is_read, created_at FROM notifications 
+        WHERE hub_manager_id = ${hubManagerIdInt}
+        ORDER BY created_at DESC LIMIT 100
+      `;
+      console.log('[API /notifications] ℹ️ Total notifications for this hub manager:', allNotifications?.length || 0);
+      if (allNotifications.length > 0) {
+        console.log('[API /notifications] Sample notifications:', allNotifications.slice(0, 3).map(n => ({ id: n.id, type: n.type, hub_manager_id: n.hub_manager_id, created_at: n.created_at })));
+      }
+      
       notifications = await sql`
         SELECT * FROM notifications 
         WHERE hub_manager_id = ${hubManagerIdInt}
         AND type IN ('service_ticket_raised', 'swap_request_pending', 'new_rider_onboarding')
         ORDER BY created_at DESC LIMIT 50
       `;
-      console.log('[API] Hub Manager notifications found:', notifications?.length || 0, 'records');
+      console.log('[API /notifications] ✅ Filtered notifications (by type):', notifications?.length || 0, 'records');
     } else if (technicianId) {
-      // Get notifications for technician - only their assigned ticket notifications
       notifications = await sql`
         SELECT * FROM notifications 
         WHERE technician_id = ${technicianId}
@@ -71,7 +80,6 @@ export async function GET(request: NextRequest) {
         ORDER BY created_at DESC LIMIT 50
       `;
     } else {
-      // Default: get all notifications (for admin) - stats only
       if (isRead !== null) {
         const readValue = isRead === 'true';
         notifications = await sql`SELECT * FROM notifications WHERE is_read = ${readValue} ORDER BY created_at DESC`;
@@ -80,7 +88,6 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Calculate unread count based on filter
     let unreadCountQuery;
     if (userId) {
       unreadCountQuery = await sql`
@@ -141,7 +148,6 @@ export async function PATCH(request: NextRequest) {
       const result = await sql`UPDATE notifications SET is_read = ${isRead} WHERE id = ${id} RETURNING *`;
       return NextResponse.json(result[0]);
     } else {
-      // Mark all as read
       await sql`UPDATE notifications SET is_read = true WHERE is_read = false`;
       return NextResponse.json({ success: true });
     }
