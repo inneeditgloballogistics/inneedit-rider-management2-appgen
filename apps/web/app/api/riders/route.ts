@@ -121,76 +121,7 @@ export async function POST(request: Request) {
       console.log('Vehicle assigned to rider:', body.assignedVehicleId, ceeId);
     }
 
-    // Create notification for hub manager if hub is assigned
-    if (hubId) {
-      try {
-        // Fetch hub details
-        const hubDetails = await sql`SELECT * FROM hubs WHERE id = ${hubId}`;
-        const hub = hubDetails[0];
 
-        // Fetch hub manager
-        const hubManagerResult = await sql`
-          SELECT id FROM hub_managers WHERE hub_id = ${hubId} AND status = 'active' LIMIT 1
-        `;
-
-        // Create notification for hub manager
-        if (hubManagerResult.length > 0) {
-          await sql`
-            INSERT INTO notifications (type, title, message, related_id, recipient_type, recipient_id, is_read, created_at)
-            VALUES (
-              'new_rider_onboarding',
-              'New Rider Registered - Ready for Handover',
-              ${`${body.fullName} (CEE ID: ${ceeId}) has been assigned to your hub and is ready for vehicle handover`},
-              ${newRider.id},
-              'hub_manager',
-              ${hubManagerResult[0].id},
-              false,
-              NOW()
-            )
-          `;
-        }
-
-        console.log('Hub manager notification created for hub:', hubId);
-      } catch (notificationError) {
-        console.error('Error creating notification:', notificationError);
-        // Continue even if notification fails
-      }
-    }
-
-    // Create notification for rider showing their assigned details
-    if (userId && hubId && body.assignedVehicleId) {
-      try {
-        // Fetch hub, store, and vehicle details
-        const [hubResult, vehicleResult] = await Promise.all([
-          sql`SELECT hub_name, hub_code, location, city FROM hubs WHERE id = ${hubId}`,
-          sql`SELECT vehicle_number, vehicle_type, model FROM vehicles WHERE id = ${body.assignedVehicleId}`
-        ]);
-
-        const hub = hubResult[0];
-        const vehicle = vehicleResult[0];
-
-        // Create notification for rider
-        await sql`
-          INSERT INTO notifications (type, title, message, user_id, recipient_type, recipient_id, related_id, is_read, created_at)
-          VALUES (
-            'rider_assignment',
-            'Welcome to the Team! 🎉',
-            ${`You have been assigned to ${hub.hub_name} (${hub.hub_code}). Vehicle: ${vehicle.vehicle_number} (${vehicle.vehicle_type}). Head to the hub to complete the vehicle handover process.`},
-            ${userId},
-            'rider',
-            ${newRider.id},
-            ${newRider.id},
-            false,
-            NOW()
-          )
-        `;
-
-        console.log('Rider assignment notification created:', userId);
-      } catch (notificationError) {
-        console.error('Error creating rider notification:', notificationError);
-        // Continue even if notification fails
-      }
-    }
     
     return NextResponse.json({ success: true, rider: newRider, ceeId, userId });
   } catch (error: any) {
@@ -321,13 +252,7 @@ export async function PATCH(request: NextRequest) {
       RETURNING *
     `;
 
-    // Create notification for admin
-    await sql`
-      INSERT INTO notifications (type, title, message, related_id, is_read, created_at)
-      VALUES ('bank_update', 'Rider Bank Details Updated', 
-        ${''}${rider.full_name} (CEE ID: ${rider.cee_id}) has updated their bank details. Please verify: ${bank_name}, Account: ${account_number}, IFSC: ${ifsc_code}, 
-        ${rider.id}, false, NOW())
-    `;
+
 
     return NextResponse.json({ 
       success: true, 

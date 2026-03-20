@@ -60,7 +60,7 @@ export default function TechnicianVehicleManagement({ vehicles, onRefresh, techn
       const tickets = await ticketsResponse.json();
       
       const vehicleTicket = tickets.find((t: any) => {
-        return t.vehicle_number === selectedVehicle.vehicle_number && t.status === 'Resolved';
+        return t.vehicle_number === selectedVehicle.vehicle_number && t.status === 'Completed';
       });
 
       if (vehicleTicket) {

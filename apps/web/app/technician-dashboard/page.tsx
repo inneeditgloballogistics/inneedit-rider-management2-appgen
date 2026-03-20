@@ -5,9 +5,10 @@ import { useState, useEffect } from 'react';
 import { HubList, StoreList } from '@/components/VehicleHubStoreManagement';
 import { AddModal } from '@/components/AddModal';
 import WeatherBadge from '@/components/WeatherBadge';
-import NotificationBell from '@/components/NotificationBell';
+
 import TechnicianTickets from '@/components/TechnicianTickets';
 import TechnicianVehicleManagement from '@/components/TechnicianVehicleManagement';
+import VehicleSwapHistorySearch from '@/components/VehicleSwapHistorySearch';
 
 function TechnicianDashboardContent() {
   const router = useRouter();
@@ -148,7 +149,7 @@ function TechnicianDashboardContent() {
             <div className="hidden md:block">
               <WeatherBadge latitude={12.9352} longitude={77.6245} locationName="Koramangala" />
             </div>
-            <NotificationBell />
+
             <div className="flex items-center gap-3 pl-4 border-l border-slate-200">
               <div className="text-right hidden sm:block">
                 <p className="text-sm font-semibold text-slate-900">{technician?.name || 'Technician'}</p>
@@ -222,6 +223,16 @@ function TechnicianDashboardContent() {
               }`}
             >
               <i className="ph-bold ph-storefront mr-2"></i>Stores
+            </button>
+            <button 
+              onClick={() => setActiveTab('swap-history')}
+              className={`px-4 py-3 font-medium text-sm transition-all ${
+                activeTab === 'swap-history' 
+                  ? 'text-amber-600 border-b-2 border-amber-600' 
+                  : 'text-slate-500 hover:text-slate-900'
+              }`}
+            >
+              <i className="ph-bold ph-truck mr-2"></i>Swap History
             </button>
           </div>
 
@@ -309,6 +320,16 @@ function TechnicianDashboardContent() {
 
           {activeTab === 'stores' && (
             <StoreList stores={stores} onAdd={() => handleAddNew('store')} />
+          )}
+
+          {activeTab === 'swap-history' && technician && (
+            <>
+              <div className="mb-6">
+                <h2 className="font-display text-3xl font-bold text-slate-900 mb-2">Vehicle Swap History</h2>
+                <p className="text-slate-600">Search and view swap history for vehicles in your hub</p>
+              </div>
+              <VehicleSwapHistorySearch role="technician" userHubId={technician.hubId} />
+            </>
           )}
 
           <AddModal 

@@ -6,7 +6,7 @@ import { LogOut, Package, TrendingUp, Users, Wallet, AlertCircle, Gift, DollarSi
 import WeatherBadge from '@/components/WeatherBadge';
 import RequestAdvanceModal from '@/components/RequestAdvanceModal';
 import ReferRiderModal from '@/components/ReferRiderModal';
-import NotificationBell from '@/components/NotificationBell';
+
 import RiderSupportTickets from '@/components/RiderSupportTickets';
 
 import html2canvas from 'html2canvas';
@@ -652,7 +652,6 @@ export default function RiderDashboard() {
                 locationName={rider.city || 'Your Location'}
               />
             )}
-            <NotificationBell />
             <button
               onClick={() => router.push('/rider-profile')}
               className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition"

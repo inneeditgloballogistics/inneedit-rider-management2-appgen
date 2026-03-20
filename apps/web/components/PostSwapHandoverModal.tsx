@@ -61,36 +61,65 @@ export default function PostSwapHandoverModal({
     }
   };
 
-  const handleSignatureMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const handleSignatureStart = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     if (!isDrawingSignature) return;
+    e.preventDefault();
+    
     const canvas = signatureCanvasRef.current;
     const ctx = canvas?.getContext('2d');
     const rect = canvas?.getBoundingClientRect();
 
     if (ctx && rect) {
+      let x, y;
+      if ('touches' in e) {
+        x = e.touches[0].clientX - rect.left;
+        y = e.touches[0].clientY - rect.top;
+      } else {
+        x = e.clientX - rect.left;
+        y = e.clientY - rect.top;
+      }
+      
       ctx.beginPath();
-      ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+      ctx.moveTo(x, y);
     }
   };
 
-  const handleSignatureMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const handleSignatureMove = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     if (!isDrawingSignature) return;
+    e.preventDefault();
+    
     const canvas = signatureCanvasRef.current;
     const ctx = canvas?.getContext('2d');
     const rect = canvas?.getBoundingClientRect();
 
     if (ctx && rect) {
-      ctx.lineWidth = 2;
+      let x, y;
+      if ('touches' in e) {
+        x = e.touches[0].clientX - rect.left;
+        y = e.touches[0].clientY - rect.top;
+      } else {
+        x = e.clientX - rect.left;
+        y = e.clientY - rect.top;
+      }
+      
+      ctx.lineWidth = 3;
       ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
       ctx.strokeStyle = '#1f2937';
-      ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+      ctx.lineTo(x, y);
       ctx.stroke();
     }
   };
 
-  const finishSignature = () => {
+  const finishSignature = (e?: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    if (e) e.preventDefault();
+    
     const canvas = signatureCanvasRef.current;
-    if (canvas) {
+    if (canvas && isDrawingSignature) {
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.closePath();
+      }
       setRiderSignature(canvas.toDataURL());
       setIsDrawingSignature(false);
     }
@@ -299,27 +328,59 @@ export default function PostSwapHandoverModal({
               <div className="border-2 border-slate-300 rounded-lg overflow-hidden bg-white">
                 <canvas
                   ref={signatureCanvasRef}
-                  width={400}
-                  height={150}
-                  className="w-full border-b border-slate-200 cursor-crosshair"
-                  onMouseDown={handleSignatureMouseDown}
-                  onMouseMove={handleSignatureMouseMove}
+                  width={600}
+                  height={200}
+                  className={`w-full border-b border-slate-200 ${
+                    isDrawingSignature ? 'cursor-crosshair bg-slate-50' : 'cursor-pointer bg-white'
+                  }`}
+                  onMouseDown={handleSignatureStart}
+                  onMouseMove={handleSignatureMove}
                   onMouseUp={finishSignature}
                   onMouseLeave={finishSignature}
+                  onTouchStart={handleSignatureStart}
+                  onTouchMove={handleSignatureMove}
+                  onTouchEnd={finishSignature}
+                  style={{ display: 'block', width: '100%', height: '200px', touchAction: 'none' }}
                 />
-                <div className="p-3 flex gap-2">
-                  <button
-                    type="button"
-                    onClick={startSignature}
-                    className="flex-1 px-3 py-2 bg-slate-100 text-slate-900 rounded text-sm font-medium hover:bg-slate-200 transition flex items-center justify-center gap-2"
-                  >
-                    <Signature size={16} />
-                    Clear
-                  </button>
-                  {riderSignature && (
-                    <span className="flex items-center text-green-600 font-medium text-sm">
-                      ✓ Signature captured
-                    </span>
+                <div className="p-3 flex gap-2 bg-slate-50">
+                  {!riderSignature ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={startSignature}
+                        className={`flex-1 px-3 py-2 rounded text-sm font-medium transition flex items-center justify-center gap-2 ${
+                          isDrawingSignature
+                            ? 'bg-blue-600 text-white hover:bg-blue-700'
+                            : 'bg-slate-100 text-slate-900 hover:bg-slate-200'
+                        }`}
+                      >
+                        <Signature size={16} />
+                        {isDrawingSignature ? 'Drawing... (Release to finish)' : 'Start Drawing'}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const canvas = signatureCanvasRef.current;
+                          if (canvas) {
+                            const ctx = canvas.getContext('2d');
+                            if (ctx) {
+                              ctx.clearRect(0, 0, canvas.width, canvas.height);
+                            }
+                          }
+                          setRiderSignature(null);
+                          setIsDrawingSignature(false);
+                        }}
+                        className="flex-1 px-3 py-2 bg-slate-100 text-slate-900 rounded text-sm font-medium hover:bg-slate-200 transition"
+                      >
+                        Clear
+                      </button>
+                      <span className="flex-1 flex items-center justify-center text-green-600 font-medium text-sm">
+                        ✓ Signature captured
+                      </span>
+                    </>
                   )}
                 </div>
               </div>

@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { LogOut, Package, Warehouse, AlertCircle, Users, Search, Wrench, RefreshCw, Truck } from 'lucide-react';
-import NotificationBell from '@/components/NotificationBell';
+
 import VehicleHandoverModal from '@/components/VehicleHandoverModal';
 import HubManagerTickets from '@/components/HubManagerTickets';
 import VehicleSwapModal from '@/components/VehicleSwapModal';
@@ -11,6 +11,7 @@ import SwapRequestsManager from '@/components/SwapRequestsManager';
 import PostSwapHandoverModal from '@/components/PostSwapHandoverModal';
 import PartsInventoryManagement from '@/components/PartsInventoryManagement';
 import VehicleInspectionManager from '@/components/VehicleInspectionManager';
+import VehicleSwapHistorySearch from '@/components/VehicleSwapHistorySearch';
 
 function HubManagerDashboardContent() {
   const router = useRouter();
@@ -213,7 +214,7 @@ function HubManagerDashboardContent() {
 
           {/* Actions */}
           <div className="flex items-center gap-4">
-            <NotificationBell />
+
             <div className="flex items-center gap-3 pl-4 border-l border-slate-200">
               <div className="text-right hidden sm:block">
                 <p className="text-sm font-semibold text-slate-900">{managerData?.name || 'Hub Manager'}</p>
@@ -306,6 +307,17 @@ function HubManagerDashboardContent() {
               >
                 <Wrench className="w-4 h-4 inline mr-2" />
                 Vehicle Inspection
+              </button>
+              <button
+                onClick={() => setActiveTab('swap-history')}
+                className={`flex-1 px-6 py-4 font-medium text-center transition ${
+                  activeTab === 'swap-history'
+                    ? 'bg-indigo-50 text-indigo-600 border-b-2 border-indigo-600'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Truck className="w-4 h-4 inline mr-2" />
+                Swap History
               </button>
             </div>
           </div>
@@ -615,6 +627,16 @@ function HubManagerDashboardContent() {
 
           {activeTab === 'inspection' && hubId && (
             <VehicleInspectionManager hubId={hubId} hubManagerId={managerData?.id} />
+          )}
+
+          {activeTab === 'swap-history' && (
+            <>
+              <div className="mb-6">
+                <h2 className="text-3xl font-bold text-slate-900 mb-2">Vehicle Swap History</h2>
+                <p className="text-slate-600">Search and view all swap history for vehicles in your hub</p>
+              </div>
+              <VehicleSwapHistorySearch role="hub_manager" userHubId={hubId} />
+            </>
           )}
         </div>
       </main>

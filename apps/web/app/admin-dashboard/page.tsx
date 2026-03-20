@@ -12,10 +12,11 @@ import HubsManagement from '@/components/HubsManagement';
 import WeatherBadge from '@/components/WeatherBadge';
 import BulkUploadModal from '@/components/BulkUploadModal';
 import HubManagerCredentialsGenerator from '@/components/HubManagerCredentialsGenerator';
-import NotificationBell from '@/components/NotificationBell';
+
 import VehicleStatusDashboard from '@/components/VehicleStatusDashboard';
 import PartsInventoryManagement from '@/components/PartsInventoryManagement';
 import PendingDeductionsManagement from '@/components/PendingDeductionsManagement';
+import VehicleSwapHistorySearch from '@/components/VehicleSwapHistorySearch';
 
 const StoreMapView = dynamic(() => import('@/components/StoreMapView'), {
   ssr: false,
@@ -427,7 +428,6 @@ function AdminDashboardContent() {
               <div className="hidden md:block">
                 <WeatherBadge latitude={12.9716} longitude={77.5946} locationName="HQ" />
               </div>
-              <NotificationBell />
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-slate-700 to-slate-900 flex items-center justify-center text-white text-sm font-bold">A</div>
                 <div className="hidden md:block">
@@ -444,7 +444,7 @@ function AdminDashboardContent() {
 
           <nav className="border-t border-slate-200 overflow-x-auto">
             <div className="flex px-6">
-              {['dashboard', 'riders', 'vehicles', 'hubs', 'stores', 'inventory', 'deductions', 'advances', 'referrals', 'payroll', 'entries', 'payout'].map((tab) => (
+              {['dashboard', 'riders', 'vehicles', 'hubs', 'stores', 'inventory', 'deductions', 'advances', 'referrals', 'payroll', 'entries', 'payout', 'swap-history'].map((tab) => (
                 <button 
                   key={tab}
                   onClick={() => setActiveTab(tab)} 
@@ -466,8 +466,9 @@ function AdminDashboardContent() {
                   {tab === 'payroll' && <i className="ph-bold ph-money text-lg"></i>}
                   {tab === 'entries' && <i className="ph-bold ph-list text-lg"></i>}
                   {tab === 'payout' && <i className="ph-bold ph-credit-card text-lg"></i>}
+                  {tab === 'swap-history' && <i className="ph-bold ph-truck text-lg"></i>}
 
-                  <span className="capitalize">{tab === 'entries' ? 'Payroll Entries' : tab === 'payout' ? 'Payout' : tab === 'deductions' ? 'Parts Deductions' : tab}</span>
+                  <span className="capitalize">{tab === 'entries' ? 'Payroll Entries' : tab === 'payout' ? 'Payout' : tab === 'deductions' ? 'Parts Deductions' : tab === 'swap-history' ? 'Swap History' : tab}</span>
                   {tab === 'advances' && pendingAdvancesCount > 0 && (
                     <span className="ml-2 px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full">{pendingAdvancesCount}</span>
                   )}
@@ -911,6 +912,16 @@ function AdminDashboardContent() {
                   </div>
                 </div>
                 <PendingDeductionsManagement />
+              </>
+            )}
+
+            {activeTab === 'swap-history' && (
+              <>
+                <div className="mb-6">
+                  <h2 className="font-display text-3xl font-bold text-slate-900 mb-2">Vehicle Swap History</h2>
+                  <p className="text-slate-600">Track all vehicle swaps across hubs, view maintenance records, and analyze swap patterns</p>
+                </div>
+                <VehicleSwapHistorySearch role="admin" />
               </>
             )}
 

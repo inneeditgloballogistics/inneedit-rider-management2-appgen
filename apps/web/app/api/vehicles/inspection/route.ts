@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
         LEFT JOIN riders r ON v.assigned_rider_id = r.cee_id
         WHERE v.hub_id = ${parseInt(hubId)}
         AND (
-          (v.status = 'in_maintenance' AND (st.status = 'Resolved' OR st.status = 'Completed'))
+          (v.status = 'in_maintenance' AND st.status = 'Completed')
           OR v.status = 'repair_completed'
         )
         ORDER BY v.id, st.updated_at DESC

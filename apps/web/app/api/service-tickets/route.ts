@@ -304,15 +304,26 @@ export async function PATCH(request: NextRequest) {
       RETURNING *
     `;
 
-    // Update vehicle status to 'in_maintenance' if status is 'In Progress'
-    if ((status === 'In Progress' || finalStatus === 'In Progress') && currentTicket[0].vehicle_id) {
+    // Update vehicle status based on ticket status
+    if (currentTicket[0].vehicle_id) {
       try {
-        await sql`
-          UPDATE vehicles
-          SET status = 'in_maintenance'
-          WHERE id = ${currentTicket[0].vehicle_id}
-        `;
-        console.log('[PATCH service-tickets] Vehicle status updated to in_maintenance:', currentTicket[0].vehicle_id);
+        if (status === 'In Progress' || finalStatus === 'In Progress') {
+          // Ticket is in progress - vehicle in maintenance
+          await sql`
+            UPDATE vehicles
+            SET status = 'in_maintenance'
+            WHERE id = ${currentTicket[0].vehicle_id}
+          `;
+          console.log('[PATCH service-tickets] Vehicle status updated to in_maintenance:', currentTicket[0].vehicle_id);
+        } else if (status === 'Resolved' || status === 'Completed' || finalStatus === 'Resolved' || finalStatus === 'Completed') {
+          // Ticket is resolved - vehicle ready for inspection
+          await sql`
+            UPDATE vehicles
+            SET status = 'repair_completed'
+            WHERE id = ${currentTicket[0].vehicle_id}
+          `;
+          console.log('[PATCH service-tickets] Vehicle status updated to repair_completed:', currentTicket[0].vehicle_id);
+        }
       } catch (vehicleUpdateError) {
         console.error('[PATCH service-tickets] Error updating vehicle status:', vehicleUpdateError);
         // Don't fail the request if vehicle update fails

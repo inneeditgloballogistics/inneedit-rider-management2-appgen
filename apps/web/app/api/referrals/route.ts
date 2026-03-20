@@ -70,16 +70,7 @@ export async function POST(request: NextRequest) {
       RETURNING *
     `;
 
-    // Create notification for admin
-    await sql`
-      INSERT INTO notifications (type, title, message, related_id)
-      VALUES (
-        'referral',
-        'New Rider Referral',
-        ${`${referrerName} (${referrerCeeId}) referred ${referredName} for ${preferredLocation}`},
-        ${result[0].id}
-      )
-    `;
+
 
     return NextResponse.json(result[0]);
   } catch (error) {
@@ -107,16 +98,7 @@ export async function PATCH(request: NextRequest) {
         RETURNING *
       `;
 
-      // Create notification for admin
-      await sql`
-        INSERT INTO notifications (type, title, message, related_id)
-        VALUES (
-          'referral_approved',
-          'Referral Approved',
-          ${`Referral ID ${id} has been approved. Rider will receive ₹1000 after 30 days if they remain active.`},
-          ${id}
-        )
-      `;
+
 
       return NextResponse.json({ success: true, referral: result[0] });
     }
