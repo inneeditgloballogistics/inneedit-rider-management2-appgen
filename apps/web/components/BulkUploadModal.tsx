@@ -20,7 +20,7 @@ export default function BulkUploadModal({ isOpen, onClose, type, onSuccess }: Bu
 
   const getTemplateColumns = () => {
     if (type === 'riders') {
-      return ['cee_id', 'full_name', 'date_of_birth', 'join_date', 'phone', 'email', 'address', 'client'];
+      return ['cee_id', 'full_name', 'phone', 'bank_account_number', 'ifsc_code', 'beneficiary_name'];
     } else if (type === 'hubs') {
       return ['hub_name', 'hub_code', 'location', 'city', 'state', 'pincode', 'manager_name', 'manager_phone', 'status', 'latitude', 'longitude'];
     } else if (type === 'vehicles') {
@@ -141,14 +141,12 @@ export default function BulkUploadModal({ isOpen, onClose, type, onSuccess }: Bu
   const preparePayload = (row: any) => {
     if (type === 'riders') {
       return {
-        ceeId: row.cee_id || null,
+        ceeId: row.cee_id,
         fullName: row.full_name,
-        dob: row.date_of_birth || null,
-        joinDate: row.join_date || null,
-        mobile: row.phone,
-        email: row.email || null,
-        address: row.address || null,
-        client: row.client
+        phone: row.phone,
+        accountNumber: row.bank_account_number,
+        ifscCode: row.ifsc_code,
+        beneficiaryName: row.beneficiary_name
       };
     } else if (type === 'hubs') {
       return {

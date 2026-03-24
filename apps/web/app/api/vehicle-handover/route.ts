@@ -5,7 +5,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const action = searchParams.get('action');
-    const hub_id = searchParams.get('hub_id'); // Use hub_id (snake_case)
+    const hub_id = searchParams.get('hub_id') || searchParams.get('hubId'); // Accept both snake_case and camelCase
 
     // Get new riders for hub (riders assigned but not yet handed over)
     if (action === 'new-riders') {

@@ -68,12 +68,35 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { hub_name, hub_code, location, city, state, pincode, manager_name, manager_phone, status, latitude, longitude } = body;
+    const { hub_name, hub_code, location, city, state, pincode, manager_name, manager_phone, manager_email, status, latitude, longitude } = body;
 
+    // Insert hub
+    const hubResult = await sql`
+      INSERT INTO hubs (hub_name, hub_code, location, city, state, pincode, status, latitude, longitude, created_at)
+      VALUES (${hub_name}, ${hub_code}, ${location}, ${city || null}, ${state || null}, ${pincode || null}, ${status || 'active'}, ${latitude || null}, ${longitude || null}, CURRENT_TIMESTAMP)
+      RETURNING id
+    `;
+
+    const hubId = hubResult[0].id;
+
+    // Insert hub manager if provided
+    if (manager_name || manager_phone) {
+      await sql`
+        INSERT INTO hub_managers (hub_id, manager_name, manager_phone, manager_email, status, created_at, updated_at)
+        VALUES (${hubId}, ${manager_name || null}, ${manager_phone || null}, ${manager_email || null}, 'active', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      `;
+    }
+
+    // Return hub with manager details
     const result = await sql`
-      INSERT INTO hubs (hub_name, hub_code, location, city, state, pincode, manager_name, manager_phone, status, latitude, longitude)
-      VALUES (${hub_name}, ${hub_code}, ${location}, ${city || null}, ${state || null}, ${pincode || null}, ${manager_name || null}, ${manager_phone || null}, ${status || 'active'}, ${latitude || null}, ${longitude || null})
-      RETURNING *
+      SELECT 
+        h.*,
+        hm.manager_name,
+        hm.manager_email,
+        hm.manager_phone
+      FROM hubs h
+      LEFT JOIN hub_managers hm ON h.id = hm.hub_id AND hm.status = 'active'
+      WHERE h.id = ${hubId}
     `;
 
     return NextResponse.json(result[0], { status: 201 });
@@ -86,23 +109,58 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { id, hub_name, hub_code, location, city, state, pincode, manager_name, manager_phone, status, latitude, longitude } = body;
+    const { id, hub_name, hub_code, location, city, state, pincode, manager_name, manager_phone, manager_email, status, latitude, longitude } = body;
 
-    const result = await sql`
+    // Update hub details
+    await sql`
       UPDATE hubs 
       SET hub_name = ${hub_name}, 
           hub_code = ${hub_code}, 
           location = ${location}, 
-          city = ${city}, 
-          state = ${state}, 
-          pincode = ${pincode}, 
-          manager_name = ${manager_name}, 
-          manager_phone = ${manager_phone}, 
+          city = ${city || null}, 
+          state = ${state || null}, 
+          pincode = ${pincode || null}, 
           status = ${status},
           latitude = ${latitude || null},
           longitude = ${longitude || null}
       WHERE id = ${id}
-      RETURNING *
+    `;
+
+    // Update or insert hub manager details
+    const existingManager = await sql`
+      SELECT id FROM hub_managers WHERE hub_id = ${id} AND status = 'active' LIMIT 1
+    `;
+
+    if (existingManager.length > 0) {
+      // Update existing manager
+      await sql`
+        UPDATE hub_managers 
+        SET manager_name = ${manager_name || null}, 
+            manager_phone = ${manager_phone || null}, 
+            manager_email = ${manager_email || null},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE hub_id = ${id} AND status = 'active'
+      `;
+    } else {
+      // Create new manager entry if none exists
+      if (manager_name || manager_phone) {
+        await sql`
+          INSERT INTO hub_managers (hub_id, manager_name, manager_phone, manager_email, status, created_at, updated_at)
+          VALUES (${id}, ${manager_name || null}, ${manager_phone || null}, ${manager_email || null}, 'active', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        `;
+      }
+    }
+
+    // Return updated hub with manager details
+    const result = await sql`
+      SELECT 
+        h.*,
+        hm.manager_name,
+        hm.manager_email,
+        hm.manager_phone
+      FROM hubs h
+      LEFT JOIN hub_managers hm ON h.id = hm.hub_id AND hm.status = 'active'
+      WHERE h.id = ${id}
     `;
 
     return NextResponse.json(result[0]);

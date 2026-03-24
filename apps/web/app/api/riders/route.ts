@@ -57,6 +57,9 @@ export async function POST(request: Request) {
     // Generate a unique user_id for the rider (required for payroll finalization and dashboard access)
     const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
+    // Check if this is a bulk upload (has all required bulk upload fields)
+    const isBulkUpload = !!(body.ceeId && body.fullName && body.phone && body.accountNumber && body.ifscCode && body.beneficiaryName);
+    
     // Use the provided CEE ID or generate if empty (trim and validate)
     let ceeId = body.ceeId ? String(body.ceeId).trim() : null;
     if (!ceeId || ceeId === '') {
@@ -75,9 +78,21 @@ export async function POST(request: Request) {
       hubId = hubMap[body.assignedHub] || (isNaN(Number(body.assignedHub)) ? null : Number(body.assignedHub));
     }
     
+    // Parse storeLocation (store_id) - same logic
+    let storeId = null;
+    if (body.storeLocation) {
+      storeId = isNaN(Number(body.storeLocation)) ? null : Number(body.storeLocation);
+    }
+    
     // Determine EV type - use provided value or default based on vehicle ownership
     const evType = body.vehicleOwnership === 'company_ev' ? (body.evType || 'fixed_battery') : null;
     const evDailyRent = body.vehicleOwnership === 'company_ev' ? (body.evDailyRent || 215) : null;
+    
+    // Get values based on whether it's bulk upload or regular form
+    const fullName = isBulkUpload ? body.fullName : (body.fullName || '');
+    const phone = isBulkUpload ? body.phone : (body.mobile || '');
+    const accountNumber = isBulkUpload ? body.accountNumber : (body.bankAccount || null);
+    const ifscCode = body.ifscCode || null;
     
     // Insert rider into database
     const result = await sql`
@@ -86,12 +101,12 @@ export async function POST(request: Request) {
         cee_id,
         full_name,
         phone,
-        email,
         date_of_birth,
         join_date,
         address,
         client,
         assigned_hub_id,
+        store_id,
         assigned_vehicle_id,
         account_number,
         ifsc_code,
@@ -102,13 +117,41 @@ export async function POST(request: Request) {
         ev_type,
         is_leader,
         leader_discount_percentage,
+        father_name,
+        father_phone,
+        mother_name,
+        mother_phone,
+        guardian_name,
+        guardian_phone,
         status
       ) VALUES (
-        ${userId}, ${ceeId}, ${body.fullName || ''}, ${body.mobile || ''}, ${body.email || null}, ${body.dob || null}, 
-        ${body.joinDate || null}, ${body.address || null}, ${body.client || ''}, ${hubId}, ${body.assignedVehicleId || null}, 
-        ${body.bankAccount || null}, ${body.ifscCode || null}, ${body.dlUrl || null}, ${body.aadharUrl || null},
-        ${body.vehicleOwnership || 'company_ev'}, ${evDailyRent},
-        ${evType}, ${body.isLeader || false}, ${body.leaderDiscountPercentage || 0}, 'active'
+        ${userId}, 
+        ${ceeId}, 
+        ${fullName}, 
+        ${phone}, 
+        ${body.dob || null}, 
+        ${body.joinDate || null}, 
+        ${body.address || null}, 
+        ${body.client || ''}, 
+        ${hubId}, 
+        ${storeId}, 
+        ${body.assignedVehicleId || null}, 
+        ${accountNumber}, 
+        ${ifscCode}, 
+        ${body.dlUrl || null}, 
+        ${body.aadharUrl || null},
+        ${body.vehicleOwnership || 'company_ev'}, 
+        ${evDailyRent},
+        ${evType}, 
+        ${body.isLeader || false}, 
+        ${body.leaderDiscountPercentage || 0},
+        ${body.fatherName || null}, 
+        ${body.fatherPhone || null}, 
+        ${body.motherName || null}, 
+        ${body.motherPhone || null},
+        ${body.guardianName || null}, 
+        ${body.guardianPhone || null}, 
+        'active'
       )
       RETURNING *
     `;
@@ -120,7 +163,6 @@ export async function POST(request: Request) {
       await sql`UPDATE vehicles SET assigned_rider_id = ${ceeId}, status = 'assigned' WHERE id = ${body.assignedVehicleId}`;
       console.log('Vehicle assigned to rider:', body.assignedVehicleId, ceeId);
     }
-
 
     
     return NextResponse.json({ success: true, rider: newRider, ceeId, userId });
@@ -251,8 +293,6 @@ export async function PATCH(request: NextRequest) {
       WHERE user_id = ${user_id}
       RETURNING *
     `;
-
-
 
     return NextResponse.json({ 
       success: true, 

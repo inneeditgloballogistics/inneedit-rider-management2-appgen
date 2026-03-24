@@ -9,11 +9,11 @@ function hashPassword(password: string): string {
 
 export async function POST(request: NextRequest) {
   try {
-    const { cee_id, email, password } = await request.json();
+    const { cee_id, phone, password } = await request.json();
 
-    if (!cee_id || !email || !password) {
+    if (!cee_id || !phone || !password) {
       return NextResponse.json(
-        { error: 'Cee ID, email, and password are required' },
+        { error: 'Cee ID, phone, and password are required' },
         { status: 400 }
       );
     }
@@ -25,11 +25,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify rider exists with cee_id and email match
+    // Verify rider exists with cee_id and phone match
     const riderCheck = await sql`
       SELECT id, cee_id, full_name, email, status, password_hash
       FROM riders
-      WHERE UPPER(cee_id) = UPPER(${cee_id}) AND LOWER(email) = LOWER(${email})
+      WHERE UPPER(cee_id) = UPPER(${cee_id}) AND phone = ${phone}
       LIMIT 1
     `;
 
@@ -57,13 +57,46 @@ export async function POST(request: NextRequest) {
       UPDATE riders
       SET password_hash = ${passwordHash}
       WHERE id = ${rider.id}
-      RETURNING id, cee_id, full_name, email
+      RETURNING id, cee_id, full_name, email, phone
     `;
+
+    // Generate synthetic email if rider doesn't have one
+    const riderRecord = result[0];
+    const syntheticEmail = riderRecord.email || `${riderRecord.cee_id.toLowerCase()}@rider.inneedit.local`;
+
+    // Create user entry if it doesn't exist
+    const existingUser = await sql`
+      SELECT id FROM "user" WHERE id = ${rider.user_id || ''}
+      LIMIT 1
+    `;
+
+    if (existingUser.length === 0) {
+      const userId = crypto.randomUUID();
+      await sql`
+        INSERT INTO "user" (id, name, email, role, "emailVerified", "createdAt", "updatedAt")
+        VALUES (
+          ${userId},
+          ${rider.full_name},
+          ${syntheticEmail},
+          'rider',
+          true,
+          NOW(),
+          NOW()
+        )
+      `;
+
+      // Link user to rider
+      await sql`
+        UPDATE riders
+        SET user_id = ${userId}
+        WHERE id = ${rider.id}
+      `;
+    }
 
     return NextResponse.json({
       success: true,
       message: 'Password set successfully',
-      rider: result[0],
+      rider: riderRecord,
     });
   } catch (error: any) {
     console.error('Set password self error:', error);

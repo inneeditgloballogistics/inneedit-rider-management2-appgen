@@ -58,15 +58,31 @@ export function GoogleMapsLoader({ children }: { children: React.ReactNode }) {
     window.googleMapsLoaded = true;
 
     const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places,marker`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places,marker&v=weekly`;
     script.async = true;
     script.defer = true;
     
     script.onload = () => {
       // Check if Google Maps is available immediately after load
       if (window.google && window.google.maps) {
-        isLoading = false;
-        setLoaded(true);
+        // Load marker clustering library
+        const clusterScript = document.createElement('script');
+        clusterScript.src = 'https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js';
+        clusterScript.async = true;
+        clusterScript.defer = true;
+        
+        clusterScript.onload = () => {
+          isLoading = false;
+          setLoaded(true);
+        };
+        
+        clusterScript.onerror = () => {
+          // Still load even if clustering fails
+          isLoading = false;
+          setLoaded(true);
+        };
+        
+        document.head.appendChild(clusterScript);
       } else {
         // Fallback: check every 50ms up to 5 seconds
         let attempts = 0;
@@ -74,8 +90,25 @@ export function GoogleMapsLoader({ children }: { children: React.ReactNode }) {
           attempts++;
           if (window.google && window.google.maps) {
             clearInterval(checkInterval);
-            isLoading = false;
-            setLoaded(true);
+            
+            // Load marker clustering library
+            const clusterScript = document.createElement('script');
+            clusterScript.src = 'https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js';
+            clusterScript.async = true;
+            clusterScript.defer = true;
+            
+            clusterScript.onload = () => {
+              isLoading = false;
+              setLoaded(true);
+            };
+            
+            clusterScript.onerror = () => {
+              // Still load even if clustering fails
+              isLoading = false;
+              setLoaded(true);
+            };
+            
+            document.head.appendChild(clusterScript);
           } else if (attempts > 100) { // 5 seconds
             clearInterval(checkInterval);
             isLoading = false;

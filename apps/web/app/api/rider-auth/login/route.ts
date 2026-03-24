@@ -72,6 +72,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Generate synthetic email if rider doesn't have one
+    const syntheticEmail = rider.email || `${rider.cee_id.toLowerCase()}@rider.inneedit.local`;
+
     // Get or create user entry
     let userId = rider.user_id;
 
@@ -88,7 +91,7 @@ export async function POST(request: NextRequest) {
           VALUES (
             ${userId},
             ${rider.full_name},
-            ${rider.email},
+            ${syntheticEmail},
             'rider',
             true,
             NOW(),
@@ -99,7 +102,7 @@ export async function POST(request: NextRequest) {
     } else {
       // No user_id in rider, check if user exists by email
       const existingUsers = await sql`
-        SELECT id FROM "user" WHERE LOWER(email) = LOWER(${rider.email})
+        SELECT id FROM "user" WHERE LOWER(email) = LOWER(${syntheticEmail})
       `;
 
       if (existingUsers.length > 0) {
@@ -112,7 +115,7 @@ export async function POST(request: NextRequest) {
           VALUES (
             ${userId},
             ${rider.full_name},
-            ${rider.email},
+            ${syntheticEmail},
             'rider',
             true,
             NOW(),

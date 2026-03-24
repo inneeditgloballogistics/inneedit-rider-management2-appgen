@@ -94,15 +94,19 @@ export default function PendingDeductionsManagement() {
         body: JSON.stringify({ id, status: 'approved' })
       });
 
+      const data = await res.json();
+      console.log('Approve response:', { status: res.status, ok: res.ok, data });
+      
       if (res.ok) {
-        alert('Deduction approved! Rider has been notified.');
+        alert('Deduction approved!');
         fetchDeductions();
       } else {
-        alert('Failed to approve deduction');
+        console.error('API error:', data);
+        alert(data.error || 'Failed to approve deduction');
       }
     } catch (error) {
       console.error('Error approving deduction:', error);
-      alert('Error approving deduction');
+      alert('Error approving deduction: ' + (error instanceof Error ? error.message : 'Unknown error'));
     } finally {
       setActioningId(null);
     }
@@ -121,15 +125,19 @@ export default function PendingDeductionsManagement() {
         body: JSON.stringify({ id, status: 'rejected' })
       });
 
+      const data = await res.json();
+      console.log('Reject response:', { status: res.status, ok: res.ok, data });
+      
       if (res.ok) {
-        alert('Deduction rejected! Parts returned to inventory. Rider has been notified.');
+        alert('Deduction rejected! Parts returned to inventory.');
         fetchDeductions();
       } else {
-        alert('Failed to reject deduction');
+        console.error('API error:', data);
+        alert(data.error || 'Failed to reject deduction');
       }
     } catch (error) {
       console.error('Error rejecting deduction:', error);
-      alert('Error rejecting deduction');
+      alert('Error rejecting deduction: ' + (error instanceof Error ? error.message : 'Unknown error'));
     } finally {
       setActioningId(null);
     }

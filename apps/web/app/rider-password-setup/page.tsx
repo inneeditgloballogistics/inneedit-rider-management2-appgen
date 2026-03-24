@@ -11,7 +11,7 @@ export default function RiderPasswordSetupPage() {
   
   // Verify step
   const [ceeId, setCeeId] = useState('');
-  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [verifyLoading, setVerifyLoading] = useState(false);
   const [verifyError, setVerifyError] = useState('');
   
@@ -23,6 +23,7 @@ export default function RiderPasswordSetupPage() {
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [passwordError, setPasswordError] = useState('');
   const [riderData, setRiderData] = useState<any>(null);
+  const [verifiedPhone, setVerifiedPhone] = useState('');
 
   // Step 1: Verify rider identity
   const handleVerify = async (e: React.FormEvent) => {
@@ -31,8 +32,8 @@ export default function RiderPasswordSetupPage() {
     setVerifyError('');
 
     try {
-      if (!ceeId || !email) {
-        setVerifyError('Please enter both Cee ID and Email');
+      if (!ceeId || !phone) {
+        setVerifyError('Please enter both Cee ID and Phone Number');
         setVerifyLoading(false);
         return;
       }
@@ -45,7 +46,7 @@ export default function RiderPasswordSetupPage() {
         },
         body: JSON.stringify({
           cee_id: ceeId.toUpperCase(),
-          email: email.toLowerCase(),
+          phone: phone.replace(/[^0-9]/g, ''),
         }),
       });
 
@@ -67,6 +68,7 @@ export default function RiderPasswordSetupPage() {
       }
 
       setRiderData(data.rider);
+      setVerifiedPhone(phone);
       setStep('setPassword');
     } catch (err: any) {
       console.error('Verification error:', err);
@@ -108,7 +110,7 @@ export default function RiderPasswordSetupPage() {
         },
         credentials: 'include',
         body: JSON.stringify({
-          email: email.toLowerCase(),
+          phone: verifiedPhone.replace(/[^0-9]/g, ''),
           cee_id: ceeId.toUpperCase(),
           password,
         }),
@@ -159,9 +161,9 @@ export default function RiderPasswordSetupPage() {
             {step === 'success' ? 'Password Set Successfully!' : 'Set Your Password'}
           </h2>
           <p className="text-slate-500 text-sm mt-2">
-            {step === 'verify' && 'Verify your identity to proceed'}
+            {step === 'verify' && 'Verify your identity with CEE ID and Phone Number'}
             {step === 'setPassword' && 'Create a secure password for your account'}
-            {step === 'success' && 'You can now log in with your email and password'}
+            {step === 'success' && 'You can now log in with your CEE ID and password'}
           </p>
         </div>
 
@@ -222,31 +224,31 @@ export default function RiderPasswordSetupPage() {
                 </p>
               </div>
 
-              {/* Email Input */}
+              {/* Phone Input */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Email Address
+                  Phone Number
                 </label>
                 <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 font-medium text-slate-400">+91</span>
                   <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
                     required
-                    placeholder="rider@example.com"
+                    placeholder="98765 43210"
                     className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                   />
                 </div>
                 <p className="text-xs text-slate-500 mt-1.5">
-                  Enter your registered email address
+                  Enter your registered phone number
                 </p>
               </div>
 
               {/* Verify Button */}
               <button
                 type="submit"
-                disabled={verifyLoading || !ceeId || !email}
+                disabled={verifyLoading || !ceeId || !phone}
                 className="w-full px-4 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-600/25 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {verifyLoading ? (
@@ -375,6 +377,7 @@ export default function RiderPasswordSetupPage() {
                   setPassword('');
                   setConfirmPassword('');
                   setPasswordError('');
+                  setVerifyError('');
                 }}
                 className="w-full px-4 py-2 text-slate-600 hover:text-slate-900 font-medium transition-colors"
               >
@@ -390,7 +393,7 @@ export default function RiderPasswordSetupPage() {
                 <span className="text-lg">ℹ️</span>
                 <span className="ml-2">
                   {step === 'verify'
-                    ? 'Use your Cee ID and registered email to verify your identity'
+                    ? 'Use your Cee ID and registered phone number to verify your identity'
                     : 'Create a strong password that you can remember for future logins'}
                 </span>
               </p>

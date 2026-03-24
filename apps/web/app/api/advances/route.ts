@@ -65,16 +65,8 @@ export async function POST(request: NextRequest) {
       RETURNING *
     `;
 
-    // Create notification for admin
-    await sql`
-      INSERT INTO notifications (type, title, message, related_id)
-      VALUES (
-        'advance',
-        'New Advance Request',
-        ${`${riderName} (${ceeId}) from ${storeLocation} requested ₹${amount}`},
-        ${result[0].id}
-      )
-    `;
+    // Notification creation has been disabled for now
+    // Will be re-enabled later after app completion
 
     return NextResponse.json(result[0]);
   } catch (error) {

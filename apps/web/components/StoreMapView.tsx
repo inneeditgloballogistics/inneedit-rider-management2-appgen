@@ -30,9 +30,22 @@ export default function StoreMapView() {
   const [map, setMap] = useState<any>(null);
   const [stores, setStores] = useState<Store[]>([]);
   const [loading, setLoading] = useState(true);
+  const [googleLoaded, setGoogleLoaded] = useState(false);
 
   useEffect(() => {
     fetchStores();
+  }, []);
+
+  useEffect(() => {
+    // Check if Google Maps API is loaded
+    const checkGoogle = () => {
+      if (window.google && window.google.maps) {
+        setGoogleLoaded(true);
+      } else {
+        setTimeout(checkGoogle, 100);
+      }
+    };
+    checkGoogle();
   }, []);
 
   const fetchStores = async () => {
@@ -48,18 +61,7 @@ export default function StoreMapView() {
   };
 
   useEffect(() => {
-    // Wait for Google Maps to be loaded
-    if (!window.google?.maps) {
-      const checkGoogle = setInterval(() => {
-        if (window.google?.maps) {
-          clearInterval(checkGoogle);
-          // Retry initialization
-        }
-      }, 100);
-      return () => clearInterval(checkGoogle);
-    }
-
-    if (!mapRef.current || stores.length === 0) return;
+    if (!mapRef.current || !googleLoaded || stores.length === 0) return;
     if (map) return;
 
     try {
@@ -186,7 +188,7 @@ export default function StoreMapView() {
     } catch (error) {
       console.error('Error initializing map:', error);
     }
-  }, [stores, map]);
+  }, [stores, map, googleLoaded]);
 
   if (loading) {
     return (
@@ -199,19 +201,13 @@ export default function StoreMapView() {
     );
   }
 
-  if (!window.google) {
+  if (!googleLoaded) {
     return (
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-12 text-center">
-        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <i className="ph-duotone ph-warning text-3xl text-red-500"></i>
+        <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+          <i className="ph-duotone ph-map-trifold text-3xl text-slate-400"></i>
         </div>
-        <h3 className="text-lg font-semibold text-slate-900 mb-2">Google Maps Not Loaded</h3>
-        <p className="text-slate-600 mb-4">
-          Please add your Google Maps API key to the .env file:
-        </p>
-        <code className="bg-slate-100 px-4 py-2 rounded text-sm text-slate-800 inline-block">
-          NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_api_key_here
-        </code>
+        <p className="text-slate-600">Initializing map...</p>
       </div>
     );
   }

@@ -99,10 +99,15 @@ export async function PATCH(request: NextRequest) {
     // Update deduction status
     const result = await sql`
       UPDATE deductions
-      SET status = ${status}, updated_at = NOW()
+      SET status = ${status}
       WHERE id = ${id}
       RETURNING *
     `;
+
+    if (result.length === 0) {
+      console.error('Update failed: No rows returned');
+      return NextResponse.json({ error: 'Failed to update deduction - no rows affected' }, { status: 500 });
+    }
 
     const updatedDeduction = result[0];
 
@@ -115,81 +120,57 @@ export async function PATCH(request: NextRequest) {
 
     // If rejecting a parts deduction, return the parts to inventory
     if (status === 'rejected' && deduction.entry_type === 'parts_deduction') {
-      // Extract ticket number from description (e.g., "Parts used in service ticket #123")
-      const ticketNumberMatch = deduction.description.match(/#(\d+)/);
-      if (ticketNumberMatch) {
-        const ticketId = parseInt(ticketNumberMatch[1]);
-        
-        // Get parts usage for this ticket
-        const partsUsage = await sql`
-          SELECT pu.id, pu.part_id, pu.quantity_used
-          FROM parts_usage pu
-          WHERE pu.service_ticket_id = ${ticketId}
-        `;
-
-        // Return parts to inventory
-        for (const usage of partsUsage) {
-          const partData = await sql`
-            SELECT quantity_in_stock, minimum_stock_level FROM parts_inventory WHERE id = ${usage.part_id}
+      try {
+        // Extract ticket number from description (e.g., "Parts used in service ticket #123")
+        const ticketNumberMatch = deduction.description.match(/#(\d+)/);
+        if (ticketNumberMatch) {
+          const ticketId = parseInt(ticketNumberMatch[1]);
+          
+          // Get parts usage for this ticket
+          const partsUsage = await sql`
+            SELECT pu.id, pu.part_id, pu.quantity_used
+            FROM parts_usage pu
+            WHERE pu.service_ticket_id = ${ticketId}
           `;
 
-          if (partData.length > 0) {
-            const newQuantity = partData[0].quantity_in_stock + usage.quantity_used;
-            await sql`
-              UPDATE parts_inventory
-              SET 
-                quantity_in_stock = ${newQuantity},
-                status = CASE 
-                  WHEN ${newQuantity} = 0 THEN 'Out of Stock'
-                  WHEN ${newQuantity} <= minimum_stock_level THEN 'Low Stock'
-                  ELSE 'In Stock'
-                END,
-                updated_at = NOW()
-              WHERE id = ${usage.part_id}
+          // Return parts to inventory
+          for (const usage of partsUsage) {
+            const partData = await sql`
+              SELECT quantity_in_stock, minimum_stock_level FROM parts_inventory WHERE id = ${usage.part_id}
             `;
+
+            if (partData.length > 0) {
+              const newQuantity = partData[0].quantity_in_stock + usage.quantity_used;
+              await sql`
+                UPDATE parts_inventory
+                SET 
+                  quantity_in_stock = ${newQuantity},
+                  status = CASE 
+                    WHEN ${newQuantity} = 0 THEN 'Out of Stock'
+                    WHEN ${newQuantity} <= minimum_stock_level THEN 'Low Stock'
+                    ELSE 'In Stock'
+                  END,
+                  updated_at = NOW()
+                WHERE id = ${usage.part_id}
+              `;
+            }
           }
         }
+      } catch (partsError) {
+        console.error('Error processing parts return:', partsError);
+        // Don't fail the whole request if parts processing fails
       }
     }
 
-    // Create notification for rider
-    if (rider) {
-      const notificationTitle = status === 'approved' 
-        ? 'Deduction Approved' 
-        : 'Deduction Rejected';
-      
-      const notificationMessage = status === 'approved'
-        ? `Deduction of ₹${deduction.amount} has been approved. This will be deducted from your next payout.`
-        : `Your deduction of ₹${deduction.amount} has been rejected. No charges will be applied.`;
-
-      await sql`
-        INSERT INTO notifications (
-          type,
-          title,
-          message,
-          related_id,
-          user_id,
-          recipient_type,
-          recipient_id,
-          is_read,
-          created_at
-        ) VALUES (
-          ${status === 'approved' ? 'deduction_approved' : 'deduction_rejected'},
-          ${notificationTitle},
-          ${notificationMessage},
-          ${deduction.id},
-          ${rider.user_id},
-          'rider',
-          ${rider.id},
-          false,
-          NOW()
-        )
-      `;
-    }
+    // Notification creation has been disabled for now
+    // Will be re-enabled later after app completion
 
     return NextResponse.json({ success: true, deduction: updatedDeduction });
   } catch (error) {
     console.error('Error updating deduction status:', error);
-    return NextResponse.json({ error: 'Failed to update deduction' }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Failed to update deduction',
+      details: error instanceof Error ? error.message : String(error)
+    }, { status: 500 });
   }
 }

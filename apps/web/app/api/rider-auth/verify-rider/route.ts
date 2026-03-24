@@ -3,26 +3,26 @@ import sql from '@/app/api/utils/sql';
 
 export async function POST(request: NextRequest) {
   try {
-    const { cee_id, email } = await request.json();
+    const { cee_id, phone } = await request.json();
 
-    if (!cee_id || !email) {
+    if (!cee_id || !phone) {
       return NextResponse.json(
-        { error: 'Cee ID and email are required' },
+        { error: 'Cee ID and phone are required' },
         { status: 400 }
       );
     }
 
-    // Find rider by cee_id and email
+    // Find rider by cee_id and phone
     const result = await sql`
       SELECT id, cee_id, full_name, email, phone, status, password_hash
       FROM riders
-      WHERE UPPER(cee_id) = UPPER(${cee_id}) AND LOWER(email) = LOWER(${email})
+      WHERE UPPER(cee_id) = UPPER(${cee_id}) AND phone = ${phone}
       LIMIT 1
     `;
 
     if (result.length === 0) {
       return NextResponse.json(
-        { error: 'Rider not found. Please check your Cee ID and email.' },
+        { error: 'Rider not found. Please check your Cee ID and phone number.' },
         { status: 404 }
       );
     }

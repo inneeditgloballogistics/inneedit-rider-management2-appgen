@@ -7,87 +7,10 @@ import Link from 'next/link';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [loginType, setLoginType] = useState<'admin' | 'rider' | 'hub_manager' | 'technician'>('admin');
-  const [phoneOrCeeId, setPhoneOrCeeId] = useState('');
-  const [riderPassword, setRiderPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleAdminLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
 
-    try {
-      // Admin login - direct access without authentication
-      router.push('/admin-dashboard');
-    } catch (err: any) {
-      setError(err.message || 'Failed to access admin dashboard.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRiderLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-
-    try {
-      // Determine which endpoint to use based on login type
-      let endpoint = '/api/rider-auth/login';
-      if (loginType === 'hub_manager') {
-        endpoint = '/api/hub-manager-auth/login';
-      } else if (loginType === 'technician') {
-        endpoint = '/api/technician-auth/login';
-      }
-
-      // Make API call to authenticate
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: phoneOrCeeId, password: riderPassword })
-      });
-
-      if (!response.ok) {
-        try {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to sign in. Please check your credentials.');
-        } catch (parseError) {
-          throw new Error('Failed to sign in. Please check your credentials.');
-        }
-      }
-
-      const data = await response.json();
-
-      // Store data based on login type
-      if (loginType === 'hub_manager') {
-        const managerData = data.hub_manager || data.manager;
-        console.log('🔐 [Login] Hub Manager login successful:', {
-          id: managerData?.id,
-          name: managerData?.name,
-          email: managerData?.email,
-          hub_id: managerData?.hub_id,
-          hubId: managerData?.hubId,
-          fullObject: JSON.stringify(managerData)
-        });
-        localStorage.setItem('hubManager', JSON.stringify(managerData));
-        // Force navigation after localStorage is set
-        setTimeout(() => router.push('/hub-manager-dashboard'), 100);
-      } else if (loginType === 'technician') {
-        localStorage.setItem('technician', JSON.stringify(data.technician));
-        // Force navigation after localStorage is set
-        setTimeout(() => router.push('/technician-dashboard'), 100);
-      } else {
-        router.push('/rider-dashboard');
-      }
-    } catch (err: any) {
-      console.error('Login error:', err);
-      setError(err.message || 'Failed to sign in. Please check your credentials.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <div className="mesh-bg min-h-screen flex items-center justify-center px-6 py-12">
@@ -113,57 +36,8 @@ export default function LoginPage() {
 
         {/* Login Card */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-xl p-8">
-          {/* Login Type Toggle */}
-          <div className="mb-6 p-1 bg-slate-100 rounded-xl grid grid-cols-2 gap-1">
-            <button
-              type="button"
-              onClick={() => setLoginType('admin')}
-              className={`px-3 py-2.5 rounded-lg font-medium text-xs transition-all focus:outline-none ${
-                loginType === 'admin'
-                  ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700'
-              }`}
-            >
-              <i className="ph-bold ph-user-gear mr-1.5"></i>
-              Admin
-            </button>
-            <button
-              type="button"
-              onClick={() => setLoginType('rider')}
-              className={`px-3 py-2.5 rounded-lg font-medium text-xs transition-all ${
-                loginType === 'rider'
-                  ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700'
-              }`}
-            >
-              <i className="ph-bold ph-moped mr-1.5"></i>
-              Rider
-            </button>
-            <button
-              type="button"
-              onClick={() => setLoginType('hub_manager')}
-              className={`px-3 py-2.5 rounded-lg font-medium text-xs transition-all ${
-                loginType === 'hub_manager'
-                  ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700'
-              }`}
-            >
-              <i className="ph-bold ph-buildings mr-1.5"></i>
-              Hub Manager
-            </button>
-            <button
-              type="button"
-              onClick={() => setLoginType('technician')}
-              className={`px-3 py-2.5 rounded-lg font-medium text-xs transition-all ${
-                loginType === 'technician'
-                  ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700'
-              }`}
-            >
-              <i className="ph-bold ph-wrench mr-1.5"></i>
-              Technician
-            </button>
-          </div>
+          {/* Login Type Buttons */}
+          <div className="mb-6 grid grid-cols-2 gap-3">
 
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm flex items-center gap-2">
@@ -172,117 +46,75 @@ export default function LoginPage() {
             </div>
           )}
 
-          {loginType === 'rider' ? (
-            <>
-              {/* Rider OTP Login Redirect */}
-              <div className="text-center py-8">
-                <div className="w-20 h-20 bg-brand-100 rounded-full mx-auto mb-4 flex items-center justify-center">
-                  <i className="ph-fill ph-moped text-4xl text-brand-600"></i>
+          {/* Login Options */}
+            <Link
+              href="/admin-dashboard"
+              className="block p-4 border border-slate-200 rounded-lg hover:bg-slate-50 transition-all"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-brand-100 rounded-lg flex items-center justify-center">
+                  <i className="ph-fill ph-user-gear text-xl text-brand-600"></i>
                 </div>
-                <h3 className="text-lg font-semibold text-slate-900 mb-2">Secure OTP Login</h3>
-                <p className="text-sm text-slate-600 mb-6">
-                  Riders login using phone number verification for enhanced security
-                </p>
-                <Link
-                  href="/rider-login"
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-brand-500 text-white rounded-lg font-medium hover:bg-brand-600 transition-all shadow-lg shadow-brand-500/25"
-                >
-                  <i className="ph-bold ph-sign-in"></i>
-                  Continue to Rider Login
-                </Link>
-              </div>
-
-              {/* Help Text */}
-              <div className="mt-6 p-4 bg-slate-50 border border-slate-200 rounded-lg">
-                <p className="text-xs text-slate-600">
-                  <i className="ph-bold ph-info mr-1 text-slate-500"></i>
-                  New rider? Contact your hub manager or admin to get registered and receive your login credentials.
-                </p>
-              </div>
-            </>
-          ) : loginType === 'admin' ? (
-            <>
-              {/* Admin Direct Access */}
-              <div className="text-center py-8">
-                <div className="w-20 h-20 bg-brand-100 rounded-full mx-auto mb-4 flex items-center justify-center">
-                  <i className="ph-fill ph-user-gear text-4xl text-brand-600"></i>
-                </div>
-                <h3 className="text-lg font-semibold text-slate-900 mb-2">Admin Access</h3>
-                <p className="text-sm text-slate-600 mb-6">
-                  Click below to access the admin dashboard
-                </p>
-                <form onSubmit={handleAdminLogin}>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full px-4 py-3 bg-brand-500 text-white rounded-lg font-medium hover:bg-brand-600 transition-all shadow-lg shadow-brand-500/25 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  >
-                    {loading ? (
-                      <>
-                        <i className="ph ph-circle-notch animate-spin text-lg"></i>
-                        Loading...
-                      </>
-                    ) : (
-                      <>
-                        <i className="ph-bold ph-sign-in"></i>
-                        Access Admin Dashboard
-                      </>
-                    )}
-                  </button>
-                </form>
-              </div>
-            </>
-          ) : (
-            <>
-              {/* Hub Manager / Technician Login */}
-              <form onSubmit={handleRiderLogin} className="space-y-5">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    {loginType === 'hub_manager' ? 'Manager Email' : loginType === 'technician' ? 'Technician Email' : 'Email Address'}
-                  </label>
-                  <input
-                    type="email"
-                    value={phoneOrCeeId}
-                    onChange={(e) => setPhoneOrCeeId(e.target.value)}
-                    required
-                    placeholder={loginType === 'hub_manager' ? 'manager@hub.com' : loginType === 'technician' ? 'technician@hub.com' : 'you@company.com'}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
-                  />
+                  <h3 className="font-semibold text-slate-900">Admin Access</h3>
+                  <p className="text-xs text-slate-500">Manage system operations</p>
                 </div>
+              </div>
+            </Link>
 
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Password
-                  </label>
-                  <input
-                    type="password"
-                    value={riderPassword}
-                    onChange={(e) => setRiderPassword(e.target.value)}
-                    required
-                    placeholder="Enter your password"
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
-                  />
+            <Link
+              href="/rider-login"
+              className="block p-4 border border-slate-200 rounded-lg hover:bg-slate-50 transition-all"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center">
+                  <i className="ph-fill ph-moped text-xl text-indigo-600"></i>
                 </div>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full px-4 py-3 bg-brand-500 text-white rounded-lg font-medium hover:bg-brand-600 transition-all shadow-lg shadow-brand-500/25 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {loading ? (
-                    <>
-                      <i className="ph ph-circle-notch animate-spin text-lg"></i>
-                      Signing in...
-                    </>
-                  ) : (
-                    <>
-                      <i className="ph-bold ph-sign-in"></i>
-                      Sign In
-                    </>
-                  )}
-                </button>
-              </form>
-            </>
-          )}
+                <div>
+                  <h3 className="font-semibold text-slate-900">Rider Login</h3>
+                  <p className="text-xs text-slate-500">Access rider dashboard</p>
+                </div>
+              </div>
+            </Link>
+
+            <Link
+              href="/hub-manager-login"
+              className="block p-4 border border-slate-200 rounded-lg hover:bg-slate-50 transition-all"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
+                  <i className="ph-fill ph-buildings text-xl text-emerald-600"></i>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-slate-900">Hub Manager</h3>
+                  <p className="text-xs text-slate-500">Manage hub operations</p>
+                </div>
+              </div>
+            </Link>
+
+            <Link
+              href="/technician-login"
+              className="block p-4 border border-slate-200 rounded-lg hover:bg-slate-50 transition-all"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <i className="ph-fill ph-wrench text-xl text-blue-600"></i>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-slate-900">Technician</h3>
+                  <p className="text-xs text-slate-500">Manage service tickets</p>
+                </div>
+              </div>
+            </Link>
+          </div>
+
+          {/* Help Text */}
+          <div className="mt-6 p-4 bg-slate-50 border border-slate-200 rounded-lg">
+            <p className="text-xs text-slate-600">
+              <i className="ph-bold ph-info mr-1 text-slate-500"></i>
+              Select your role to log in. New riders should contact their hub manager to get registered.
+            </p>
+          </div>
         </div>
 
         {/* Footer */}
